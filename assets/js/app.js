@@ -207,6 +207,7 @@ function renderLeg(leg) {
                 <label>Flight Time</label>
                 <div class="time-input">
                     <input type="number" placeholder="HH" min="0" value="${leg.hours}" oninput="updateLegField(${leg.id}, 'hours', this.value)" inputmode="numeric">
+                    <span class="time-separator">:</span>
                     <input type="number" placeholder="MM" min="0" max="59" value="${leg.minutes}" oninput="updateLegField(${leg.id}, 'minutes', this.value)" inputmode="numeric">
                 </div>
             </div>
@@ -541,10 +542,10 @@ function formatEstimate(estimate) {
     if (estimate.crewExpensesTotal > 0) {
         output += 'Crew Expenses:\n';
         if (estimate.hotelTotal > 0) {
-            output += `  Hotel: $${estimate.hotelTotal.toFixed(2)} (${estimate.crewCount} crew × ${estimate.hotelStays} night(s) × $${estimate.hotelRate.toFixed(2)})\n`;
+            output += `  Hotel: $${estimate.hotelTotal.toFixed(2)} (${estimate.crewCount} crew ï¿½ ${estimate.hotelStays} night(s) ï¿½ $${estimate.hotelRate.toFixed(2)})\n`;
         }
         if (estimate.mealsTotal > 0) {
-            output += `  Meals: $${estimate.mealsTotal.toFixed(2)} (${estimate.crewCount} crew × ${estimate.tripDays} day(s) × $${estimate.mealsRate.toFixed(2)})\n`;
+            output += `  Meals: $${estimate.mealsTotal.toFixed(2)} (${estimate.crewCount} crew ï¿½ ${estimate.tripDays} day(s) ï¿½ $${estimate.mealsRate.toFixed(2)})\n`;
         }
         if (estimate.otherTotal > 0) {
             output += `  Other: $${estimate.otherTotal.toFixed(2)}\n`;
@@ -565,13 +566,13 @@ function formatEstimate(estimate) {
     if (estimate.hourlySubtotal > 0) {
         output += `Hourly Subtotal (Programs & Reserves): $${estimate.hourlySubtotal.toFixed(2)}\n`;
         if (estimate.maintenanceTotal > 0) {
-            output += `  Maintenance Programs: $${estimate.maintenanceTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs × $${estimate.maintenanceRate.toFixed(2)})\n`;
+            output += `  Maintenance Programs: $${estimate.maintenanceTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs ï¿½ $${estimate.maintenanceRate.toFixed(2)})\n`;
         }
         if (estimate.consumablesTotal > 0) {
-            output += `  Other Consumables: $${estimate.consumablesTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs × $${estimate.consumablesRate.toFixed(2)})\n`;
+            output += `  Other Consumables: $${estimate.consumablesTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs ï¿½ $${estimate.consumablesRate.toFixed(2)})\n`;
         }
         if (estimate.additionalTotal > 0) {
-            output += `  Additional: $${estimate.additionalTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs × $${estimate.additionalRate.toFixed(2)})\n`;
+            output += `  Additional: $${estimate.additionalTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs ï¿½ $${estimate.additionalRate.toFixed(2)})\n`;
         }
     }
 
