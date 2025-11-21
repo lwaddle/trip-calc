@@ -3,8 +3,8 @@
    =========================== */
 :root {
     /* Colors */
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
+    --color-primary: #bc282e;
+    --color-primary-hover: #9a2024;
     --color-secondary: #64748b;
     --color-secondary-hover: #475569;
     --color-bg: #ffffff;
@@ -261,7 +261,8 @@ textarea:focus {
 
 textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 150px;
+    width: 100%;
 }
 
 /* ===========================
