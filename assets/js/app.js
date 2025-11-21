@@ -105,6 +105,26 @@ function attachEventListeners() {
         input.addEventListener('input', updateEstimate);
     });
 
+    // Auto-select input contents on click for static fields
+    document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+        input.addEventListener('click', function() {
+            this.select();
+        });
+    });
+
+    // Auto-select input contents on click for dynamic fields (event delegation)
+    document.getElementById('flightLegsContainer').addEventListener('click', function(e) {
+        if (e.target.matches('input[type="text"], input[type="number"]')) {
+            e.target.select();
+        }
+    });
+
+    document.getElementById('crewContainer').addEventListener('click', function(e) {
+        if (e.target.matches('input[type="number"]')) {
+            e.target.select();
+        }
+    });
+
     // Footer buttons
     document.getElementById('copyButton').addEventListener('click', copyToClipboard);
     document.getElementById('exportPdfButton').addEventListener('click', exportToPDF);
