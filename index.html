@@ -50,6 +50,12 @@
                     <input type="number" id="fuelDensity" step="0.1" min="0" value="6.7">
                 </div>
             </div>
+            <div class="form-field" style="margin-top: var(--spacing-md);">
+                <label>
+                    <input type="checkbox" id="includeAPU">
+                    Include APU Burn
+                </label>
+            </div>
         </section>
 
         <!-- Section 3: Crew Day Rates -->
@@ -246,6 +252,10 @@
                 <div class="form-field">
                     <label for="defaultMaintenanceRate">Maintenance Programs ($/hour)</label>
                     <input type="number" id="defaultMaintenanceRate" step="0.01" min="0" value="1048.42">
+                </div>
+                <div class="form-field">
+                    <label for="defaultAPUBurn">APU Burn (lbs/leg)</label>
+                    <input type="number" id="defaultAPUBurn" step="0.01" min="0" value="100">
                 </div>
             </div>
             <div class="modal-footer">

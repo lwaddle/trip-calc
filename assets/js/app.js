@@ -44,6 +44,7 @@ function loadDefaults() {
     document.getElementById('defaultHotelRate').value = defaults.hotelRate;
     document.getElementById('defaultMealsRate').value = defaults.mealsRate;
     document.getElementById('defaultMaintenanceRate').value = defaults.maintenanceRate;
+    document.getElementById('defaultAPUBurn').value = defaults.apuBurn;
 }
 
 function getDefaults() {
@@ -58,7 +59,8 @@ function getDefaults() {
         attendantRate: 1200,
         hotelRate: 200,
         mealsRate: 100,
-        maintenanceRate: 1048.42
+        maintenanceRate: 1048.42,
+        apuBurn: 100
     };
 }
 
@@ -70,7 +72,8 @@ function saveDefaults() {
         attendantRate: parseFloat(document.getElementById('defaultAttendantRate').value) || 1200,
         hotelRate: parseFloat(document.getElementById('defaultHotelRate').value) || 200,
         mealsRate: parseFloat(document.getElementById('defaultMealsRate').value) || 100,
-        maintenanceRate: parseFloat(document.getElementById('defaultMaintenanceRate').value) || 1048.42
+        maintenanceRate: parseFloat(document.getElementById('defaultMaintenanceRate').value) || 1048.42,
+        apuBurn: parseFloat(document.getElementById('defaultAPUBurn').value) || 100
     };
 
     localStorage.setItem('tripCalcDefaults', JSON.stringify(defaults));
@@ -104,6 +107,9 @@ function attachEventListeners() {
     document.querySelectorAll('input, select, textarea').forEach(input => {
         input.addEventListener('input', updateEstimate);
     });
+
+    // APU checkbox change event
+    document.getElementById('includeAPU').addEventListener('change', updateEstimate);
 
     // Auto-select input contents on click for static fields
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
@@ -386,9 +392,14 @@ function calculateEstimate() {
     // Flight legs
     const fuelDensity = parseFloat(document.getElementById('fuelDensity').value) || 6.7;
     const fuelPrice = parseFloat(document.getElementById('fuelPrice').value) || 5.93;
+    const includeAPU = document.getElementById('includeAPU').checked;
+    const defaults = getDefaults();
+    const apuBurn = defaults.apuBurn;
 
     let totalMinutes = 0;
     let totalFuelLbs = 0;
+    let totalAPUFuel = 0;
+    let activeLegsCount = 0;
     const legsSummary = [];
 
     state.legs.forEach((leg, index) => {
@@ -397,16 +408,31 @@ function calculateEstimate() {
         const fuelBurn = leg.fuelBurn || 0;
 
         totalMinutes += (hours * 60) + minutes;
-        totalFuelLbs += fuelBurn;
 
-        const gallons = fuelBurn / fuelDensity;
+        // Determine if leg is active (has flight time AND fuel burn)
+        const isActiveLeg = ((hours > 0 || minutes > 0) && fuelBurn > 0);
+
+        // Add base fuel burn
+        let legFuelTotal = fuelBurn;
+
+        // Add APU burn if checkbox is checked and leg is active
+        if (includeAPU && isActiveLeg) {
+            legFuelTotal += apuBurn;
+            totalAPUFuel += apuBurn;
+            activeLegsCount++;
+        }
+
+        totalFuelLbs += legFuelTotal;
+
+        const gallons = legFuelTotal / fuelDensity;
         legsSummary.push({
             index: index + 1,
             from: leg.from || '(empty)',
             to: leg.to || '(empty)',
             hours,
             minutes,
-            gallons
+            gallons,
+            apuIncluded: includeAPU && isActiveLeg
         });
     });
 
@@ -532,7 +558,11 @@ function calculateEstimate() {
         otherMisc,
         miscSubtotal,
         estimatedTotal,
-        tripNotes
+        tripNotes,
+        includeAPU,
+        apuBurn,
+        totalAPUFuel,
+        activeLegsCount
     };
 }
 
@@ -549,6 +579,9 @@ function formatEstimate(estimate) {
 
     output += `\nTotal Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m\n`;
     output += `Total Fuel Used: ${estimate.totalFuelGallons.toFixed(0)} gallons\n`;
+    if (estimate.includeAPU && estimate.activeLegsCount > 0) {
+        output += `  (Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
+    }
 
     output += '\n\nESTIMATE\n';
 
@@ -792,7 +825,8 @@ function getFormData() {
         otherAirport: document.getElementById('otherAirport').value,
         tripCoordinationFee: document.getElementById('tripCoordinationFee').value,
         otherMisc: document.getElementById('otherMisc').value,
-        tripNotes: document.getElementById('tripNotes').value
+        tripNotes: document.getElementById('tripNotes').value,
+        includeAPU: document.getElementById('includeAPU').checked
     };
 }
 
@@ -800,7 +834,11 @@ function setFormData(data) {
     Object.keys(data).forEach(key => {
         const element = document.getElementById(key);
         if (element) {
-            element.value = data[key];
+            if (element.type === 'checkbox') {
+                element.checked = data[key];
+            } else {
+                element.value = data[key];
+            }
         }
     });
 }
