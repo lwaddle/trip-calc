@@ -304,6 +304,21 @@ textarea {
     gap: var(--spacing-sm);
 }
 
+.time-input input[type="number"] {
+    padding: var(--spacing-sm) var(--spacing-sm);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.time-input input[type="number"]::-webkit-inner-spin-button,
+.time-input input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 /* ===========================
    Buttons
    =========================== */
