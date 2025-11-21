@@ -7,7 +7,271 @@
     <title>Trip Cost Calculator</title>
 </head>
 <body>
-    
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-logo">
+                <img src="./assets/img/logo.svg" alt="Logo">
+            </div>
+            <div class="header-menu">
+                <button class="menu-button" id="menuButton">
+                    <span class="hamburger"></span>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="menu-item menu-user" id="menuUser" style="display: none;">user@example.com</div>
+                    <button class="menu-item" id="menuEstimates" style="display: none;">Estimates</button>
+                    <button class="menu-item" id="menuDefaults">Defaults</button>
+                    <button class="menu-item" id="menuSignOut" style="display: none;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <h1>Trip Cost Calculator</h1>
+
+        <!-- Section 1: Flight Legs -->
+        <section class="section">
+            <h2>Flight Legs</h2>
+            <div id="flightLegsContainer"></div>
+            <button class="btn-secondary" id="addLegButton">Add Leg</button>
+        </section>
+
+        <!-- Section 2: Fuel & Operations -->
+        <section class="section">
+            <h2>Fuel & Operations</h2>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="fuelPrice">Fuel Price ($/gallon)</label>
+                    <input type="number" id="fuelPrice" step="0.01" min="0" value="5.93">
+                </div>
+                <div class="form-field">
+                    <label for="fuelDensity">Fuel Density (lbs/gallon)</label>
+                    <input type="number" id="fuelDensity" step="0.1" min="0" value="6.7">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Crew Day Rates -->
+        <section class="section">
+            <h2>Crew Day Rates</h2>
+            <div id="crewContainer"></div>
+            <button class="btn-secondary" id="addCrewButton">Add Role</button>
+        </section>
+
+        <!-- Section 4: Crew Expenses -->
+        <section class="section">
+            <h2>Crew Expenses</h2>
+
+            <h3>Trip Duration</h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="tripDays">Trip Days</label>
+                    <input type="number" id="tripDays" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="hotelStays">Hotel Stays (nights)</label>
+                    <input type="number" id="hotelStays" min="0" value="0">
+                </div>
+            </div>
+
+            <h3>Per Person Expenses</h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="hotelRate">Hotel ($/night/person)</label>
+                    <input type="number" id="hotelRate" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="mealsRate">Meals ($/day/person)</label>
+                    <input type="number" id="mealsRate" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="otherRate">Other ($/day/person)</label>
+                    <input type="number" id="otherRate" step="0.01" min="0" value="0">
+                </div>
+            </div>
+
+            <h3>Total Trip Expenses</h3>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="rentalCar">Rental Car ($)</label>
+                    <input type="number" id="rentalCar" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="airfare">Airfare ($)</label>
+                    <input type="number" id="airfare" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="mileage">Mileage ($)</label>
+                    <input type="number" id="mileage" step="0.01" min="0" value="0">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Hourly Programs & Reserves -->
+        <section class="section">
+            <h2>Hourly Programs & Reserves</h2>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="maintenancePrograms">Maintenance Programs ($/hour)</label>
+                    <input type="number" id="maintenancePrograms" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="otherConsumables">Other Consumables ($/hour)</label>
+                    <input type="number" id="otherConsumables" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="additionalHourly">Additional ($/hour)</label>
+                    <input type="number" id="additionalHourly" step="0.01" min="0" value="0">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: Airport & Ground Costs -->
+        <section class="section">
+            <h2>Airport & Ground Costs</h2>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="landingFees">Landing Fees ($)</label>
+                    <input type="number" id="landingFees" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="catering">Catering ($)</label>
+                    <input type="number" id="catering" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="handling">Handling ($)</label>
+                    <input type="number" id="handling" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="passengerTransport">Passenger Ground Transport ($)</label>
+                    <input type="number" id="passengerTransport" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="facilityFees">Facility Fees ($)</label>
+                    <input type="number" id="facilityFees" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="specialEventFees">Special Event Fees ($)</label>
+                    <input type="number" id="specialEventFees" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="rampParking">Ramp/Parking ($)</label>
+                    <input type="number" id="rampParking" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="customs">Customs ($)</label>
+                    <input type="number" id="customs" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="hangar">Hangar ($)</label>
+                    <input type="number" id="hangar" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="otherAirport">Other ($)</label>
+                    <input type="number" id="otherAirport" step="0.01" min="0" value="0">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: Miscellaneous -->
+        <section class="section">
+            <h2>Miscellaneous</h2>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="tripCoordinationFee">Trip Coordination Fee ($)</label>
+                    <input type="number" id="tripCoordinationFee" step="0.01" min="0" value="0">
+                </div>
+                <div class="form-field">
+                    <label for="otherMisc">Other ($)</label>
+                    <input type="number" id="otherMisc" step="0.01" min="0" value="0">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Trip Notes -->
+        <section class="section">
+            <h2>Trip Notes</h2>
+            <textarea id="tripNotes" rows="4" placeholder="Optional notes about the trip (e.g., client preferences, special handling, overnight particulars)"></textarea>
+        </section>
+
+        <!-- Section 9: Trip Estimate -->
+        <section class="section">
+            <h2>Trip Estimate</h2>
+            <pre id="tripEstimate">Add flight legs to see estimate...</pre>
+        </section>
+
+        <!-- Footer Buttons -->
+        <footer class="footer-buttons">
+            <button class="btn-primary" id="copyButton">Copy to Clipboard</button>
+            <button class="btn-primary" id="exportPdfButton">Export to PDF</button>
+            <button class="btn-primary" id="saveEstimateButton">Save Estimate</button>
+            <button class="btn-primary" id="loadEstimateButton">Load Estimate</button>
+            <button class="btn-secondary" id="resetButton">Reset</button>
+        </footer>
+    </main>
+
+    <!-- Defaults Modal -->
+    <div class="modal" id="defaultsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Defaults</h2>
+                <button class="modal-close" id="closeDefaultsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field">
+                    <label for="defaultFuelPrice">Fuel Price ($/gallon)</label>
+                    <input type="number" id="defaultFuelPrice" step="0.01" min="0" value="5.93">
+                </div>
+                <div class="form-field">
+                    <label for="defaultFuelDensity">Fuel Density (lbs/gallon)</label>
+                    <input type="number" id="defaultFuelDensity" step="0.1" min="0" value="6.7">
+                </div>
+                <div class="form-field">
+                    <label for="defaultPilotRate">Pilot Daily Rate ($)</label>
+                    <input type="number" id="defaultPilotRate" step="0.01" min="0" value="1500">
+                </div>
+                <div class="form-field">
+                    <label for="defaultAttendantRate">Flight Attendant Daily Rate ($)</label>
+                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="1200">
+                </div>
+                <div class="form-field">
+                    <label for="defaultHotelRate">Hotel ($/night/person)</label>
+                    <input type="number" id="defaultHotelRate" step="0.01" min="0" value="200">
+                </div>
+                <div class="form-field">
+                    <label for="defaultMealsRate">Meals ($/day/person)</label>
+                    <input type="number" id="defaultMealsRate" step="0.01" min="0" value="100">
+                </div>
+                <div class="form-field">
+                    <label for="defaultMaintenanceRate">Maintenance Programs ($/hour)</label>
+                    <input type="number" id="defaultMaintenanceRate" step="0.01" min="0" value="1048.42">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelDefaultsButton">Cancel</button>
+                <button class="btn-primary" id="saveDefaultsButton">Save Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Estimate Modal -->
+    <div class="modal" id="loadEstimateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Load Estimate</h2>
+                <button class="modal-close" id="closeLoadEstimateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="savedEstimatesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelLoadButton">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="./assets/js/app.js"></script>
 </body>
 </html>
