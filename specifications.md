@@ -10,4 +10,65 @@ Below the header, there will be an h1 that says, 'Trip Cost Calculator'. The h1 
 
 The next section is titled 'Crew Day Rates'. This section is similar to the 'Flight Legs' section in that it is dynamic. When the page loads, it will default to having two crew members loaded--'Crew Member 1' and 'Crew Member 2'. A crew member has two properties--'role' and 'dailyRate'. For the UI, I want the user to be able to select a crew member role from a dropdown. The options will be 'Pilot' or 'Flight Attendant'. Their dailyRate will be a dollar amount that can be modified by the user. Default amounts for a pilot and flight attendant can be configured in the defaults page. I would like a button to 'Add Role' where the user can add additional crew members. Each crew member should also have a 'Delete' button to remove that crew member. Apply validation to the dailyRate form field that only allows positive dollar amounts. In mobile view, the keypad displayed should be appropriate--decimal point and numbers only.
 
-The next section is titled, 'Crew Expenses'. It has multiple sub-sections. The first sub-section is labeld, 'Trip Duration'. In this sub-section, I need two fields--'Trip Days' and 'Hotel Stays (nights)'. Data validation should only allow positive integers. For mobile, the keypad should be numeric.
+The next section is titled, 'Crew Expenses'. It has multiple sub-sections. The first sub-section is labeld, 'Trip Duration'. In this sub-section, I need two fields--'Trip Days' and 'Hotel Stays (nights)'. Data validation should only allow positive integers. For mobile, the keypad should be numeric. These fields will both default to 0 initially.
+
+The next sub-section is labled, 'Per Person Expenses'. This subsection needs the following three fields: 'Hotel ($/night/person)', 'Meals ($/day/person)', and 'Other ($/day/person)'. For data validation, ensure these fields are all positive dollar amounts. In mobile, present the user with a decimal keypad.
+
+The next sub-section is labeld, 'Total Trip Expenses'. The sub-section needs the following 3 fields: 'Rental Car ($)', 'Airfare ($)', and 'Mileage ($)'. Data validation--only positive dollar amounts. In mobile, present a decimal keypad.
+
+The next h2 secions is labeled, 'Hourly Programs & Reserves'. This section contains the following 3 fields: 'Maintenance Programs ($/hour)', 'Other Consumables ($/hour)', and 'Additional ($/hour)'. Validate these fields to only allow positive dollar amounts. Present the user a decimal pad in mobile view
+
+The next h2 section is labeled, 'Airport & Ground Costs'. It contains the following fields: 'Landing Fees ($)', 'Catering ($)', 'Handling ($)', 'Passenger Ground Transport ($)', 'Facility Fees ($)', 'Special Event Fees ($)', 'Ramp/Parking ($)', 'Customs ($)', 'Hangar ($)', and 'Other ($)'. Apply data validation to ensure these are all positive dollar amounts. In mobile view, present the user with a decimal pad.
+
+The next h2 section is labeled, 'Miscellaneous'. It contains 2 fields: 'Trip Coordination Fee ($)', and 'Other ($)'. Apply data validation to ensure these are all positive dollar amounts. In mobile view, present the user with a decimal pad.
+
+The next h2 section is labeled, 'Trip Notes'. It contains one big textarea with the following placeholder text: 'Optional notes about the trip (e.g., client preferences, special handling, overnight particulars)'. The user can enter any misc notes here that will be attached to the summary.
+
+The last h2 section is labeled, 'Trip Estimate'. This section contains a pre element that presents an estimate of the trip. The text in this element should look something like this:
+
+```
+LEGS SUMMARY
+Leg 1: Aurora - Elko 1h 12m (306 gallons)
+Leg 2: Elko - Las Vegas 1h 15m (325 gallons)
+Leg 3: Las Vegas - Aurora 1h 58m (597 gallons)
+
+Total Flight Time: 4h 25m
+Total Fuel Used: 1228 gallons
+
+ESTIMATE
+Pilot 3 day(s) @ $1,500.00
+Pilot 3 day(s) @ $1,500.00
+Crew Day Rate Subtotal: $9,000.00
+Crew Expenses:
+  Hotel: $800.00 (2 crew × 2 night(s) × $200.00)
+  Meals: $600.00 (2 crew × 3 day(s) × $100.00)
+  Rental Car: $200.00
+  Mileage: $100.00
+Crew Subtotal: $10,700.00
+
+Hourly Subtotal (Programs & Reserves): $4,630.52
+  Maintenance Programs: $4,630.52 (4.42 hrs × $1,048.42)
+Fuel Subtotal: $7,279.74
+  (1228 gallons @ $5.93)
+Airport & Ground Subtotal: $2,475.00
+  Landing Fees: $100.00
+  Catering: $300.00
+  Handling: $375.00
+  Facility Fees: $800.00
+  Ramp/Parking: $900.00
+Miscellaneous Subtotal: $150.00
+  Trip Coordination Fee: $150.00
+
+Estimated Total: $25,235.26
+
+Trip Notes:
+Sally is gluten free.
+```
+
+This is just an example. The actual output we be calculated based on the values from all the fields in the page.
+
+I want the following buttons at the bottom of the page: 'Copy to Clipboard', 'Export to PDF', 'Save Estimate', 'Load Estimate', and 'Reset'. If the user is not signed in, don't display options to save or load estimates.
+
+Let me explain a little about the 'Defaults' page. I was thinking this could be a separate page that is used to store defaults values for things like fuel price, fuel density, pilot daily rate, flight attendant daily rate, Hotel ($/night/person), Meals ($/day/person), and Maintenance Programs ($/hour).
+
+I'm thinking I want to use something like Firebase to handle authentication, but I will need you to help me determine what I need. This app will only be used by a few people that I will give access. Annonomous users will be allowed to use the basic functions, but they won't be able to load or save estimates. Signed in users will get to save and load estimates. Help me determine best way to host. I was thinking Cloudflare Pages because it's so simple.
