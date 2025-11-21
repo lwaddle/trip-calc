@@ -1,30 +1,163 @@
 # Specifications
 
-**Here is a detailed description of the app I want you to help me build:**
+## Overview
+This app is a lightweight, single-page trip-cost calculator for private jet travel. When the page loads, the user is presented with a worksheet-style interface containing form fields that update the trip estimate in real time.
 
-The app is a very simple, lightweight calculator to compute an estimated cost of a specific trip in a private jet. When the page loads, the user should be presented with a worksheet of form fields that collect trip specifics and update the output in real time.
+The app consists of:
 
-I want the main page, index.html, to have a familiar look for the user. The top of the page will have a full width header with its content restrictd to a standard desktop max width. The same max-width will be used throughout the site. In the header, my logo (logo.svg) will be positioned at the left. At the right side of the header, I want a dropdown menu. Eventually it will contain the signed in user's username (just their email address), a link to 'Estimates', a link to 'Defaults' (a pager where the user can configure default values), and a sign out link. In mobile mode, the drop down will be one of those classic 3 bar (hamburger) style buttons.
+- A main page: **index.html**
+- A **Defaults** page for configuring persistent default values
+- Optional user authentication for saving/loading estimates
+- A real-time calculated **Trip Estimate** section
+- A PDF export feature for generating a downloadable trip summary
 
-Below the header, there will be an h1 that says, 'Trip Cost Calculator'. The h1 will be followed by multiple sections. The first section is titled with an h2, 'Flight Legs'. This section is where the user enters in the legs of a trip. It needs the following data fields to create a single tripLeg: 'from' (text), 'to' (text), 'flightTime' (see note), and 'fuelBurn' (int). Note... flightTime should be derived from the user filling out two fields, 'HH' and 'MM'. Those can be used to make a flight time in the format HH:MM. choose whatever variable naming convention that works best. The user should be able to add multiple legs, so place an 'Add Leg' button somewhere conveinient. When the user pushes the add leg button, create a new row at the bottom with a blank leg. There also needs to be a way to delete a leg, so place a 'Delete Leg' button somewhere too. Each leg should have a label like, 'Leg 1', 'Leg 2', etc. There needs to be some data validation on the fields. hours must be positive, minutes must be positive and not exceed 59. In mobile, utilize a numberpad instead of an alphanumeric keyboard--same for the fuelBurn field. The purpose of this section is to collect data to calculate total flight time and total fuel burn. Total fuel burn is calcuated in pounds, but the final output on the summary will be in gallons. The fuel density for the conversion will come from the defaults page and will initially be set to 6.7 pounds per gallon.
+---
 
-The next section is titled 'Crew Day Rates'. This section is similar to the 'Flight Legs' section in that it is dynamic. When the page loads, it will default to having two crew members loaded--'Crew Member 1' and 'Crew Member 2'. A crew member has two properties--'role' and 'dailyRate'. For the UI, I want the user to be able to select a crew member role from a dropdown. The options will be 'Pilot' or 'Flight Attendant'. Their dailyRate will be a dollar amount that can be modified by the user. Default amounts for a pilot and flight attendant can be configured in the defaults page. I would like a button to 'Add Role' where the user can add additional crew members. Each crew member should also have a 'Delete' button to remove that crew member. Apply validation to the dailyRate form field that only allows positive dollar amounts. In mobile view, the keypad displayed should be appropriate--decimal point and numbers only.
+## Layout & Navigation
 
-The next section is titled, 'Crew Expenses'. It has multiple sub-sections. The first sub-section is labeld, 'Trip Duration'. In this sub-section, I need two fields--'Trip Days' and 'Hotel Stays (nights)'. Data validation should only allow positive integers. For mobile, the keypad should be numeric. These fields will both default to 0 initially.
+### Header
+- Full-width header bar with content constrained to a consistent max-width (standard desktop width).
+- **Left:** display `logo.svg`.
+- **Right:** a dropdown menu.  
+  - **Desktop:** normal dropdown  
+  - **Mobile:** hamburger menu
+- Dropdown menu items (when signed in):
+  - Username (email)
+  - **Estimates**
+  - **Defaults**
+  - **Sign Out**
+- If **not** signed in, hide **Estimates**, **Defaults**, and **Sign Out**.
 
-The next sub-section is labled, 'Per Person Expenses'. This subsection needs the following three fields: 'Hotel ($/night/person)', 'Meals ($/day/person)', and 'Other ($/day/person)'. For data validation, ensure these fields are all positive dollar amounts. In mobile, present the user with a decimal keypad.
+### Title
+Below the header, display:
 
-The next sub-section is labeld, 'Total Trip Expenses'. The sub-section needs the following 3 fields: 'Rental Car ($)', 'Airfare ($)', and 'Mileage ($)'. Data validation--only positive dollar amounts. In mobile, present a decimal keypad.
+```
+<h1>Trip Cost Calculator</h1>
+```
 
-The next h2 secions is labeled, 'Hourly Programs & Reserves'. This section contains the following 3 fields: 'Maintenance Programs ($/hour)', 'Other Consumables ($/hour)', and 'Additional ($/hour)'. Validate these fields to only allow positive dollar amounts. Present the user a decimal pad in mobile view
+---
 
-The next h2 section is labeled, 'Airport & Ground Costs'. It contains the following fields: 'Landing Fees ($)', 'Catering ($)', 'Handling ($)', 'Passenger Ground Transport ($)', 'Facility Fees ($)', 'Special Event Fees ($)', 'Ramp/Parking ($)', 'Customs ($)', 'Hangar ($)', and 'Other ($)'. Apply data validation to ensure these are all positive dollar amounts. In mobile view, present the user with a decimal pad.
+## Sections
 
-The next h2 section is labeled, 'Miscellaneous'. It contains 2 fields: 'Trip Coordination Fee ($)', and 'Other ($)'. Apply data validation to ensure these are all positive dollar amounts. In mobile view, present the user with a decimal pad.
+### 1. Flight Legs (`<h2>Flight Legs</h2>`)
+A dynamic list of flight legs entered by the user.
 
-The next h2 section is labeled, 'Trip Notes'. It contains one big textarea with the following placeholder text: 'Optional notes about the trip (e.g., client preferences, special handling, overnight particulars)'. The user can enter any misc notes here that will be attached to the summary.
+Each **tripLeg** contains:
 
-The last h2 section is labeled, 'Trip Estimate'. This section contains a pre element that presents an estimate of the trip. The text in this element should look something like this:
+- **From:** text
+- **To:** text
+- **HH:** integer hours (≥ 0)
+- **MM:** integer minutes (0–59)
+- **Fuel Burn:** positive integer (lbs)
+
+Notes:
+
+- HH + MM combine into a computed `flightTime` in `HH:MM` format.
+- Provide an **Add Leg** button to append an empty leg row.
+- Each leg row includes:
+  - Label: “Leg 1”, “Leg 2”, etc.
+  - A **Delete Leg** button.
+- Mobile: use numeric keypads for HH, MM, and fuelBurn.
+- App must compute:
+  - Total flight time (sum of all legs, properly normalizing minutes)
+  - Total fuel burn (lbs → gallons)
+- Initial fuel density default: **6.7 lbs per gallon**.
+
+---
+
+### 2. Crew Day Rates (`<h2>Crew Day Rates</h2>`)
+Dynamic list of crew entries.
+
+Defaults on load:
+
+- **Crew Member 1**
+- **Crew Member 2**
+
+Each crew entry contains:
+
+- **Role:** dropdown (“Pilot”, “Flight Attendant”)
+- **Daily Rate:** positive dollar amount
+
+Other rules:
+
+- Default daily rates come from the Defaults page.
+- **Add Role** button appends another crew member.
+- Each member includes a **Delete** button.
+- Mobile: numeric/decimal keypad.
+
+---
+
+### 3. Crew Expenses (`<h2>Crew Expenses</h2>`)
+
+#### 3.1 Trip Duration
+- **Trip Days:** positive integer
+- **Hotel Stays (nights):** positive integer  
+  Defaults: both start at `0`.
+
+#### 3.2 Per Person Expenses
+- **Hotel ($/night/person)**
+- **Meals ($/day/person)**
+- **Other ($/day/person)**  
+All must be positive dollar amounts.
+
+#### 3.3 Total Trip Expenses
+- **Rental Car ($)**
+- **Airfare ($)**
+- **Mileage ($)**  
+All positive dollar amounts.
+
+Mobile: numeric or decimal keypad.
+
+---
+
+### 4. Hourly Programs & Reserves (`<h2>Hourly Programs & Reserves</h2>`)
+Fields:
+
+- **Maintenance Programs ($/hour)**
+- **Other Consumables ($/hour)**
+- **Additional ($/hour)**
+
+All fields validated as positive dollar amounts.
+
+---
+
+### 5. Airport & Ground Costs (`<h2>Airport & Ground Costs</h2>`)
+Fields (all positive dollar amounts):
+
+- Landing Fees  
+- Catering  
+- Handling  
+- Passenger Ground Transport  
+- Facility Fees  
+- Special Event Fees  
+- Ramp/Parking  
+- Customs  
+- Hangar  
+- Other  
+
+Mobile: decimal keypad.
+
+---
+
+### 6. Miscellaneous (`<h2>Miscellaneous</h2>`)
+Fields (positive dollar amounts):
+
+- **Trip Coordination Fee ($)**
+- **Other ($)**
+
+---
+
+### 7. Trip Notes (`<h2>Trip Notes</h2>`)
+One large textarea with placeholder:
+
+> Optional notes about the trip (e.g., client preferences, special handling, overnight particulars)
+
+---
+
+### 8. Trip Estimate (`<h2>Trip Estimate</h2>`)
+A `<pre>` block displaying the calculated trip summary.
+
+Example format:
 
 ```
 LEGS SUMMARY
@@ -65,10 +198,73 @@ Trip Notes:
 Sally is gluten free.
 ```
 
-This is just an example. The actual output we be calculated based on the values from all the fields in the page.
+Values update in real time based on all page inputs.
 
-I want the following buttons at the bottom of the page: 'Copy to Clipboard', 'Export to PDF', 'Save Estimate', 'Load Estimate', and 'Reset'. If the user is not signed in, don't display options to save or load estimates.
+---
 
-Let me explain a little about the 'Defaults' page. I was thinking this could be a separate page that is used to store defaults values for things like fuel price, fuel density, pilot daily rate, flight attendant daily rate, Hotel ($/night/person), Meals ($/day/person), and Maintenance Programs ($/hour).
+## Footer Buttons
+At the bottom of the page include:
 
-I'm thinking I want to use something like Firebase to handle authentication, but I will need you to help me determine what I need. This app will only be used by a few people that I will give access. Annonomous users will be allowed to use the basic functions, but they won't be able to load or save estimates. Signed in users will get to save and load estimates. Help me determine best way to host. I was thinking Cloudflare Pages because it's so simple.
+- **Copy to Clipboard**
+- **Export to PDF**
+- **Save Estimate** (signed-in only)
+- **Load Estimate** (signed-in only)
+- **Reset**
+
+---
+
+## PDF Export Integration
+
+The **Export to PDF** button must generate a downloadable PDF version of the *Trip Estimate* section.
+
+### Requirements:
+- Use a client-side JavaScript PDF library (recommended: **jsPDF**, **pdf-lib**, or **html2pdf.js**).
+- Export only the `Trip Estimate` section, not the entire page.
+- PDF formatting should preserve:
+  - Monospaced formatting (like the `<pre>` block)
+  - Line breaks
+  - Indentation structure
+  - Section header styling (simple, bold text)
+- The downloaded file name should follow:
+  `trip-estimate-YYYYMMDD-HHMM.pdf`
+
+---
+
+## Defaults Page
+A separate page for setting global default values:
+
+- Fuel price
+- Fuel density (lbs/gal)
+- Pilot daily rate
+- Flight attendant daily rate
+- Hotel ($/night/person)
+- Meals ($/day/person)
+- Maintenance Programs ($/hour)
+
+Defaults should persist:
+- Anonymous users → localStorage  
+- Signed-in users → Firestore
+
+---
+
+## Authentication & Hosting
+
+### Authentication
+- Only a few trusted users will have sign-in access.
+- Anonymous users:
+  - Full calculator functionality
+  - Cannot save/load estimates
+- Signed-in users:
+  - Can save and load estimates
+  - Can access **Defaults**
+
+**Planning to use:** Firebase Authentication  
+- Email/password sign-in  
+- Easy integration  
+- Works well with static hosting
+
+### Storage Options
+- Firebase Firestore
+
+### Hosting
+Cloudflare Pages
