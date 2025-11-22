@@ -412,6 +412,7 @@ function attachEventListeners() {
         const button = document.getElementById('menuButton');
         if (!menu.contains(e.target) && !button.contains(e.target)) {
             menu.classList.remove('active');
+            button.classList.remove('active');
         }
     });
 }
@@ -443,7 +444,9 @@ function showToast(message, type = 'success', duration = 3000) {
 // ===========================
 function toggleMenu() {
     const menu = document.getElementById('dropdownMenu');
+    const button = document.getElementById('menuButton');
     menu.classList.toggle('active');
+    button.classList.toggle('active');
 }
 
 function openModal(modalId) {
