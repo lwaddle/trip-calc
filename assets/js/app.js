@@ -111,6 +111,36 @@ function attachEventListeners() {
     // APU checkbox change event
     document.getElementById('includeAPU').addEventListener('change', updateEstimate);
 
+    // Prevent negative values and invalid characters in number inputs
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', function(e) {
+            // Remove any non-numeric characters except decimal point
+            this.value = this.value.replace(/[^0-9.]/g, '');
+            // Ensure only one decimal point
+            const parts = this.value.split('.');
+            if (parts.length > 2) {
+                this.value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            // Cap minutes field at 59
+            if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
+                this.value = '59';
+            }
+        });
+        // Prevent paste of invalid content
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanedText = pastedText.replace(/[^0-9.]/g, '');
+            document.execCommand('insertText', false, cleanedText);
+        });
+        // Also cap on blur to catch any edge cases
+        input.addEventListener('blur', function(e) {
+            if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
+                this.value = '59';
+            }
+        });
+    });
+
     // Auto-select input contents on click for static fields
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
         input.addEventListener('click', function() {
@@ -645,13 +675,13 @@ function formatEstimate(estimate) {
     if (estimate.hourlySubtotal > 0) {
         output += `Hourly Subtotal (Programs & Reserves): $${estimate.hourlySubtotal.toFixed(2)}\n`;
         if (estimate.maintenanceTotal > 0) {
-            output += `  Maintenance Programs: $${estimate.maintenanceTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs � $${estimate.maintenanceRate.toFixed(2)})\n`;
+            output += `  Maintenance Programs: $${estimate.maintenanceTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.maintenanceRate.toFixed(2)})\n`;
         }
         if (estimate.consumablesTotal > 0) {
-            output += `  Other Consumables: $${estimate.consumablesTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs � $${estimate.consumablesRate.toFixed(2)})\n`;
+            output += `  Other Consumables: $${estimate.consumablesTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.consumablesRate.toFixed(2)})\n`;
         }
         if (estimate.additionalTotal > 0) {
-            output += `  Additional: $${estimate.additionalTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs � $${estimate.additionalRate.toFixed(2)})\n`;
+            output += `  Additional: $${estimate.additionalTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.additionalRate.toFixed(2)})\n`;
         }
     }
 
