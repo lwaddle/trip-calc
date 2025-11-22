@@ -16,6 +16,11 @@ const state = {
     currentEstimateName: null
 };
 
+// PDF Preview State
+let currentPdfDoc = null;
+let currentPdfBlob = null;
+let currentPdfFilename = null;
+
 // ===========================
 // Helper Functions
 // ===========================
@@ -397,11 +402,22 @@ function attachEventListeners() {
     document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
     document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
 
+    // PDF preview modal
+    document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
+    document.getElementById('closePdfPreviewButton').addEventListener('click', closePdfPreview);
+    document.getElementById('downloadPdfButton').addEventListener('click', downloadCurrentPDF);
+
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.classList.remove('active');
+                // Special handling for PDF preview modal to cleanup resources
+                if (modal.id === 'pdfPreviewModal') {
+                    closePdfPreview();
+                } else {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
             }
         });
     });
@@ -1409,10 +1425,58 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     // Add footer to the last page
     addFooter();
 
-    // Save PDF
+    // Generate filename
     const now = new Date();
     const filename = `trip-estimate-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
-    doc.save(filename);
+
+    // Show preview instead of immediately downloading
+    showPDFPreview(doc, filename);
+}
+
+// ===========================
+// PDF Preview Functions
+// ===========================
+function showPDFPreview(doc, filename) {
+    // Store PDF document and filename for download
+    currentPdfDoc = doc;
+    currentPdfFilename = filename;
+
+    // Convert PDF to blob
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    // Store blob URL for cleanup
+    currentPdfBlob = pdfUrl;
+
+    // Set iframe source to display PDF
+    document.getElementById('pdfPreviewFrame').src = pdfUrl;
+
+    // Open the modal
+    openModal('pdfPreviewModal');
+}
+
+function downloadCurrentPDF() {
+    if (currentPdfDoc && currentPdfFilename) {
+        currentPdfDoc.save(currentPdfFilename);
+    }
+}
+
+function closePdfPreview() {
+    // Revoke blob URL to free memory
+    if (currentPdfBlob) {
+        URL.revokeObjectURL(currentPdfBlob);
+        currentPdfBlob = null;
+    }
+
+    // Clear PDF state
+    currentPdfDoc = null;
+    currentPdfFilename = null;
+
+    // Clear iframe
+    document.getElementById('pdfPreviewFrame').src = '';
+
+    // Close the modal
+    closeModal('pdfPreviewModal');
 }
 
 // ===========================

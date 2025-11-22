@@ -413,6 +413,23 @@
         </div>
     </div>
 
+    <!-- PDF Preview Modal -->
+    <div class="modal" id="pdfPreviewModal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2>PDF Preview</h2>
+                <button type="button" class="modal-close" id="closePdfPreviewModal">&times;</button>
+            </div>
+            <div class="modal-body modal-body-pdf">
+                <iframe id="pdfPreviewFrame"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="closePdfPreviewButton">Close</button>
+                <button type="button" class="btn-primary" id="downloadPdfButton">Download PDF</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
