@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { copyFileSync } from 'fs';
 
 export default defineConfig({
   // Serve files from root directory
@@ -10,7 +11,20 @@ export default defineConfig({
     // Don't empty the output directory (preserves any existing files)
     emptyOutDir: true,
     // Generate sourcemaps for debugging
-    sourcemap: true
+    sourcemap: true,
+    // Copy static files
+    rollupOptions: {
+      output: {
+        // Copy _headers and _redirects after build
+        plugins: [{
+          name: 'copy-static-files',
+          writeBundle() {
+            copyFileSync('_headers', 'dist/_headers');
+            copyFileSync('_redirects', 'dist/_redirects');
+          }
+        }]
+      }
+    }
   },
 
   // Public base path
