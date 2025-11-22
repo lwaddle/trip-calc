@@ -20,5 +20,8 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true
-  }
+  },
+
+  // Explicitly tell Vite to include VITE_ prefixed environment variables
+  envPrefix: 'VITE_'
 });
