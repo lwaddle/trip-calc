@@ -22,10 +22,6 @@ export default defineConfig({
     open: true
   },
 
-  // Explicitly define environment variables for the build
-  // Uses process.env which Cloudflare Pages populates during build
-  define: {
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || ''),
-    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || '')
-  }
+  // Explicitly tell Vite to include VITE_ prefixed environment variables
+  envPrefix: 'VITE_'
 });
