@@ -36,8 +36,10 @@ let currentPdfDoc = null;
 let currentPdfBlob = null;
 let currentPdfFilename = null;
 
-// Password Recovery State
-let isPasswordRecoveryInProgress = false;
+// Password Recovery State (using localStorage to sync across tabs)
+// Check: localStorage.getItem('passwordRecoveryInProgress') === 'true'
+// Set: localStorage.setItem('passwordRecoveryInProgress', 'true')
+// Clear: localStorage.removeItem('passwordRecoveryInProgress')
 
 // ===========================
 // Helper Functions
@@ -52,7 +54,8 @@ function formatCurrency(amount) {
 function updateUIForAuthState(user) {
     // During password recovery, show signed-out UI even though user is authenticated
     // This prevents confusing "signed in" state before password is actually reset
-    if (isPasswordRecoveryInProgress) {
+    // Using localStorage so this state is shared across all tabs
+    if (localStorage.getItem('passwordRecoveryInProgress') === 'true') {
         user = null; // Force signed-out UI during recovery
     }
 
@@ -136,7 +139,7 @@ async function initializeApp() {
     // Check if password recovery was detected before Supabase cleared the hash
     if (sessionStorage.getItem('pendingPasswordRecovery') === 'true') {
         sessionStorage.removeItem('pendingPasswordRecovery');
-        isPasswordRecoveryInProgress = true;
+        localStorage.setItem('passwordRecoveryInProgress', 'true');
         // Open the password reset modal
         openModal('updatePasswordModal');
 
@@ -168,7 +171,7 @@ async function initializeApp() {
         if (event === 'PASSWORD_RECOVERY') {
             // PASSWORD_RECOVERY event only fires in the tab that has the recovery URL
             // Other tabs receive SIGNED_IN event instead when session syncs via localStorage
-            isPasswordRecoveryInProgress = true;
+            localStorage.setItem('passwordRecoveryInProgress', 'true');
             // Open the password reset modal
             openModal('updatePasswordModal');
 
@@ -436,7 +439,7 @@ async function handlePasswordUpdate(e) {
     setTimeout(async () => {
         closeModal('updatePasswordModal');
         successDiv.style.display = 'none';
-        isPasswordRecoveryInProgress = false;
+        localStorage.removeItem('passwordRecoveryInProgress');
 
         // Sign out to clear the recovery session
         await signOut();
@@ -579,11 +582,11 @@ function attachEventListeners() {
     // Update password modal
     document.getElementById('closeUpdatePasswordModal').addEventListener('click', () => {
         closeModal('updatePasswordModal');
-        isPasswordRecoveryInProgress = false;
+        localStorage.removeItem('passwordRecoveryInProgress');
     });
     document.getElementById('cancelUpdatePasswordButton').addEventListener('click', () => {
         closeModal('updatePasswordModal');
-        isPasswordRecoveryInProgress = false;
+        localStorage.removeItem('passwordRecoveryInProgress');
     });
     document.getElementById('updatePasswordForm').addEventListener('submit', handlePasswordUpdate);
 
@@ -736,7 +739,7 @@ function addLeg() {
 
     // Auto-focus the "From" field in the newly created leg
     // Skip auto-focus during password recovery to prevent stealing focus from modal
-    if (!isPasswordRecoveryInProgress) {
+    if (localStorage.getItem('passwordRecoveryInProgress') !== 'true') {
         const legRow = document.querySelector(`[data-leg-id="${leg.id}"]`);
         const fromInput = legRow?.querySelector('.leg-fields input[type="text"]');
         fromInput?.focus();
