@@ -2,7 +2,7 @@
 // Imports
 // ===========================
 import { initAuth, signIn, signOut, resetPassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
-import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 
 // ===========================
 // App State
@@ -11,7 +11,9 @@ const state = {
     legs: [],
     crew: [],
     nextLegId: 1,
-    nextCrewId: 1
+    nextCrewId: 1,
+    currentEstimateId: null,
+    currentEstimateName: null
 };
 
 // ===========================
@@ -382,6 +384,7 @@ function attachEventListeners() {
     // Save estimate modal
     document.getElementById('closeSaveEstimateModal').addEventListener('click', () => closeModal('saveEstimateModal'));
     document.getElementById('cancelSaveEstimateButton').addEventListener('click', () => closeModal('saveEstimateModal'));
+    document.getElementById('confirmUpdateEstimateButton').addEventListener('click', confirmUpdateEstimate);
     document.getElementById('saveEstimateForm').addEventListener('submit', confirmSaveEstimate);
 
     // Share estimate modal
@@ -1407,9 +1410,28 @@ function saveEstimateAction() {
         return;
     }
 
-    // Clear previous values and errors
-    document.getElementById('estimateName').value = '';
+    const updateButton = document.getElementById('confirmUpdateEstimateButton');
+    const saveButton = document.getElementById('confirmSaveEstimateButton');
+    const modalTitle = document.getElementById('saveEstimateModalTitle');
+    const nameInput = document.getElementById('estimateName');
+
+    // Clear errors
     document.getElementById('saveEstimateError').style.display = 'none';
+
+    // Check if we're editing an existing estimate
+    if (state.currentEstimateId) {
+        // Editing mode: show both Update and Save as New
+        nameInput.value = state.currentEstimateName;
+        updateButton.style.display = 'inline-block';
+        saveButton.textContent = 'Save as New';
+        modalTitle.textContent = 'Update Estimate';
+    } else {
+        // New estimate mode: only show Save
+        nameInput.value = '';
+        updateButton.style.display = 'none';
+        saveButton.textContent = 'Save';
+        modalTitle.textContent = 'Save Estimate';
+    }
 
     // Open the modal
     openModal('saveEstimateModal');
@@ -1437,7 +1459,7 @@ async function confirmSaveEstimate(e) {
         formData: getFormData()
     };
 
-    // Save to Supabase
+    // Save to Supabase as new estimate
     const { data, error } = await saveEstimate(name, estimateData);
 
     if (error) {
@@ -1446,9 +1468,58 @@ async function confirmSaveEstimate(e) {
         return;
     }
 
+    // Clear current estimate tracking (we just created a new one)
+    state.currentEstimateId = data.id;
+    state.currentEstimateName = data.name;
+
     // Success!
     closeModal('saveEstimateModal');
     showToast('Estimate saved successfully!', 'success');
+}
+
+async function confirmUpdateEstimate(e) {
+    e.preventDefault();
+
+    const nameInput = document.getElementById('estimateName');
+    const name = nameInput.value.trim();
+    const errorDiv = document.getElementById('saveEstimateError');
+
+    // Hide previous errors
+    errorDiv.style.display = 'none';
+
+    if (!name) {
+        errorDiv.textContent = 'Please enter a name for this estimate';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (!state.currentEstimateId) {
+        errorDiv.textContent = 'No estimate loaded to update';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const estimateData = {
+        legs: state.legs,
+        crew: state.crew,
+        formData: getFormData()
+    };
+
+    // Update existing estimate in Supabase
+    const { error } = await updateEstimateInDB(state.currentEstimateId, name, estimateData);
+
+    if (error) {
+        errorDiv.textContent = 'Failed to update: ' + error.message;
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Update the name in state
+    state.currentEstimateName = name;
+
+    // Success!
+    closeModal('saveEstimateModal');
+    showToast('Estimate updated successfully!', 'success');
 }
 
 async function getSavedEstimatesFromSource() {
@@ -1520,6 +1591,10 @@ function loadEstimateAction(estimate) {
     state.crew = [];
     document.getElementById('flightLegsContainer').innerHTML = '';
     document.getElementById('crewContainer').innerHTML = '';
+
+    // Track the loaded estimate for updates
+    state.currentEstimateId = estimate.id;
+    state.currentEstimateName = estimate.name;
 
     // Get estimate data (handle both Supabase and localStorage formats)
     const estimateData = estimate.estimate_data || estimate.data;
@@ -1706,6 +1781,8 @@ function resetForm() {
     state.crew = [];
     state.nextLegId = 1;
     state.nextCrewId = 1;
+    state.currentEstimateId = null;
+    state.currentEstimateName = null;
 
     // Clear containers
     document.getElementById('flightLegsContainer').innerHTML = '';
