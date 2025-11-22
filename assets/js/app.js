@@ -5,6 +5,15 @@ import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateCh
 import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 
 // ===========================
+// Early Password Recovery Detection
+// ===========================
+// Detect password recovery BEFORE Supabase processes and clears the hash
+// This must run immediately, before DOMContentLoaded and before Supabase's detectSessionInUrl
+if (window.location.hash.includes('type=recovery')) {
+    sessionStorage.setItem('pendingPasswordRecovery', 'true');
+}
+
+// ===========================
 // App State
 // ===========================
 const state = {
@@ -112,11 +121,23 @@ async function initializeApp() {
     // Initialize authentication
     await initAuth();
 
+    // Check if password recovery was detected before Supabase cleared the hash
+    if (sessionStorage.getItem('pendingPasswordRecovery') === 'true') {
+        sessionStorage.removeItem('pendingPasswordRecovery');
+        isPasswordRecoveryInProgress = true;
+        // Open the password reset modal
+        openModal('updatePasswordModal');
+        // Focus the password input to bring tab to foreground
+        setTimeout(() => {
+            document.getElementById('newPassword')?.focus();
+        }, 100);
+    }
+
     // Set up auth state listener
     onAuthStateChange((user, event) => {
         updateUIForAuthState(user);
 
-        // Handle password recovery event
+        // Handle password recovery event (backup in case event does fire)
         if (event === 'PASSWORD_RECOVERY') {
             // PASSWORD_RECOVERY event only fires in the tab that has the recovery URL
             // Other tabs receive SIGNED_IN event instead when session syncs via localStorage
