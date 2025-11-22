@@ -46,7 +46,7 @@ export async function initAuth() {
         currentUser = null;
       }
 
-      notifyAuthStateChange(currentUser);
+      notifyAuthStateChange(currentUser, event);
     });
 
     return currentUser;
@@ -159,7 +159,7 @@ export function isAuthenticated() {
 
 /**
  * Register a callback for auth state changes
- * @param {Function} callback - Called with user object (or null if signed out)
+ * @param {Function} callback - Called with user object (or null if signed out) and event type
  */
 export function onAuthStateChange(callback) {
   authStateCallbacks.push(callback);
@@ -168,11 +168,12 @@ export function onAuthStateChange(callback) {
 /**
  * Notify all registered callbacks of auth state change
  * @param {import('@supabase/supabase-js').User | null} user
+ * @param {string} event - The auth event type (e.g., 'SIGNED_IN', 'PASSWORD_RECOVERY')
  */
-function notifyAuthStateChange(user) {
+function notifyAuthStateChange(user, event = null) {
   authStateCallbacks.forEach(callback => {
     try {
-      callback(user);
+      callback(user, event);
     } catch (error) {
       console.error('Error in auth state callback:', error);
     }
