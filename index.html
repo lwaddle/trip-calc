@@ -385,6 +385,30 @@
         </div>
     </div>
 
+    <!-- Reset Confirmation Modal -->
+    <div class="modal" id="resetConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reset Form</h2>
+                <button class="modal-close" id="closeResetConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reset the form? This will clear all data including:</p>
+                <ul style="margin: 1rem 0; padding-left: 2rem;">
+                    <li>All flight legs</li>
+                    <li>All crew members</li>
+                    <li>Trip details and notes</li>
+                    <li>Any unsaved changes</li>
+                </ul>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelResetButton">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmResetButton">Reset Form</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 

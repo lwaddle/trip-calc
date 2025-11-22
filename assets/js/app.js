@@ -392,6 +392,11 @@ function attachEventListeners() {
     document.getElementById('closeShareModalButton').addEventListener('click', () => closeModal('shareEstimateModal'));
     document.getElementById('copyShareLinkButton').addEventListener('click', copyShareLink);
 
+    // Reset confirmation modal
+    document.getElementById('closeResetConfirmModal').addEventListener('click', () => closeModal('resetConfirmModal'));
+    document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
+    document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
+
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -1774,8 +1779,11 @@ function setFormData(data) {
 // Reset Form
 // ===========================
 function resetForm() {
-    if (!confirm('Are you sure you want to reset the form? This will clear all data.')) return;
+    // Open confirmation modal instead of system dialog
+    openModal('resetConfirmModal');
+}
 
+function confirmReset() {
     // Clear state
     state.legs = [];
     state.crew = [];
@@ -1804,4 +1812,8 @@ function resetForm() {
     addInitialCrew();
     addInitialCrew();
     updateEstimate();
+
+    // Close modal and show success message
+    closeModal('resetConfirmModal');
+    showToast('Form reset successfully', 'success');
 }
