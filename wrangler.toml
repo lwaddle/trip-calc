@@ -1,0 +1,16 @@
+# Cloudflare Pages Configuration for Trip Calculator
+
+name = "trip-calculator"
+compatibility_date = "2024-01-01"
+
+# Pages-specific settings
+pages_build_output_dir = "dist"
+
+[build]
+command = "npm run build"
+
+[env.production]
+name = "trip-calculator-production"
+
+[env.preview]
+name = "trip-calculator-preview"

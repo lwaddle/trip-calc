@@ -24,6 +24,7 @@ pnpm-debug.log*
 dist/
 dist-ssr/
 *.local
+.vite/
 
 # Environment variables
 .env

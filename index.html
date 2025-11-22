@@ -19,6 +19,7 @@
                 </button>
                 <div class="dropdown-menu" id="dropdownMenu">
                     <div class="menu-item menu-user" id="menuUser" style="display: none;">user@example.com</div>
+                    <button class="menu-item" id="menuSignIn">Sign In</button>
                     <button class="menu-item" id="menuEstimates" style="display: none;">Estimates</button>
                     <button class="menu-item" id="menuDefaults">Defaults</button>
                     <button class="menu-item" id="menuSignOut" style="display: none;">Sign Out</button>
@@ -281,10 +282,89 @@
         </div>
     </div>
 
+    <!-- Sign In Modal -->
+    <div class="modal" id="signInModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign In</h2>
+                <button class="modal-close" id="closeSignInModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="signInForm">
+                    <div class="form-field">
+                        <label for="signInEmail">Email</label>
+                        <input type="email" id="signInEmail" required autocomplete="email">
+                    </div>
+                    <div class="form-field">
+                        <label for="signInPassword">Password</label>
+                        <input type="password" id="signInPassword" required autocomplete="current-password">
+                    </div>
+                    <div id="signInError" class="error-message" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-link" id="forgotPasswordLink">Forgot Password?</button>
+                <div style="flex: 1;"></div>
+                <button type="button" class="btn-secondary" id="cancelSignInButton">Cancel</button>
+                <button type="submit" class="btn-primary" id="signInButton" form="signInForm">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="modal" id="passwordResetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reset Password</h2>
+                <button class="modal-close" id="closePasswordResetModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <form id="passwordResetForm">
+                    <div class="form-field">
+                        <label for="resetEmail">Email</label>
+                        <input type="email" id="resetEmail" required autocomplete="email">
+                    </div>
+                    <div id="resetError" class="error-message" style="display: none;"></div>
+                    <div id="resetSuccess" class="success-message" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelPasswordResetButton">Cancel</button>
+                <button type="submit" class="btn-primary" id="sendResetButton" form="passwordResetForm">Send Reset Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Estimate Modal -->
+    <div class="modal" id="shareEstimateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Share Estimate</h2>
+                <button class="modal-close" id="closeShareEstimateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Share this estimate with others. They can view it and copy it to their own account for editing.</p>
+                <div class="form-field">
+                    <label for="shareLink">Share Link</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="shareLink" readonly style="flex: 1;">
+                        <button class="btn-secondary" id="copyShareLinkButton">Copy</button>
+                    </div>
+                </div>
+                <div id="shareError" class="error-message" style="display: none;"></div>
+                <div id="shareSuccess" class="success-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="closeShareModalButton">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="./assets/js/app.js"></script>
+    <script type="module" src="./assets/js/app.js"></script>
 </body>
 </html>

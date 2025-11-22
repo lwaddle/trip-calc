@@ -1,4 +1,10 @@
 // ===========================
+// Imports
+// ===========================
+import { initAuth, signIn, signOut, resetPassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
+import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+
+// ===========================
 // App State
 // ===========================
 const state = {
@@ -16,27 +22,107 @@ function formatCurrency(amount) {
 }
 
 // ===========================
+// Auth UI Management
+// ===========================
+function updateUIForAuthState(user) {
+    const isAuth = user !== null;
+
+    // Menu items
+    const menuUser = document.getElementById('menuUser');
+    const menuSignIn = document.getElementById('menuSignIn');
+    const menuEstimates = document.getElementById('menuEstimates');
+    const menuSignOut = document.getElementById('menuSignOut');
+
+    // Footer buttons
+    const saveEstimateButton = document.getElementById('saveEstimateButton');
+    const loadEstimateButton = document.getElementById('loadEstimateButton');
+
+    if (isAuth) {
+        // Show authenticated UI
+        menuUser.textContent = getUserEmail();
+        menuUser.style.display = 'block';
+        menuSignIn.style.display = 'none';
+        menuEstimates.style.display = 'block';
+        menuSignOut.style.display = 'block';
+
+        // Show save/load buttons
+        if (saveEstimateButton) saveEstimateButton.style.display = 'inline-block';
+        if (loadEstimateButton) loadEstimateButton.style.display = 'inline-block';
+    } else {
+        // Show anonymous UI
+        menuUser.style.display = 'none';
+        menuSignIn.style.display = 'block';
+        menuEstimates.style.display = 'none';
+        menuSignOut.style.display = 'none';
+
+        // Hide save/load buttons for anonymous users
+        if (saveEstimateButton) saveEstimateButton.style.display = 'none';
+        if (loadEstimateButton) loadEstimateButton.style.display = 'none';
+    }
+}
+
+// ===========================
 // Initialization
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
-function initializeApp() {
-    loadDefaults();
+async function initializeApp() {
+    // Initialize authentication
+    await initAuth();
+
+    // Set up auth state listener
+    onAuthStateChange((user) => {
+        updateUIForAuthState(user);
+    });
+
+    // Load defaults (will use Supabase if authenticated, localStorage otherwise)
+    await loadDefaultsFromSource();
+
     addInitialLeg();
     addInitialCrew();
     addInitialCrew();
     attachEventListeners();
     updateEstimate();
+
+    // Check for shared estimate in URL
+    await checkForSharedEstimate();
 }
 
 // ===========================
-// Load Defaults from localStorage
+// Defaults Management
 // ===========================
-function loadDefaults() {
-    const defaults = getDefaults();
+async function loadDefaultsFromSource() {
+    let defaults = getDefaults();
 
+    // Try to load from Supabase if authenticated
+    if (isAuthenticated()) {
+        const { data, error } = await loadUserDefaults();
+        if (!error && data) {
+            defaults = {
+                fuelPrice: data.fuel_price,
+                fuelDensity: data.fuel_density,
+                pilotRate: data.pilot_rate,
+                attendantRate: data.attendant_rate,
+                hotelRate: data.hotel_rate,
+                mealsRate: data.meals_rate,
+                maintenanceRate: data.maintenance_rate,
+                apuBurn: data.apu_burn
+            };
+        }
+    } else {
+        // Load from localStorage for anonymous users
+        const stored = localStorage.getItem('tripCalcDefaults');
+        if (stored) {
+            defaults = JSON.parse(stored);
+        }
+    }
+
+    applyDefaults(defaults);
+}
+
+function applyDefaults(defaults) {
     document.getElementById('fuelPrice').value = defaults.fuelPrice;
     document.getElementById('fuelDensity').value = defaults.fuelDensity;
     document.getElementById('hotelRate').value = defaults.hotelRate;
@@ -55,10 +141,6 @@ function loadDefaults() {
 }
 
 function getDefaults() {
-    const stored = localStorage.getItem('tripCalcDefaults');
-    if (stored) {
-        return JSON.parse(stored);
-    }
     return {
         fuelPrice: 5.93,
         fuelDensity: 6.7,
@@ -71,7 +153,7 @@ function getDefaults() {
     };
 }
 
-function saveDefaults() {
+async function saveDefaultsAction() {
     const defaults = {
         fuelPrice: parseFloat(document.getElementById('defaultFuelPrice').value) || 5.93,
         fuelDensity: parseFloat(document.getElementById('defaultFuelDensity').value) || 6.7,
@@ -83,7 +165,18 @@ function saveDefaults() {
         apuBurn: parseFloat(document.getElementById('defaultAPUBurn').value) || 100
     };
 
-    localStorage.setItem('tripCalcDefaults', JSON.stringify(defaults));
+    // Save to Supabase if authenticated, otherwise localStorage
+    if (isAuthenticated()) {
+        const { error } = await saveUserDefaults(defaults);
+        if (error) {
+            showToast('Failed to save defaults: ' + error.message, 'error');
+            return;
+        }
+        showToast('Defaults saved successfully', 'success');
+    } else {
+        localStorage.setItem('tripCalcDefaults', JSON.stringify(defaults));
+        showToast('Defaults saved locally', 'success');
+    }
 
     // Update main form with new defaults
     document.getElementById('fuelPrice').value = defaults.fuelPrice;
@@ -97,12 +190,100 @@ function saveDefaults() {
 }
 
 // ===========================
+// Authentication Handlers
+// ===========================
+async function handleSignIn(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('signInEmail').value.trim();
+    const password = document.getElementById('signInPassword').value;
+    const errorDiv = document.getElementById('signInError');
+
+    // Hide previous error
+    errorDiv.style.display = 'none';
+
+    // Validate inputs
+    if (!email || !password) {
+        errorDiv.textContent = 'Please enter both email and password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Attempt sign in
+    const { user, error } = await signIn(email, password);
+
+    if (error) {
+        errorDiv.textContent = error.message || 'Failed to sign in';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Success
+    closeModal('signInModal');
+    document.getElementById('signInForm').reset();
+    showToast('Signed in successfully', 'success');
+
+    // Reload defaults from Supabase
+    await loadDefaultsFromSource();
+}
+
+async function handleSignOut() {
+    const { error } = await signOut();
+
+    if (error) {
+        showToast('Failed to sign out: ' + error.message, 'error');
+        return;
+    }
+
+    showToast('Signed out successfully', 'success');
+
+    // Reload defaults from localStorage
+    await loadDefaultsFromSource();
+}
+
+async function handlePasswordReset(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('resetEmail').value.trim();
+    const errorDiv = document.getElementById('resetError');
+    const successDiv = document.getElementById('resetSuccess');
+
+    // Hide previous messages
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    // Validate email
+    if (!email) {
+        errorDiv.textContent = 'Please enter your email address';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Send reset email
+    const { error } = await resetPassword(email);
+
+    if (error) {
+        errorDiv.textContent = error.message || 'Failed to send reset email';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Success
+    successDiv.textContent = 'Password reset email sent! Please check your inbox.';
+    successDiv.style.display = 'block';
+    document.getElementById('passwordResetForm').reset();
+}
+
+// ===========================
 // Event Listeners
 // ===========================
 function attachEventListeners() {
     // Menu
     document.getElementById('menuButton').addEventListener('click', toggleMenu);
+    document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));
+    document.getElementById('menuEstimates').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('menuDefaults').addEventListener('click', () => openModal('defaultsModal'));
+    document.getElementById('menuSignOut').addEventListener('click', handleSignOut);
 
     // Flight Legs
     document.getElementById('addLegButton').addEventListener('click', addLeg);
@@ -171,18 +352,37 @@ function attachEventListeners() {
     // Footer buttons
     document.getElementById('copyButton').addEventListener('click', copyToClipboard);
     document.getElementById('exportPdfButton').addEventListener('click', exportToPDF);
-    document.getElementById('saveEstimateButton').addEventListener('click', saveEstimate);
+    document.getElementById('saveEstimateButton').addEventListener('click', saveEstimateAction);
     document.getElementById('loadEstimateButton').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('resetButton').addEventListener('click', resetForm);
 
     // Defaults modal
     document.getElementById('closeDefaultsModal').addEventListener('click', () => closeModal('defaultsModal'));
     document.getElementById('cancelDefaultsButton').addEventListener('click', () => closeModal('defaultsModal'));
-    document.getElementById('saveDefaultsButton').addEventListener('click', saveDefaults);
+    document.getElementById('saveDefaultsButton').addEventListener('click', saveDefaultsAction);
 
     // Load estimate modal
     document.getElementById('closeLoadEstimateModal').addEventListener('click', () => closeModal('loadEstimateModal'));
     document.getElementById('cancelLoadButton').addEventListener('click', () => closeModal('loadEstimateModal'));
+
+    // Sign in modal
+    document.getElementById('closeSignInModal').addEventListener('click', () => closeModal('signInModal'));
+    document.getElementById('cancelSignInButton').addEventListener('click', () => closeModal('signInModal'));
+    document.getElementById('signInForm').addEventListener('submit', handleSignIn);
+    document.getElementById('forgotPasswordLink').addEventListener('click', () => {
+        closeModal('signInModal');
+        openModal('passwordResetModal');
+    });
+
+    // Password reset modal
+    document.getElementById('closePasswordResetModal').addEventListener('click', () => closeModal('passwordResetModal'));
+    document.getElementById('cancelPasswordResetButton').addEventListener('click', () => closeModal('passwordResetModal'));
+    document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordReset);
+
+    // Share estimate modal
+    document.getElementById('closeShareEstimateModal').addEventListener('click', () => closeModal('shareEstimateModal'));
+    document.getElementById('closeShareModalButton').addEventListener('click', () => closeModal('shareEstimateModal'));
+    document.getElementById('copyShareLinkButton').addEventListener('click', copyShareLink);
 
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
@@ -442,6 +642,16 @@ function reindexCrew() {
         label.textContent = `Crew Member ${index + 1}`;
     });
 }
+
+// ===========================
+// Expose Functions to Window Scope for Inline Event Handlers
+// Required because ES6 modules have their own scope
+// ===========================
+window.removeLeg = removeLeg;
+window.updateLegField = updateLegField;
+window.removeCrew = removeCrew;
+window.updateCrewField = updateCrewField;
+window.updateCrewRate = updateCrewRate;
 
 // ===========================
 // Calculation Engine
@@ -763,35 +973,54 @@ function exportToPDF() {
 // ===========================
 // Save/Load Estimates
 // ===========================
-function saveEstimate() {
+async function saveEstimateAction() {
     const name = prompt('Enter a name for this estimate:');
     if (!name) return;
 
-    const estimate = {
-        name,
-        date: new Date().toISOString(),
-        data: {
-            legs: state.legs,
-            crew: state.crew,
-            formData: getFormData()
-        }
+    const estimateData = {
+        legs: state.legs,
+        crew: state.crew,
+        formData: getFormData()
     };
 
-    const saved = getSavedEstimates();
-    saved.push(estimate);
-    localStorage.setItem('tripCalcEstimates', JSON.stringify(saved));
+    // Save to Supabase if authenticated, otherwise show error
+    if (!isAuthenticated()) {
+        showToast('You must be signed in to save estimates', 'error');
+        return;
+    }
 
-    showToast('Estimate saved!', 'success');
+    const { data, error } = await saveEstimate(name, estimateData);
+
+    if (error) {
+        showToast('Failed to save estimate: ' + error.message, 'error');
+        return;
+    }
+
+    showToast('Estimate saved successfully!', 'success');
 }
 
-function getSavedEstimates() {
-    const stored = localStorage.getItem('tripCalcEstimates');
-    return stored ? JSON.parse(stored) : [];
+async function getSavedEstimatesFromSource() {
+    // Only load from Supabase if authenticated
+    if (!isAuthenticated()) {
+        return [];
+    }
+
+    const { data, error } = await loadEstimates();
+
+    if (error) {
+        console.error('Failed to load estimates:', error);
+        showToast('Failed to load estimates: ' + error.message, 'error');
+        return [];
+    }
+
+    return data || [];
 }
 
-function populateLoadEstimateModal() {
-    const saved = getSavedEstimates();
+async function populateLoadEstimateModal() {
     const container = document.getElementById('savedEstimatesList');
+    container.innerHTML = '<div class="empty-state">Loading...</div>';
+
+    const saved = await getSavedEstimatesFromSource();
 
     if (saved.length === 0) {
         container.innerHTML = '<div class="empty-state">No saved estimates</div>';
@@ -800,7 +1029,8 @@ function populateLoadEstimateModal() {
 
     container.innerHTML = '';
     saved.forEach((estimate, index) => {
-        const date = new Date(estimate.date);
+        // For Supabase estimates, use created_at; for localStorage, use date
+        const date = new Date(estimate.created_at || estimate.date);
         const dateStr = date.toLocaleString();
 
         const item = document.createElement('div');
@@ -811,54 +1041,161 @@ function populateLoadEstimateModal() {
                 <div class="saved-estimate-date">${dateStr}</div>
             </div>
             <div class="saved-estimate-actions">
-                <button class="btn-primary" onclick="loadEstimate(${index})">Load</button>
-                <button class="btn-danger" onclick="deleteEstimate(${index})">Delete</button>
+                <button class="btn-primary" data-estimate-id="${estimate.id || index}">Load</button>
+                <button class="btn-danger" data-estimate-id="${estimate.id || index}">Delete</button>
+                ${estimate.id ? `<button class="btn-secondary" data-estimate-id="${estimate.id}">Share</button>` : ''}
             </div>
         `;
+
+        // Add event listeners
+        const loadBtn = item.querySelector('.btn-primary');
+        const deleteBtn = item.querySelector('.btn-danger');
+        const shareBtn = item.querySelector('.btn-secondary');
+
+        loadBtn.addEventListener('click', () => loadEstimateAction(estimate));
+        deleteBtn.addEventListener('click', () => deleteEstimateAction(estimate));
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => shareEstimateAction(estimate));
+        }
+
         container.appendChild(item);
     });
 }
 
-function loadEstimate(index) {
-    const saved = getSavedEstimates();
-    const estimate = saved[index];
-
-    if (!estimate) return;
-
+function loadEstimateAction(estimate) {
     // Clear existing
     state.legs = [];
     state.crew = [];
     document.getElementById('flightLegsContainer').innerHTML = '';
     document.getElementById('crewContainer').innerHTML = '';
 
+    // Get estimate data (handle both Supabase and localStorage formats)
+    const estimateData = estimate.estimate_data || estimate.data;
+
     // Load legs
-    estimate.data.legs.forEach(leg => {
+    estimateData.legs.forEach(leg => {
         state.legs.push({ ...leg });
         renderLeg(leg);
     });
     state.nextLegId = Math.max(...state.legs.map(l => l.id), 0) + 1;
 
     // Load crew
-    estimate.data.crew.forEach(crew => {
+    estimateData.crew.forEach(crew => {
         state.crew.push({ ...crew });
         renderCrew(crew);
     });
     state.nextCrewId = Math.max(...state.crew.map(c => c.id), 0) + 1;
 
     // Load form data
-    setFormData(estimate.data.formData);
+    setFormData(estimateData.formData);
 
     closeModal('loadEstimateModal');
     updateEstimate();
+    showToast('Estimate loaded successfully', 'success');
 }
 
-function deleteEstimate(index) {
+async function deleteEstimateAction(estimate) {
     if (!confirm('Are you sure you want to delete this estimate?')) return;
 
-    const saved = getSavedEstimates();
-    saved.splice(index, 1);
-    localStorage.setItem('tripCalcEstimates', JSON.stringify(saved));
-    populateLoadEstimateModal();
+    // Delete from Supabase if it has an ID
+    if (estimate.id) {
+        const { error } = await deleteEstimate(estimate.id);
+        if (error) {
+            showToast('Failed to delete estimate: ' + error.message, 'error');
+            return;
+        }
+        showToast('Estimate deleted successfully', 'success');
+    }
+
+    // Refresh the list
+    await populateLoadEstimateModal();
+}
+
+// ===========================
+// Estimate Sharing
+// ===========================
+async function shareEstimateAction(estimate) {
+    if (!estimate.id) {
+        showToast('Cannot share this estimate', 'error');
+        return;
+    }
+
+    // Create share link
+    const { shareToken, error } = await createEstimateShare(estimate.id, estimate.name);
+
+    if (error) {
+        showToast('Failed to create share link: ' + error.message, 'error');
+        return;
+    }
+
+    // Display share link in modal
+    const shareLink = `${window.location.origin}?share=${shareToken}`;
+    document.getElementById('shareLink').value = shareLink;
+
+    // Show success message
+    const successDiv = document.getElementById('shareSuccess');
+    successDiv.textContent = 'Share link created! Anyone with this link can view and copy this estimate.';
+    successDiv.style.display = 'block';
+
+    // Hide error message
+    document.getElementById('shareError').style.display = 'none';
+
+    // Open share modal
+    closeModal('loadEstimateModal');
+    openModal('shareEstimateModal');
+}
+
+function copyShareLink() {
+    const shareLinkInput = document.getElementById('shareLink');
+    shareLinkInput.select();
+    navigator.clipboard.writeText(shareLinkInput.value)
+        .then(() => {
+            showToast('Share link copied to clipboard!', 'success');
+        })
+        .catch(() => {
+            showToast('Failed to copy link', 'error');
+        });
+}
+
+// Check for shared estimate on page load
+async function checkForSharedEstimate() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareToken = urlParams.get('share');
+
+    if (!shareToken) return;
+
+    // Load the shared estimate
+    const { data, error } = await loadSharedEstimate(shareToken);
+
+    if (error) {
+        showToast('Failed to load shared estimate: ' + error.message, 'error');
+        return;
+    }
+
+    // Ask user if they want to load it or copy it
+    if (isAuthenticated()) {
+        const action = confirm('Would you like to save this shared estimate to your account?\n\nOK = Save to account\nCancel = Just view it');
+
+        if (action) {
+            // Copy to user's account
+            const { error: copyError } = await copySharedEstimate(shareToken);
+            if (copyError) {
+                showToast('Failed to save estimate: ' + copyError.message, 'error');
+                return;
+            }
+            showToast('Shared estimate saved to your account!', 'success');
+        } else {
+            // Just load it for viewing
+            loadEstimateAction(data);
+        }
+    } else {
+        // Anonymous user - just load it
+        loadEstimateAction(data);
+        showToast('Viewing shared estimate. Sign in to save it to your account.', 'info');
+    }
+
+    // Remove share token from URL
+    window.history.replaceState({}, document.title, window.location.pathname);
 }
 
 function getFormData() {
