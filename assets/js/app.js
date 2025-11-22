@@ -1036,7 +1036,7 @@ function formatEstimate(estimate) {
         return 'Add flight legs to see estimate...';
     }
 
-    let output = 'LEGS SUMMARY\n';
+    let output = 'Trip Cost Estimate\n\nLEGS SUMMARY\n';
 
     estimate.legsSummary.forEach(leg => {
         output += `Leg ${leg.index}: ${leg.from} - ${leg.to} ${leg.hours}h ${leg.minutes}m (${leg.gallons.toFixed(0)} gallons)\n`;
