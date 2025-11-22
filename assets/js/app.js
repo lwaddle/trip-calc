@@ -983,7 +983,7 @@ function exportToPDF() {
 </svg>`;
 
     // Convert SVG to canvas and then to image (simplified approach - embed as data URI)
-    const logoWidth = 40;
+    const logoWidth = 20;
     const logoHeight = (logoWidth * 1278.16) / 2677.78; // maintain aspect ratio
 
     // Create a temporary canvas to render SVG
@@ -1012,6 +1012,18 @@ function exportToPDF() {
 
 function generatePDFContent(doc, pageWidth, margin, startY) {
     let yPos = startY;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const bottomMargin = 20;
+
+    // Helper function to check if we need a new page
+    const checkPageBreak = (neededSpace) => {
+        if (yPos + neededSpace > pageHeight - bottomMargin) {
+            doc.addPage();
+            yPos = margin;
+            return true;
+        }
+        return false;
+    };
 
     // Add centered title
     doc.setFont('helvetica', 'bold');
@@ -1021,7 +1033,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     doc.text(title, (pageWidth - titleWidth) / 2, yPos);
     yPos += 15;
 
-    // Add date
+    // Add created date and user
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     const currentDate = new Date();
@@ -1032,14 +1044,17 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         hour: '2-digit',
         minute: '2-digit'
     });
-    const dateWidth = doc.getTextWidth(dateStr);
-    doc.text(dateStr, (pageWidth - dateWidth) / 2, yPos);
+    const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+    const createdStr = `Created: ${dateStr} - by ${userEmail}`;
+    const createdWidth = doc.getTextWidth(createdStr);
+    doc.text(createdStr, (pageWidth - createdWidth) / 2, yPos);
     yPos += 15;
 
     // Get estimate data
     const estimate = calculateEstimate();
 
     // Section: Flight Summary
+    checkPageBreak(15);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Flight Summary', margin, yPos);
@@ -1049,10 +1064,12 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     doc.setFontSize(10);
 
     if (state.legs.length === 0) {
+        checkPageBreak(6);
         doc.text('No flight legs added', margin + 5, yPos);
         yPos += 6;
     } else {
         estimate.legsSummary.forEach(leg => {
+            checkPageBreak(6);
             const legText = `Leg ${leg.index}: ${leg.from} - ${leg.to}`;
             const legDetails = `${leg.hours}h ${leg.minutes}m (${leg.gallons.toFixed(0)} gallons)`;
             doc.text(legText, margin + 5, yPos);
@@ -1061,6 +1078,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         });
 
         yPos += 2;
+        checkPageBreak(12);
         doc.setFont('helvetica', 'bold');
         doc.text(`Total Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m`, margin + 5, yPos);
         yPos += 6;
@@ -1068,6 +1086,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         yPos += 6;
 
         if (estimate.includeAPU && estimate.activeLegsCount > 0) {
+            checkPageBreak(6);
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);
             doc.text(`(Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
@@ -1078,6 +1097,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     yPos += 5;
 
     // Section: Cost Breakdown
+    checkPageBreak(15);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Cost Breakdown', margin, yPos);
@@ -1088,6 +1108,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Crew Day Rates
     if (estimate.crewDetails.length > 0) {
+        checkPageBreak(10);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.text('Crew Day Rates', margin + 5, yPos);
@@ -1095,6 +1116,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
         doc.setFont('helvetica', 'normal');
         estimate.crewDetails.forEach(crew => {
+            checkPageBreak(5);
             const crewText = `${crew.role} - ${crew.days} day(s) @ $${formatCurrency(crew.rate)}`;
             const crewCost = `$${formatCurrency(crew.days * crew.rate)}`;
             doc.text(crewText, margin + 10, yPos);
@@ -1102,6 +1124,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         });
 
+        checkPageBreak(8);
         doc.setFont('helvetica', 'bold');
         const crewDayTotal = `$${formatCurrency(estimate.crewDayTotal)}`;
         doc.text('Crew Day Rate Subtotal:', margin + 10, yPos);
@@ -1111,12 +1134,14 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Crew Expenses
     if (estimate.crewExpensesTotal > 0) {
+        checkPageBreak(10);
         doc.setFont('helvetica', 'bold');
         doc.text('Crew Expenses', margin + 5, yPos);
         yPos += 6;
 
         doc.setFont('helvetica', 'normal');
         if (estimate.hotelTotal > 0) {
+            checkPageBreak(5);
             const hotelText = `Hotel (${estimate.crewCount} crew x ${estimate.hotelStays} night(s) x $${formatCurrency(estimate.hotelRate)})`;
             const hotelCost = `$${formatCurrency(estimate.hotelTotal)}`;
             doc.text(hotelText, margin + 10, yPos);
@@ -1124,6 +1149,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         }
         if (estimate.mealsTotal > 0) {
+            checkPageBreak(5);
             const mealsText = `Meals (${estimate.crewCount} crew x ${estimate.tripDays} day(s) x $${formatCurrency(estimate.mealsRate)})`;
             const mealsCost = `$${formatCurrency(estimate.mealsTotal)}`;
             doc.text(mealsText, margin + 10, yPos);
@@ -1131,26 +1157,31 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         }
         if (estimate.otherTotal > 0) {
+            checkPageBreak(5);
             doc.text('Other Expenses', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.otherTotal)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherTotal)}`), yPos);
             yPos += 5;
         }
         if (estimate.rentalCar > 0) {
+            checkPageBreak(5);
             doc.text('Rental Car', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.rentalCar)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.rentalCar)}`), yPos);
             yPos += 5;
         }
         if (estimate.airfare > 0) {
+            checkPageBreak(5);
             doc.text('Airfare', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.airfare)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.airfare)}`), yPos);
             yPos += 5;
         }
         if (estimate.mileage > 0) {
+            checkPageBreak(5);
             doc.text('Mileage', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.mileage)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.mileage)}`), yPos);
             yPos += 5;
         }
 
+        checkPageBreak(8);
         doc.setFont('helvetica', 'bold');
         const crewSubtotal = `$${formatCurrency(estimate.crewSubtotal)}`;
         doc.text('Crew Subtotal:', margin + 10, yPos);
@@ -1160,12 +1191,14 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Hourly Programs
     if (estimate.hourlySubtotal > 0) {
+        checkPageBreak(10);
         doc.setFont('helvetica', 'bold');
         doc.text('Hourly Programs & Reserves', margin + 5, yPos);
         yPos += 6;
 
         doc.setFont('helvetica', 'normal');
         if (estimate.maintenanceTotal > 0) {
+            checkPageBreak(5);
             const maintText = `Maintenance Programs (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.maintenanceRate)})`;
             const maintCost = `$${formatCurrency(estimate.maintenanceTotal)}`;
             doc.text(maintText, margin + 10, yPos);
@@ -1173,6 +1206,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         }
         if (estimate.consumablesTotal > 0) {
+            checkPageBreak(5);
             const consText = `Other Consumables (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.consumablesRate)})`;
             const consCost = `$${formatCurrency(estimate.consumablesTotal)}`;
             doc.text(consText, margin + 10, yPos);
@@ -1180,6 +1214,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         }
         if (estimate.additionalTotal > 0) {
+            checkPageBreak(5);
             const addText = `Additional (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.additionalRate)})`;
             const addCost = `$${formatCurrency(estimate.additionalTotal)}`;
             doc.text(addText, margin + 10, yPos);
@@ -1187,6 +1222,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             yPos += 5;
         }
 
+        checkPageBreak(8);
         doc.setFont('helvetica', 'bold');
         const hourlySubtotal = `$${formatCurrency(estimate.hourlySubtotal)}`;
         doc.text('Hourly Subtotal:', margin + 10, yPos);
@@ -1195,6 +1231,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     }
 
     // Fuel
+    checkPageBreak(10);
     doc.setFont('helvetica', 'bold');
     doc.text('Fuel', margin + 5, yPos);
     yPos += 6;
@@ -1208,62 +1245,74 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Airport & Ground
     if (estimate.airportSubtotal > 0) {
+        checkPageBreak(10);
         doc.setFont('helvetica', 'bold');
         doc.text('Airport & Ground Services', margin + 5, yPos);
         yPos += 6;
 
         doc.setFont('helvetica', 'normal');
         if (estimate.landingFees > 0) {
+            checkPageBreak(5);
             doc.text('Landing Fees', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.landingFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.landingFees)}`), yPos);
             yPos += 5;
         }
         if (estimate.catering > 0) {
+            checkPageBreak(5);
             doc.text('Catering', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.catering)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.catering)}`), yPos);
             yPos += 5;
         }
         if (estimate.handling > 0) {
+            checkPageBreak(5);
             doc.text('Handling', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.handling)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.handling)}`), yPos);
             yPos += 5;
         }
         if (estimate.passengerTransport > 0) {
+            checkPageBreak(5);
             doc.text('Passenger Ground Transport', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.passengerTransport)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.passengerTransport)}`), yPos);
             yPos += 5;
         }
         if (estimate.facilityFees > 0) {
+            checkPageBreak(5);
             doc.text('Facility Fees', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.facilityFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.facilityFees)}`), yPos);
             yPos += 5;
         }
         if (estimate.specialEventFees > 0) {
+            checkPageBreak(5);
             doc.text('Special Event Fees', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.specialEventFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.specialEventFees)}`), yPos);
             yPos += 5;
         }
         if (estimate.rampParking > 0) {
+            checkPageBreak(5);
             doc.text('Ramp/Parking', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.rampParking)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.rampParking)}`), yPos);
             yPos += 5;
         }
         if (estimate.customs > 0) {
+            checkPageBreak(5);
             doc.text('Customs', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.customs)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.customs)}`), yPos);
             yPos += 5;
         }
         if (estimate.hangar > 0) {
+            checkPageBreak(5);
             doc.text('Hangar', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.hangar)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.hangar)}`), yPos);
             yPos += 5;
         }
         if (estimate.otherAirport > 0) {
+            checkPageBreak(5);
             doc.text('Other', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.otherAirport)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherAirport)}`), yPos);
             yPos += 5;
         }
 
+        checkPageBreak(8);
         doc.setFont('helvetica', 'bold');
         const airportSubtotal = `$${formatCurrency(estimate.airportSubtotal)}`;
         doc.text('Airport & Ground Subtotal:', margin + 10, yPos);
@@ -1273,22 +1322,26 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Miscellaneous
     if (estimate.miscSubtotal > 0) {
+        checkPageBreak(10);
         doc.setFont('helvetica', 'bold');
         doc.text('Miscellaneous', margin + 5, yPos);
         yPos += 6;
 
         doc.setFont('helvetica', 'normal');
         if (estimate.tripCoordinationFee > 0) {
+            checkPageBreak(5);
             doc.text('Trip Coordination Fee', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.tripCoordinationFee)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.tripCoordinationFee)}`), yPos);
             yPos += 5;
         }
         if (estimate.otherMisc > 0) {
+            checkPageBreak(5);
             doc.text('Other', margin + 10, yPos);
             doc.text(`$${formatCurrency(estimate.otherMisc)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherMisc)}`), yPos);
             yPos += 5;
         }
 
+        checkPageBreak(8);
         doc.setFont('helvetica', 'bold');
         const miscSubtotal = `$${formatCurrency(estimate.miscSubtotal)}`;
         doc.text('Miscellaneous Subtotal:', margin + 10, yPos);
@@ -1297,6 +1350,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     }
 
     // Total
+    checkPageBreak(20);
     yPos += 5;
     doc.setDrawColor(0);
     doc.setLineWidth(0.5);
@@ -1313,6 +1367,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
 
     // Trip Notes
     if (estimate.tripNotes) {
+        checkPageBreak(15);
         yPos += 5;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
@@ -1322,6 +1377,9 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         const notesLines = doc.splitTextToSize(estimate.tripNotes, pageWidth - (margin * 2));
+        // Check if notes will fit, if not add page break
+        const notesHeight = notesLines.length * 6;
+        checkPageBreak(notesHeight);
         doc.text(notesLines, margin + 5, yPos);
     }
 
