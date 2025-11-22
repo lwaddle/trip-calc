@@ -1015,9 +1015,31 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const pageHeight = doc.internal.pageSize.getHeight();
     const bottomMargin = 20;
 
+    // Prepare footer data
+    const currentDate = new Date();
+    const dateStr = currentDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+    const footerText = `Created: ${dateStr} - by ${userEmail}`;
+
+    // Helper function to add footer to current page
+    const addFooter = () => {
+        const footerY = pageHeight - 10;
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        const footerWidth = doc.getTextWidth(footerText);
+        doc.text(footerText, (pageWidth - footerWidth) / 2, footerY);
+    };
+
     // Helper function to check if we need a new page
     const checkPageBreak = (neededSpace) => {
         if (yPos + neededSpace > pageHeight - bottomMargin) {
+            addFooter();
             doc.addPage();
             yPos = margin;
             return true;
@@ -1031,23 +1053,6 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const title = 'Trip Cost Estimate';
     const titleWidth = doc.getTextWidth(title);
     doc.text(title, (pageWidth - titleWidth) / 2, yPos);
-    yPos += 15;
-
-    // Add created date and user
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const currentDate = new Date();
-    const dateStr = currentDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
-    const createdStr = `Created: ${dateStr} - by ${userEmail}`;
-    const createdWidth = doc.getTextWidth(createdStr);
-    doc.text(createdStr, (pageWidth - createdWidth) / 2, yPos);
     yPos += 15;
 
     // Get estimate data
@@ -1382,6 +1387,9 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         checkPageBreak(notesHeight);
         doc.text(notesLines, margin + 5, yPos);
     }
+
+    // Add footer to the last page
+    addFooter();
 
     // Save PDF
     const now = new Date();
