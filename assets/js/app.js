@@ -873,10 +873,10 @@ function formatEstimate(estimate) {
     if (estimate.crewExpensesTotal > 0) {
         output += 'Crew Expenses:\n';
         if (estimate.hotelTotal > 0) {
-            output += `  Hotel: $${formatCurrency(estimate.hotelTotal)} (${estimate.crewCount} crew � ${estimate.hotelStays} night(s) � $${formatCurrency(estimate.hotelRate)})\n`;
+            output += `  Hotel: $${formatCurrency(estimate.hotelTotal)} (${estimate.crewCount} crew x ${estimate.hotelStays} night(s) x $${formatCurrency(estimate.hotelRate)})\n`;
         }
         if (estimate.mealsTotal > 0) {
-            output += `  Meals: $${formatCurrency(estimate.mealsTotal)} (${estimate.crewCount} crew � ${estimate.tripDays} day(s) � $${formatCurrency(estimate.mealsRate)})\n`;
+            output += `  Meals: $${formatCurrency(estimate.mealsTotal)} (${estimate.crewCount} crew x ${estimate.tripDays} day(s) x $${formatCurrency(estimate.mealsRate)})\n`;
         }
         if (estimate.otherTotal > 0) {
             output += `  Other: $${formatCurrency(estimate.otherTotal)}\n`;
