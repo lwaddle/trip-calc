@@ -16,6 +16,11 @@ const state = {
     currentEstimateName: null
 };
 
+// PDF Preview State
+let currentPdfDoc = null;
+let currentPdfBlob = null;
+let currentPdfFilename = null;
+
 // ===========================
 // Helper Functions
 // ===========================
@@ -29,7 +34,7 @@ function formatCurrency(amount) {
 function updateUIForAuthState(user) {
     const isAuth = user !== null;
 
-    // Menu items
+    // Mobile menu items
     const menuUser = document.getElementById('menuUser');
     const menuSignIn = document.getElementById('menuSignIn');
     const menuEstimates = document.getElementById('menuEstimates');
@@ -40,7 +45,7 @@ function updateUIForAuthState(user) {
     const loadEstimateButton = document.getElementById('loadEstimateButton');
 
     if (isAuth) {
-        // Show authenticated UI
+        // Show authenticated UI (mobile)
         menuUser.textContent = getUserEmail();
         menuUser.style.display = 'block';
         menuSignIn.style.display = 'none';
@@ -51,7 +56,7 @@ function updateUIForAuthState(user) {
         if (saveEstimateButton) saveEstimateButton.style.display = 'inline-block';
         if (loadEstimateButton) loadEstimateButton.style.display = 'inline-block';
     } else {
-        // Show anonymous UI
+        // Show anonymous UI (mobile)
         menuUser.style.display = 'none';
         menuSignIn.style.display = 'block';
         menuEstimates.style.display = 'none';
@@ -60,6 +65,36 @@ function updateUIForAuthState(user) {
         // Hide save/load buttons for anonymous users
         if (saveEstimateButton) saveEstimateButton.style.display = 'none';
         if (loadEstimateButton) loadEstimateButton.style.display = 'none';
+    }
+
+    // Update desktop nav as well
+    updateDesktopNavForAuthState(user);
+}
+
+// ===========================
+// Desktop Nav UI Management
+// ===========================
+function updateDesktopNavForAuthState(user) {
+    const isAuth = user !== null;
+
+    // Desktop nav elements
+    const desktopDefaults = document.getElementById('desktopDefaults');
+    const desktopEstimates = document.getElementById('desktopEstimates');
+    const desktopSignIn = document.getElementById('desktopSignIn');
+    const desktopUserDropdown = document.getElementById('desktopUserDropdown');
+    const desktopUserEmail = document.getElementById('desktopUserEmail');
+
+    if (isAuth) {
+        // Show authenticated desktop UI
+        if (desktopEstimates) desktopEstimates.style.display = 'block';
+        if (desktopSignIn) desktopSignIn.style.display = 'none';
+        if (desktopUserDropdown) desktopUserDropdown.style.display = 'block';
+        if (desktopUserEmail) desktopUserEmail.textContent = getUserEmail();
+    } else {
+        // Show anonymous desktop UI
+        if (desktopEstimates) desktopEstimates.style.display = 'none';
+        if (desktopSignIn) desktopSignIn.style.display = 'block';
+        if (desktopUserDropdown) desktopUserDropdown.style.display = 'none';
     }
 }
 
@@ -280,12 +315,38 @@ async function handlePasswordReset(e) {
 // Event Listeners
 // ===========================
 function attachEventListeners() {
-    // Menu
+    // Mobile menu
     document.getElementById('menuButton').addEventListener('click', toggleMenu);
     document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));
     document.getElementById('menuEstimates').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('menuDefaults').addEventListener('click', () => openModal('defaultsModal'));
     document.getElementById('menuSignOut').addEventListener('click', handleSignOut);
+
+    // Desktop nav
+    const desktopDefaults = document.getElementById('desktopDefaults');
+    const desktopEstimates = document.getElementById('desktopEstimates');
+    const desktopSignIn = document.getElementById('desktopSignIn');
+    const desktopUserButton = document.getElementById('desktopUserButton');
+    const desktopSignOut = document.getElementById('desktopSignOut');
+
+    if (desktopDefaults) {
+        desktopDefaults.addEventListener('click', () => openModal('defaultsModal'));
+    }
+    if (desktopEstimates) {
+        desktopEstimates.addEventListener('click', () => openModal('loadEstimateModal'));
+    }
+    if (desktopSignIn) {
+        desktopSignIn.addEventListener('click', () => openModal('signInModal'));
+    }
+    if (desktopUserButton) {
+        desktopUserButton.addEventListener('click', toggleDesktopUserDropdown);
+    }
+    if (desktopSignOut) {
+        desktopSignOut.addEventListener('click', () => {
+            closeDesktopUserDropdown();
+            handleSignOut();
+        });
+    }
 
     // Flight Legs
     document.getElementById('addLegButton').addEventListener('click', addLeg);
@@ -397,21 +458,42 @@ function attachEventListeners() {
     document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
     document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
 
+    // PDF preview modal
+    document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
+    document.getElementById('closePdfPreviewButton').addEventListener('click', closePdfPreview);
+    document.getElementById('downloadPdfButton').addEventListener('click', downloadCurrentPDF);
+
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.classList.remove('active');
+                // Special handling for PDF preview modal to cleanup resources
+                if (modal.id === 'pdfPreviewModal') {
+                    closePdfPreview();
+                } else {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
             }
         });
     });
 
-    // Close menu when clicking outside
+    // Close menus when clicking outside
     document.addEventListener('click', (e) => {
+        // Close mobile menu
         const menu = document.getElementById('dropdownMenu');
         const button = document.getElementById('menuButton');
         if (!menu.contains(e.target) && !button.contains(e.target)) {
             menu.classList.remove('active');
+            button.classList.remove('active');
+        }
+
+        // Close desktop user dropdown
+        const userDropdown = document.getElementById('desktopUserDropdown');
+        const userMenu = document.getElementById('desktopUserMenu');
+        if (userDropdown && !userDropdown.contains(e.target)) {
+            userDropdown.classList.remove('active');
+            if (userMenu) userMenu.classList.remove('active');
         }
     });
 }
@@ -443,7 +525,23 @@ function showToast(message, type = 'success', duration = 3000) {
 // ===========================
 function toggleMenu() {
     const menu = document.getElementById('dropdownMenu');
+    const button = document.getElementById('menuButton');
     menu.classList.toggle('active');
+    button.classList.toggle('active');
+}
+
+function toggleDesktopUserDropdown() {
+    const dropdown = document.getElementById('desktopUserDropdown');
+    const menu = document.getElementById('desktopUserMenu');
+    dropdown.classList.toggle('active');
+    menu.classList.toggle('active');
+}
+
+function closeDesktopUserDropdown() {
+    const dropdown = document.getElementById('desktopUserDropdown');
+    const menu = document.getElementById('desktopUserMenu');
+    dropdown.classList.remove('active');
+    menu.classList.remove('active');
 }
 
 function openModal(modalId) {
@@ -451,10 +549,12 @@ function openModal(modalId) {
         populateLoadEstimateModal();
     }
     document.getElementById(modalId).classList.add('active');
+    document.body.classList.add('modal-open');
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 // ===========================
@@ -606,7 +706,7 @@ function renderCrew(crew) {
             </div>
             <div class="form-field">
                 <label>Daily Rate ($)</label>
-                <input type="number" step="0.01" min="0" value="${crew.rate}" oninput="updateCrewField(${crew.id}, 'rate', this.value)">
+                <input type="number" step="0.01" min="0" value="${crew.rate}" oninput="updateCrewField(${crew.id}, 'rate', this.value)" inputmode="decimal">
             </div>
         </div>
     `;
@@ -1404,10 +1504,58 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     // Add footer to the last page
     addFooter();
 
-    // Save PDF
+    // Generate filename
     const now = new Date();
     const filename = `trip-estimate-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
-    doc.save(filename);
+
+    // Show preview instead of immediately downloading
+    showPDFPreview(doc, filename);
+}
+
+// ===========================
+// PDF Preview Functions
+// ===========================
+function showPDFPreview(doc, filename) {
+    // Store PDF document and filename for download
+    currentPdfDoc = doc;
+    currentPdfFilename = filename;
+
+    // Convert PDF to blob
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    // Store blob URL for cleanup
+    currentPdfBlob = pdfUrl;
+
+    // Set iframe source to display PDF
+    document.getElementById('pdfPreviewFrame').src = pdfUrl;
+
+    // Open the modal
+    openModal('pdfPreviewModal');
+}
+
+function downloadCurrentPDF() {
+    if (currentPdfDoc && currentPdfFilename) {
+        currentPdfDoc.save(currentPdfFilename);
+    }
+}
+
+function closePdfPreview() {
+    // Revoke blob URL to free memory
+    if (currentPdfBlob) {
+        URL.revokeObjectURL(currentPdfBlob);
+        currentPdfBlob = null;
+    }
+
+    // Clear PDF state
+    currentPdfDoc = null;
+    currentPdfFilename = null;
+
+    // Clear iframe
+    document.getElementById('pdfPreviewFrame').src = '';
+
+    // Close the modal
+    closeModal('pdfPreviewModal');
 }
 
 // ===========================

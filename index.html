@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./assets/css/styles.css">
     <title>Trip Cost Calculator</title>
 </head>
@@ -13,6 +16,26 @@
             <div class="header-logo">
                 <img src="./assets/img/logo.svg" alt="Logo">
             </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="desktop-nav" id="desktopNav">
+                <button type="button" class="nav-link" id="desktopDefaults">Defaults</button>
+                <button type="button" class="nav-link" id="desktopEstimates" style="display: none;">My Estimates</button>
+                <button type="button" class="nav-link" id="desktopSignIn">Sign In</button>
+
+                <!-- User dropdown for desktop -->
+                <div class="user-dropdown" id="desktopUserDropdown" style="display: none;">
+                    <button type="button" class="user-dropdown-button" id="desktopUserButton">
+                        <span id="desktopUserEmail">user@example.com</span>
+                        <span class="dropdown-arrow">▾</span>
+                    </button>
+                    <div class="user-dropdown-menu" id="desktopUserMenu">
+                        <button type="button" class="user-dropdown-item" id="desktopSignOut">Sign Out</button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Mobile Menu -->
             <div class="header-menu">
                 <button class="menu-button" id="menuButton">
                     <span class="hamburger"></span>
@@ -44,11 +67,11 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="fuelPrice">Fuel Price ($/gallon)</label>
-                    <input type="number" id="fuelPrice" step="0.01" min="0" value="5.93">
+                    <input type="number" id="fuelPrice" step="0.01" min="0" value="5.93" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="fuelDensity">Fuel Density (lbs/gallon)</label>
-                    <input type="number" id="fuelDensity" step="0.1" min="0" value="6.7">
+                    <input type="number" id="fuelDensity" step="0.1" min="0" value="6.7" inputmode="decimal">
                 </div>
             </div>
             <div class="form-field" style="margin-top: var(--spacing-md);">
@@ -74,11 +97,11 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="tripDays">Trip Days</label>
-                    <input type="number" id="tripDays" min="0" value="0">
+                    <input type="number" id="tripDays" min="0" value="0" inputmode="numeric">
                 </div>
                 <div class="form-field">
                     <label for="hotelStays">Hotel Stays (nights)</label>
-                    <input type="number" id="hotelStays" min="0" value="0">
+                    <input type="number" id="hotelStays" min="0" value="0" inputmode="numeric">
                 </div>
             </div>
 
@@ -86,15 +109,15 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="hotelRate">Hotel ($/night/person)</label>
-                    <input type="number" id="hotelRate" step="0.01" min="0" value="0">
+                    <input type="number" id="hotelRate" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="mealsRate">Meals ($/day/person)</label>
-                    <input type="number" id="mealsRate" step="0.01" min="0" value="0">
+                    <input type="number" id="mealsRate" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="otherRate">Other ($/day/person)</label>
-                    <input type="number" id="otherRate" step="0.01" min="0" value="0">
+                    <input type="number" id="otherRate" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
             </div>
 
@@ -102,15 +125,15 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="rentalCar">Rental Car ($)</label>
-                    <input type="number" id="rentalCar" step="0.01" min="0" value="0">
+                    <input type="number" id="rentalCar" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="airfare">Airfare ($)</label>
-                    <input type="number" id="airfare" step="0.01" min="0" value="0">
+                    <input type="number" id="airfare" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="mileage">Mileage ($)</label>
-                    <input type="number" id="mileage" step="0.01" min="0" value="0">
+                    <input type="number" id="mileage" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
             </div>
         </section>
@@ -121,15 +144,15 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="maintenancePrograms">Maintenance Programs ($/hour)</label>
-                    <input type="number" id="maintenancePrograms" step="0.01" min="0" value="0">
+                    <input type="number" id="maintenancePrograms" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="otherConsumables">Other Consumables ($/hour)</label>
-                    <input type="number" id="otherConsumables" step="0.01" min="0" value="0">
+                    <input type="number" id="otherConsumables" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="additionalHourly">Additional ($/hour)</label>
-                    <input type="number" id="additionalHourly" step="0.01" min="0" value="0">
+                    <input type="number" id="additionalHourly" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
             </div>
         </section>
@@ -140,43 +163,43 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="landingFees">Landing Fees ($)</label>
-                    <input type="number" id="landingFees" step="0.01" min="0" value="0">
+                    <input type="number" id="landingFees" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="catering">Catering ($)</label>
-                    <input type="number" id="catering" step="0.01" min="0" value="0">
+                    <input type="number" id="catering" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="handling">Handling ($)</label>
-                    <input type="number" id="handling" step="0.01" min="0" value="0">
+                    <input type="number" id="handling" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="passengerTransport">Passenger Ground Transport ($)</label>
-                    <input type="number" id="passengerTransport" step="0.01" min="0" value="0">
+                    <input type="number" id="passengerTransport" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="facilityFees">Facility Fees ($)</label>
-                    <input type="number" id="facilityFees" step="0.01" min="0" value="0">
+                    <input type="number" id="facilityFees" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="specialEventFees">Special Event Fees ($)</label>
-                    <input type="number" id="specialEventFees" step="0.01" min="0" value="0">
+                    <input type="number" id="specialEventFees" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="rampParking">Ramp/Parking ($)</label>
-                    <input type="number" id="rampParking" step="0.01" min="0" value="0">
+                    <input type="number" id="rampParking" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="customs">Customs ($)</label>
-                    <input type="number" id="customs" step="0.01" min="0" value="0">
+                    <input type="number" id="customs" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="hangar">Hangar ($)</label>
-                    <input type="number" id="hangar" step="0.01" min="0" value="0">
+                    <input type="number" id="hangar" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="otherAirport">Other ($)</label>
-                    <input type="number" id="otherAirport" step="0.01" min="0" value="0">
+                    <input type="number" id="otherAirport" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
             </div>
         </section>
@@ -187,11 +210,11 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="tripCoordinationFee">Trip Coordination Fee ($)</label>
-                    <input type="number" id="tripCoordinationFee" step="0.01" min="0" value="0">
+                    <input type="number" id="tripCoordinationFee" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="otherMisc">Other ($)</label>
-                    <input type="number" id="otherMisc" step="0.01" min="0" value="0">
+                    <input type="number" id="otherMisc" step="0.01" min="0" value="0" inputmode="decimal">
                 </div>
             </div>
         </section>
@@ -228,35 +251,35 @@
             <div class="modal-body">
                 <div class="form-field">
                     <label for="defaultFuelPrice">Fuel Price ($/gallon)</label>
-                    <input type="number" id="defaultFuelPrice" step="0.01" min="0" value="5.93">
+                    <input type="number" id="defaultFuelPrice" step="0.01" min="0" value="5.93" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultFuelDensity">Fuel Density (lbs/gallon)</label>
-                    <input type="number" id="defaultFuelDensity" step="0.1" min="0" value="6.7">
+                    <input type="number" id="defaultFuelDensity" step="0.1" min="0" value="6.7" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultPilotRate">Pilot Daily Rate ($)</label>
-                    <input type="number" id="defaultPilotRate" step="0.01" min="0" value="1500">
+                    <input type="number" id="defaultPilotRate" step="0.01" min="0" value="1500" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultAttendantRate">Flight Attendant Daily Rate ($)</label>
-                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="800">
+                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="800" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultHotelRate">Hotel ($/night/person)</label>
-                    <input type="number" id="defaultHotelRate" step="0.01" min="0" value="200">
+                    <input type="number" id="defaultHotelRate" step="0.01" min="0" value="200" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultMealsRate">Meals ($/day/person)</label>
-                    <input type="number" id="defaultMealsRate" step="0.01" min="0" value="100">
+                    <input type="number" id="defaultMealsRate" step="0.01" min="0" value="100" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultMaintenanceRate">Maintenance Programs ($/hour)</label>
-                    <input type="number" id="defaultMaintenanceRate" step="0.01" min="0" value="1048.42">
+                    <input type="number" id="defaultMaintenanceRate" step="0.01" min="0" value="1048.42" inputmode="decimal">
                 </div>
                 <div class="form-field">
                     <label for="defaultAPUBurn">APU Burn (lbs/leg)</label>
-                    <input type="number" id="defaultAPUBurn" step="0.01" min="0" value="100">
+                    <input type="number" id="defaultAPUBurn" min="0" value="100" inputmode="numeric">
                 </div>
             </div>
             <div class="modal-footer">
@@ -300,11 +323,12 @@
                         <input type="password" id="signInPassword" required autocomplete="current-password">
                     </div>
                     <div id="signInError" class="error-message" style="display: none;"></div>
+                    <div style="margin-top: var(--spacing-md);">
+                        <button type="button" class="btn-link" id="forgotPasswordLink">Forgot Password?</button>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-link" id="forgotPasswordLink">Forgot Password?</button>
-                <div style="flex: 1;"></div>
                 <button type="button" class="btn-secondary" id="cancelSignInButton">Cancel</button>
                 <button type="submit" class="btn-primary" id="signInButton" form="signInForm">Sign In</button>
             </div>
@@ -405,6 +429,23 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelResetButton">Cancel</button>
                 <button type="button" class="btn-danger" id="confirmResetButton">Reset Form</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Preview Modal -->
+    <div class="modal" id="pdfPreviewModal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2>PDF Preview</h2>
+                <button type="button" class="modal-close" id="closePdfPreviewModal">&times;</button>
+            </div>
+            <div class="modal-body modal-body-pdf">
+                <iframe id="pdfPreviewFrame"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="closePdfPreviewButton">Close</button>
+                <button type="button" class="btn-primary" id="downloadPdfButton">Download PDF</button>
             </div>
         </div>
     </div>
