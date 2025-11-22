@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./assets/css/styles.css">
     <title>Trip Cost Calculator</title>
 </head>
@@ -74,11 +77,11 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label for="tripDays">Trip Days</label>
-                    <input type="number" id="tripDays" min="0" value="0">
+                    <input type="number" id="tripDays" min="0" value="0" inputmode="numeric">
                 </div>
                 <div class="form-field">
                     <label for="hotelStays">Hotel Stays (nights)</label>
-                    <input type="number" id="hotelStays" min="0" value="0">
+                    <input type="number" id="hotelStays" min="0" value="0" inputmode="numeric">
                 </div>
             </div>
 
@@ -256,7 +259,7 @@
                 </div>
                 <div class="form-field">
                     <label for="defaultAPUBurn">APU Burn (lbs/leg)</label>
-                    <input type="number" id="defaultAPUBurn" step="0.01" min="0" value="100" inputmode="decimal">
+                    <input type="number" id="defaultAPUBurn" min="0" value="100" inputmode="numeric">
                 </div>
             </div>
             <div class="modal-footer">
@@ -300,11 +303,12 @@
                         <input type="password" id="signInPassword" required autocomplete="current-password">
                     </div>
                     <div id="signInError" class="error-message" style="display: none;"></div>
+                    <div style="margin-top: var(--spacing-md);">
+                        <button type="button" class="btn-link" id="forgotPasswordLink">Forgot Password?</button>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-link" id="forgotPasswordLink">Forgot Password?</button>
-                <div style="flex: 1;"></div>
                 <button type="button" class="btn-secondary" id="cancelSignInButton">Cancel</button>
                 <button type="submit" class="btn-primary" id="signInButton" form="signInForm">Sign In</button>
             </div>
