@@ -21,6 +21,9 @@ let currentPdfDoc = null;
 let currentPdfBlob = null;
 let currentPdfFilename = null;
 
+// Password Recovery State
+let isPasswordRecoveryInProgress = false;
+
 // ===========================
 // Helper Functions
 // ===========================
@@ -117,10 +120,13 @@ async function initializeApp() {
         if (event === 'PASSWORD_RECOVERY') {
             // PASSWORD_RECOVERY event only fires in the tab that has the recovery URL
             // Other tabs receive SIGNED_IN event instead when session syncs via localStorage
-            // Bring this tab to foreground so user sees the modal
-            window.focus();
+            isPasswordRecoveryInProgress = true;
             // Open the password reset modal
             openModal('updatePasswordModal');
+            // Focus the password input to bring tab to foreground (window.focus() is blocked by browsers)
+            setTimeout(() => {
+                document.getElementById('newPassword')?.focus();
+            }, 100);
         }
     });
 
@@ -371,6 +377,7 @@ async function handlePasswordUpdate(e) {
     setTimeout(() => {
         closeModal('updatePasswordModal');
         successDiv.style.display = 'none';
+        isPasswordRecoveryInProgress = false;
     }, 2000);
 }
 
@@ -505,8 +512,14 @@ function attachEventListeners() {
     document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordReset);
 
     // Update password modal
-    document.getElementById('closeUpdatePasswordModal').addEventListener('click', () => closeModal('updatePasswordModal'));
-    document.getElementById('cancelUpdatePasswordButton').addEventListener('click', () => closeModal('updatePasswordModal'));
+    document.getElementById('closeUpdatePasswordModal').addEventListener('click', () => {
+        closeModal('updatePasswordModal');
+        isPasswordRecoveryInProgress = false;
+    });
+    document.getElementById('cancelUpdatePasswordButton').addEventListener('click', () => {
+        closeModal('updatePasswordModal');
+        isPasswordRecoveryInProgress = false;
+    });
     document.getElementById('updatePasswordForm').addEventListener('submit', handlePasswordUpdate);
 
     // Save estimate modal
@@ -657,9 +670,12 @@ function addLeg() {
     updateEstimate();
 
     // Auto-focus the "From" field in the newly created leg
-    const legRow = document.querySelector(`[data-leg-id="${leg.id}"]`);
-    const fromInput = legRow?.querySelector('.leg-fields input[type="text"]');
-    fromInput?.focus();
+    // Skip auto-focus during password recovery to prevent stealing focus from modal
+    if (!isPasswordRecoveryInProgress) {
+        const legRow = document.querySelector(`[data-leg-id="${leg.id}"]`);
+        const fromInput = legRow?.querySelector('.leg-fields input[type="text"]');
+        fromInput?.focus();
+    }
 }
 
 function renderLeg(leg) {
