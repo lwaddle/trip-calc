@@ -472,8 +472,7 @@ function attachEventListeners() {
     });
 
     // Footer buttons
-    document.getElementById('copyButton').addEventListener('click', copyToClipboard);
-    document.getElementById('exportPdfButton').addEventListener('click', exportToPDF);
+    document.getElementById('shareButton').addEventListener('click', openEnhancedShareModal);
     document.getElementById('saveEstimateButton').addEventListener('click', saveEstimateAction);
     document.getElementById('loadEstimateButton').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('resetButton').addEventListener('click', resetForm);
@@ -526,6 +525,17 @@ function attachEventListeners() {
     document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
     document.getElementById('closePdfPreviewButton').addEventListener('click', closePdfPreview);
     document.getElementById('downloadPdfButton').addEventListener('click', downloadCurrentPDF);
+
+    // Enhanced share modal
+    document.getElementById('closeEnhancedShareModal').addEventListener('click', () => closeModal('enhancedShareModal'));
+    document.getElementById('closeEnhancedShareButton').addEventListener('click', () => closeModal('enhancedShareModal'));
+    document.getElementById('shareViaEmailBtn').addEventListener('click', shareViaEmail);
+    document.getElementById('shareViaCopyBtn').addEventListener('click', copyToClipboard);
+    document.getElementById('shareViaLinkBtn').addEventListener('click', copyShareableLink);
+    document.getElementById('shareViaQRBtn').addEventListener('click', generateShareQR);
+    document.getElementById('shareViaPDFBtn').addEventListener('click', exportToPDFFromShare);
+    document.getElementById('shareViaNativeBtn').addEventListener('click', shareViaNative);
+    document.getElementById('hideQRBtn').addEventListener('click', hideQRCode);
 
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
@@ -1130,6 +1140,142 @@ function copyToClipboard() {
         console.error('Failed to copy:', err);
         showToast('Failed to copy to clipboard', 'error');
     });
+}
+
+// ===========================
+// Enhanced Share Functions
+// ===========================
+
+// Open the enhanced share modal
+function openEnhancedShareModal() {
+    // Check if user is authenticated to show link/QR options
+    const isAuthenticated = window.supabaseClient && currentUser;
+
+    // Show/hide authenticated-only options
+    const linkBtn = document.getElementById('shareViaLinkBtn');
+    const qrBtn = document.getElementById('shareViaQRBtn');
+
+    if (linkBtn) linkBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
+    if (qrBtn) qrBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
+
+    // Check if Web Share API is available (mobile devices)
+    if (navigator.share) {
+        const nativeBtn = document.getElementById('shareViaNativeBtn');
+        if (nativeBtn) nativeBtn.style.display = 'flex';
+    }
+
+    // Hide QR code container if it was previously shown
+    const qrContainer = document.getElementById('qrCodeContainer');
+    if (qrContainer) qrContainer.style.display = 'none';
+
+    openModal('enhancedShareModal');
+}
+
+// Share via email (mailto:)
+function shareViaEmail() {
+    const estimateText = document.getElementById('tripEstimate').textContent;
+    const subject = encodeURIComponent('Trip Cost Estimate');
+    const body = encodeURIComponent(estimateText);
+
+    // Open default email client with pre-filled content
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+
+    showToast('Opening email client...', 'success');
+}
+
+// Share via Web Share API (native mobile sharing)
+async function shareViaNative() {
+    const estimateText = document.getElementById('tripEstimate').textContent;
+
+    if (!navigator.share) {
+        showToast('Native sharing not supported on this device', 'error');
+        return;
+    }
+
+    try {
+        await navigator.share({
+            title: 'Trip Cost Estimate',
+            text: estimateText
+        });
+        showToast('Shared successfully!', 'success');
+    } catch (err) {
+        // User cancelled or sharing failed
+        if (err.name !== 'AbortError') {
+            console.error('Share failed:', err);
+            showToast('Failed to share', 'error');
+        }
+    }
+}
+
+// Generate QR code for shareable link
+async function generateShareQR() {
+    if (!currentEstimateId) {
+        showToast('Please save the estimate first', 'error');
+        return;
+    }
+
+    try {
+        // Create or get share link
+        const shareToken = await createEstimateShare(currentEstimateId);
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+
+        // Show QR container
+        const qrContainer = document.getElementById('qrCodeContainer');
+        const qrCodeDiv = document.getElementById('qrCode');
+
+        // Clear previous QR code
+        qrCodeDiv.innerHTML = '';
+
+        // Generate QR code
+        new QRCode(qrCodeDiv, {
+            text: shareUrl,
+            width: 256,
+            height: 256,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        qrContainer.style.display = 'block';
+        showToast('QR code generated!', 'success');
+    } catch (err) {
+        console.error('Failed to generate QR code:', err);
+        showToast('Failed to generate QR code', 'error');
+    }
+}
+
+// Hide QR code
+function hideQRCode() {
+    const qrContainer = document.getElementById('qrCodeContainer');
+    if (qrContainer) qrContainer.style.display = 'none';
+}
+
+// Copy shareable link to clipboard
+async function copyShareableLink() {
+    if (!currentEstimateId) {
+        showToast('Please save the estimate first', 'error');
+        return;
+    }
+
+    try {
+        const shareToken = await createEstimateShare(currentEstimateId);
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+
+        await navigator.clipboard.writeText(shareUrl);
+        showToast('Shareable link copied to clipboard!', 'success');
+    } catch (err) {
+        console.error('Failed to copy link:', err);
+        showToast('Failed to copy link', 'error');
+    }
+}
+
+// Export to PDF from share modal (closes share modal first)
+function exportToPDFFromShare() {
+    closeModal('enhancedShareModal');
+    // Small delay to allow modal close animation to start
+    setTimeout(() => {
+        exportToPDF();
+    }, 100);
 }
 
 // ===========================
