@@ -11,6 +11,12 @@ import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, update
 // This must run immediately, before DOMContentLoaded and before Supabase's detectSessionInUrl
 if (window.location.hash.includes('type=recovery')) {
     sessionStorage.setItem('pendingPasswordRecovery', 'true');
+    // Try to get focus immediately (may not work due to browser restrictions, but worth trying)
+    window.focus();
+    // Try multiple times with delays to fight for focus
+    setTimeout(() => window.focus(), 50);
+    setTimeout(() => window.focus(), 200);
+    setTimeout(() => window.focus(), 500);
 }
 
 // ===========================
@@ -44,6 +50,12 @@ function formatCurrency(amount) {
 // Auth UI Management
 // ===========================
 function updateUIForAuthState(user) {
+    // During password recovery, show signed-out UI even though user is authenticated
+    // This prevents confusing "signed in" state before password is actually reset
+    if (isPasswordRecoveryInProgress) {
+        user = null; // Force signed-out UI during recovery
+    }
+
     const isAuth = user !== null;
 
     // Mobile menu items
@@ -127,10 +139,25 @@ async function initializeApp() {
         isPasswordRecoveryInProgress = true;
         // Open the password reset modal
         openModal('updatePasswordModal');
-        // Focus the password input to bring tab to foreground
+
+        // Aggressive focus strategy - try everything to bring this tab forward
+        window.focus(); // Try immediately
+        setTimeout(() => {
+            window.focus();
+            document.getElementById('newPassword')?.focus();
+        }, 50);
+        setTimeout(() => {
+            window.focus();
+            document.getElementById('newPassword')?.focus();
+        }, 150);
+        setTimeout(() => {
+            window.focus();
+            document.getElementById('newPassword')?.focus();
+        }, 300);
         setTimeout(() => {
             document.getElementById('newPassword')?.focus();
-        }, 100);
+            window.focus(); // Try window focus AFTER input focus
+        }, 500);
     }
 
     // Set up auth state listener
@@ -144,10 +171,21 @@ async function initializeApp() {
             isPasswordRecoveryInProgress = true;
             // Open the password reset modal
             openModal('updatePasswordModal');
-            // Focus the password input to bring tab to foreground (window.focus() is blocked by browsers)
+
+            // Aggressive focus strategy - try everything to bring this tab forward
+            window.focus();
+            setTimeout(() => {
+                window.focus();
+                document.getElementById('newPassword')?.focus();
+            }, 50);
+            setTimeout(() => {
+                window.focus();
+                document.getElementById('newPassword')?.focus();
+            }, 150);
             setTimeout(() => {
                 document.getElementById('newPassword')?.focus();
-            }, 100);
+                window.focus();
+            }, 300);
         }
     });
 
@@ -389,16 +427,22 @@ async function handlePasswordUpdate(e) {
         return;
     }
 
-    // Success
-    successDiv.textContent = 'Password updated successfully! You can now sign in with your new password.';
+    // Success - sign out and require re-authentication for security
+    successDiv.textContent = 'Password updated successfully! Please sign in with your new password.';
     successDiv.style.display = 'block';
     document.getElementById('updatePasswordForm').reset();
 
-    // Close modal after 2 seconds
-    setTimeout(() => {
+    // Sign out after successful password update and open sign-in modal
+    setTimeout(async () => {
         closeModal('updatePasswordModal');
         successDiv.style.display = 'none';
         isPasswordRecoveryInProgress = false;
+
+        // Sign out to clear the recovery session
+        await signOut();
+
+        // Open sign-in modal for user to authenticate with new password
+        openModal('signInModal');
     }, 2000);
 }
 
