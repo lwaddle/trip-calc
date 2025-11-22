@@ -9,6 +9,13 @@ const state = {
 };
 
 // ===========================
+// Helper Functions
+// ===========================
+function formatCurrency(amount) {
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ===========================
 // Initialization
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
@@ -643,75 +650,75 @@ function formatEstimate(estimate) {
 
     // Crew day rates
     estimate.crewDetails.forEach(crew => {
-        output += `${crew.role} ${crew.days} day(s) @ $${crew.rate.toFixed(2)}\n`;
+        output += `${crew.role} ${crew.days} day(s) @ $${formatCurrency(crew.rate)}\n`;
     });
-    output += `Crew Day Rate Subtotal: $${estimate.crewDayTotal.toFixed(2)}\n`;
+    output += `Crew Day Rate Subtotal: $${formatCurrency(estimate.crewDayTotal)}\n`;
 
     // Crew expenses
     if (estimate.crewExpensesTotal > 0) {
         output += 'Crew Expenses:\n';
         if (estimate.hotelTotal > 0) {
-            output += `  Hotel: $${estimate.hotelTotal.toFixed(2)} (${estimate.crewCount} crew � ${estimate.hotelStays} night(s) � $${estimate.hotelRate.toFixed(2)})\n`;
+            output += `  Hotel: $${formatCurrency(estimate.hotelTotal)} (${estimate.crewCount} crew � ${estimate.hotelStays} night(s) � $${formatCurrency(estimate.hotelRate)})\n`;
         }
         if (estimate.mealsTotal > 0) {
-            output += `  Meals: $${estimate.mealsTotal.toFixed(2)} (${estimate.crewCount} crew � ${estimate.tripDays} day(s) � $${estimate.mealsRate.toFixed(2)})\n`;
+            output += `  Meals: $${formatCurrency(estimate.mealsTotal)} (${estimate.crewCount} crew � ${estimate.tripDays} day(s) � $${formatCurrency(estimate.mealsRate)})\n`;
         }
         if (estimate.otherTotal > 0) {
-            output += `  Other: $${estimate.otherTotal.toFixed(2)}\n`;
+            output += `  Other: $${formatCurrency(estimate.otherTotal)}\n`;
         }
         if (estimate.rentalCar > 0) {
-            output += `  Rental Car: $${estimate.rentalCar.toFixed(2)}\n`;
+            output += `  Rental Car: $${formatCurrency(estimate.rentalCar)}\n`;
         }
         if (estimate.airfare > 0) {
-            output += `  Airfare: $${estimate.airfare.toFixed(2)}\n`;
+            output += `  Airfare: $${formatCurrency(estimate.airfare)}\n`;
         }
         if (estimate.mileage > 0) {
-            output += `  Mileage: $${estimate.mileage.toFixed(2)}\n`;
+            output += `  Mileage: $${formatCurrency(estimate.mileage)}\n`;
         }
     }
-    output += `Crew Subtotal: $${estimate.crewSubtotal.toFixed(2)}\n\n`;
+    output += `Crew Subtotal: $${formatCurrency(estimate.crewSubtotal)}\n\n`;
 
     // Hourly programs
     if (estimate.hourlySubtotal > 0) {
-        output += `Hourly Subtotal (Programs & Reserves): $${estimate.hourlySubtotal.toFixed(2)}\n`;
+        output += `Hourly Subtotal (Programs & Reserves): $${formatCurrency(estimate.hourlySubtotal)}\n`;
         if (estimate.maintenanceTotal > 0) {
-            output += `  Maintenance Programs: $${estimate.maintenanceTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.maintenanceRate.toFixed(2)})\n`;
+            output += `  Maintenance Programs: $${formatCurrency(estimate.maintenanceTotal)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.maintenanceRate)})\n`;
         }
         if (estimate.consumablesTotal > 0) {
-            output += `  Other Consumables: $${estimate.consumablesTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.consumablesRate.toFixed(2)})\n`;
+            output += `  Other Consumables: $${formatCurrency(estimate.consumablesTotal)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.consumablesRate)})\n`;
         }
         if (estimate.additionalTotal > 0) {
-            output += `  Additional: $${estimate.additionalTotal.toFixed(2)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${estimate.additionalRate.toFixed(2)})\n`;
+            output += `  Additional: $${formatCurrency(estimate.additionalTotal)} (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.additionalRate)})\n`;
         }
     }
 
     // Fuel
-    output += `Fuel Subtotal: $${estimate.fuelSubtotal.toFixed(2)}\n`;
-    output += `  (${estimate.totalFuelGallons.toFixed(0)} gallons @ $${estimate.fuelPrice.toFixed(2)})\n`;
+    output += `Fuel Subtotal: $${formatCurrency(estimate.fuelSubtotal)}\n`;
+    output += `  (${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)})\n`;
 
     // Airport & Ground
     if (estimate.airportSubtotal > 0) {
-        output += `Airport & Ground Subtotal: $${estimate.airportSubtotal.toFixed(2)}\n`;
-        if (estimate.landingFees > 0) output += `  Landing Fees: $${estimate.landingFees.toFixed(2)}\n`;
-        if (estimate.catering > 0) output += `  Catering: $${estimate.catering.toFixed(2)}\n`;
-        if (estimate.handling > 0) output += `  Handling: $${estimate.handling.toFixed(2)}\n`;
-        if (estimate.passengerTransport > 0) output += `  Passenger Ground Transport: $${estimate.passengerTransport.toFixed(2)}\n`;
-        if (estimate.facilityFees > 0) output += `  Facility Fees: $${estimate.facilityFees.toFixed(2)}\n`;
-        if (estimate.specialEventFees > 0) output += `  Special Event Fees: $${estimate.specialEventFees.toFixed(2)}\n`;
-        if (estimate.rampParking > 0) output += `  Ramp/Parking: $${estimate.rampParking.toFixed(2)}\n`;
-        if (estimate.customs > 0) output += `  Customs: $${estimate.customs.toFixed(2)}\n`;
-        if (estimate.hangar > 0) output += `  Hangar: $${estimate.hangar.toFixed(2)}\n`;
-        if (estimate.otherAirport > 0) output += `  Other: $${estimate.otherAirport.toFixed(2)}\n`;
+        output += `Airport & Ground Subtotal: $${formatCurrency(estimate.airportSubtotal)}\n`;
+        if (estimate.landingFees > 0) output += `  Landing Fees: $${formatCurrency(estimate.landingFees)}\n`;
+        if (estimate.catering > 0) output += `  Catering: $${formatCurrency(estimate.catering)}\n`;
+        if (estimate.handling > 0) output += `  Handling: $${formatCurrency(estimate.handling)}\n`;
+        if (estimate.passengerTransport > 0) output += `  Passenger Ground Transport: $${formatCurrency(estimate.passengerTransport)}\n`;
+        if (estimate.facilityFees > 0) output += `  Facility Fees: $${formatCurrency(estimate.facilityFees)}\n`;
+        if (estimate.specialEventFees > 0) output += `  Special Event Fees: $${formatCurrency(estimate.specialEventFees)}\n`;
+        if (estimate.rampParking > 0) output += `  Ramp/Parking: $${formatCurrency(estimate.rampParking)}\n`;
+        if (estimate.customs > 0) output += `  Customs: $${formatCurrency(estimate.customs)}\n`;
+        if (estimate.hangar > 0) output += `  Hangar: $${formatCurrency(estimate.hangar)}\n`;
+        if (estimate.otherAirport > 0) output += `  Other: $${formatCurrency(estimate.otherAirport)}\n`;
     }
 
     // Miscellaneous
     if (estimate.miscSubtotal > 0) {
-        output += `Miscellaneous Subtotal: $${estimate.miscSubtotal.toFixed(2)}\n`;
-        if (estimate.tripCoordinationFee > 0) output += `  Trip Coordination Fee: $${estimate.tripCoordinationFee.toFixed(2)}\n`;
-        if (estimate.otherMisc > 0) output += `  Other: $${estimate.otherMisc.toFixed(2)}\n`;
+        output += `Miscellaneous Subtotal: $${formatCurrency(estimate.miscSubtotal)}\n`;
+        if (estimate.tripCoordinationFee > 0) output += `  Trip Coordination Fee: $${formatCurrency(estimate.tripCoordinationFee)}\n`;
+        if (estimate.otherMisc > 0) output += `  Other: $${formatCurrency(estimate.otherMisc)}\n`;
     }
 
-    output += `\nEstimated Total: $${estimate.estimatedTotal.toFixed(2)}\n`;
+    output += `\nEstimated Total: $${formatCurrency(estimate.estimatedTotal)}\n`;
 
     if (estimate.tripNotes) {
         output += `\nTrip Notes:\n${estimate.tripNotes}\n`;
