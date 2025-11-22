@@ -315,6 +315,12 @@ async function handlePasswordReset(e) {
     successDiv.textContent = 'Password reset email sent! Please check your inbox.';
     successDiv.style.display = 'block';
     document.getElementById('passwordResetForm').reset();
+
+    // Close modal after 2 seconds
+    setTimeout(() => {
+        closeModal('passwordResetModal');
+        successDiv.style.display = 'none';
+    }, 2000);
 }
 
 async function handlePasswordUpdate(e) {
