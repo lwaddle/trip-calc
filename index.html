@@ -336,6 +336,29 @@
         </div>
     </div>
 
+    <!-- Save Estimate Modal -->
+    <div class="modal" id="saveEstimateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Save Estimate</h2>
+                <button class="modal-close" id="closeSaveEstimateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="saveEstimateForm">
+                    <div class="form-field">
+                        <label for="estimateName">Estimate Name</label>
+                        <input type="text" id="estimateName" required placeholder="e.g., Miami to New York - June 2024" autofocus>
+                    </div>
+                    <div id="saveEstimateError" class="error-message" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelSaveEstimateButton">Cancel</button>
+                <button type="submit" class="btn-primary" id="confirmSaveEstimateButton" form="saveEstimateForm">Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Share Estimate Modal -->
     <div class="modal" id="shareEstimateModal">
         <div class="modal-content">
