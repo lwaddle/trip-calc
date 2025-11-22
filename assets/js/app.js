@@ -115,17 +115,12 @@ async function initializeApp() {
 
         // Handle password recovery event
         if (event === 'PASSWORD_RECOVERY') {
-            // Only open modal in the tab that has the recovery tokens in the URL
-            // This prevents the modal from opening in existing tabs when session syncs via localStorage
-            const hasRecoveryToken = window.location.hash.includes('type=recovery') ||
-                                     window.location.search.includes('type=recovery');
-
-            if (hasRecoveryToken) {
-                // Bring this tab to foreground so user sees the modal
-                window.focus();
-                // Open the password reset modal
-                openModal('updatePasswordModal');
-            }
+            // PASSWORD_RECOVERY event only fires in the tab that has the recovery URL
+            // Other tabs receive SIGNED_IN event instead when session syncs via localStorage
+            // Bring this tab to foreground so user sees the modal
+            window.focus();
+            // Open the password reset modal
+            openModal('updatePasswordModal');
         }
     });
 
