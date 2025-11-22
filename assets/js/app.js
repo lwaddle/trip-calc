@@ -609,7 +609,7 @@ function renderCrew(crew) {
             </div>
             <div class="form-field">
                 <label>Daily Rate ($)</label>
-                <input type="number" step="0.01" min="0" value="${crew.rate}" oninput="updateCrewField(${crew.id}, 'rate', this.value)">
+                <input type="number" step="0.01" min="0" value="${crew.rate}" oninput="updateCrewField(${crew.id}, 'rate', this.value)" inputmode="decimal">
             </div>
         </div>
     `;
