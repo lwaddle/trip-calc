@@ -454,10 +454,12 @@ function openModal(modalId) {
         populateLoadEstimateModal();
     }
     document.getElementById(modalId).classList.add('active');
+    document.body.classList.add('modal-open');
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 // ===========================

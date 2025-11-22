@@ -72,6 +72,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
 /* ===========================
    Header
    =========================== */
