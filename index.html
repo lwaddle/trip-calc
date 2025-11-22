@@ -16,6 +16,26 @@
             <div class="header-logo">
                 <img src="./assets/img/logo.svg" alt="Logo">
             </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="desktop-nav" id="desktopNav">
+                <button type="button" class="nav-link" id="desktopDefaults">Defaults</button>
+                <button type="button" class="nav-link" id="desktopEstimates" style="display: none;">My Estimates</button>
+                <button type="button" class="nav-link" id="desktopSignIn">Sign In</button>
+
+                <!-- User dropdown for desktop -->
+                <div class="user-dropdown" id="desktopUserDropdown" style="display: none;">
+                    <button type="button" class="user-dropdown-button" id="desktopUserButton">
+                        <span id="desktopUserEmail">user@example.com</span>
+                        <span class="dropdown-arrow">▾</span>
+                    </button>
+                    <div class="user-dropdown-menu" id="desktopUserMenu">
+                        <button type="button" class="user-dropdown-item" id="desktopSignOut">Sign Out</button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Mobile Menu -->
             <div class="header-menu">
                 <button class="menu-button" id="menuButton">
                     <span class="hamburger"></span>

@@ -34,7 +34,7 @@ function formatCurrency(amount) {
 function updateUIForAuthState(user) {
     const isAuth = user !== null;
 
-    // Menu items
+    // Mobile menu items
     const menuUser = document.getElementById('menuUser');
     const menuSignIn = document.getElementById('menuSignIn');
     const menuEstimates = document.getElementById('menuEstimates');
@@ -45,7 +45,7 @@ function updateUIForAuthState(user) {
     const loadEstimateButton = document.getElementById('loadEstimateButton');
 
     if (isAuth) {
-        // Show authenticated UI
+        // Show authenticated UI (mobile)
         menuUser.textContent = getUserEmail();
         menuUser.style.display = 'block';
         menuSignIn.style.display = 'none';
@@ -56,7 +56,7 @@ function updateUIForAuthState(user) {
         if (saveEstimateButton) saveEstimateButton.style.display = 'inline-block';
         if (loadEstimateButton) loadEstimateButton.style.display = 'inline-block';
     } else {
-        // Show anonymous UI
+        // Show anonymous UI (mobile)
         menuUser.style.display = 'none';
         menuSignIn.style.display = 'block';
         menuEstimates.style.display = 'none';
@@ -65,6 +65,36 @@ function updateUIForAuthState(user) {
         // Hide save/load buttons for anonymous users
         if (saveEstimateButton) saveEstimateButton.style.display = 'none';
         if (loadEstimateButton) loadEstimateButton.style.display = 'none';
+    }
+
+    // Update desktop nav as well
+    updateDesktopNavForAuthState(user);
+}
+
+// ===========================
+// Desktop Nav UI Management
+// ===========================
+function updateDesktopNavForAuthState(user) {
+    const isAuth = user !== null;
+
+    // Desktop nav elements
+    const desktopDefaults = document.getElementById('desktopDefaults');
+    const desktopEstimates = document.getElementById('desktopEstimates');
+    const desktopSignIn = document.getElementById('desktopSignIn');
+    const desktopUserDropdown = document.getElementById('desktopUserDropdown');
+    const desktopUserEmail = document.getElementById('desktopUserEmail');
+
+    if (isAuth) {
+        // Show authenticated desktop UI
+        if (desktopEstimates) desktopEstimates.style.display = 'block';
+        if (desktopSignIn) desktopSignIn.style.display = 'none';
+        if (desktopUserDropdown) desktopUserDropdown.style.display = 'block';
+        if (desktopUserEmail) desktopUserEmail.textContent = getUserEmail();
+    } else {
+        // Show anonymous desktop UI
+        if (desktopEstimates) desktopEstimates.style.display = 'none';
+        if (desktopSignIn) desktopSignIn.style.display = 'block';
+        if (desktopUserDropdown) desktopUserDropdown.style.display = 'none';
     }
 }
 
@@ -285,12 +315,38 @@ async function handlePasswordReset(e) {
 // Event Listeners
 // ===========================
 function attachEventListeners() {
-    // Menu
+    // Mobile menu
     document.getElementById('menuButton').addEventListener('click', toggleMenu);
     document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));
     document.getElementById('menuEstimates').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('menuDefaults').addEventListener('click', () => openModal('defaultsModal'));
     document.getElementById('menuSignOut').addEventListener('click', handleSignOut);
+
+    // Desktop nav
+    const desktopDefaults = document.getElementById('desktopDefaults');
+    const desktopEstimates = document.getElementById('desktopEstimates');
+    const desktopSignIn = document.getElementById('desktopSignIn');
+    const desktopUserButton = document.getElementById('desktopUserButton');
+    const desktopSignOut = document.getElementById('desktopSignOut');
+
+    if (desktopDefaults) {
+        desktopDefaults.addEventListener('click', () => openModal('defaultsModal'));
+    }
+    if (desktopEstimates) {
+        desktopEstimates.addEventListener('click', () => openModal('loadEstimateModal'));
+    }
+    if (desktopSignIn) {
+        desktopSignIn.addEventListener('click', () => openModal('signInModal'));
+    }
+    if (desktopUserButton) {
+        desktopUserButton.addEventListener('click', toggleDesktopUserDropdown);
+    }
+    if (desktopSignOut) {
+        desktopSignOut.addEventListener('click', () => {
+            closeDesktopUserDropdown();
+            handleSignOut();
+        });
+    }
 
     // Flight Legs
     document.getElementById('addLegButton').addEventListener('click', addLeg);
@@ -422,13 +478,22 @@ function attachEventListeners() {
         });
     });
 
-    // Close menu when clicking outside
+    // Close menus when clicking outside
     document.addEventListener('click', (e) => {
+        // Close mobile menu
         const menu = document.getElementById('dropdownMenu');
         const button = document.getElementById('menuButton');
         if (!menu.contains(e.target) && !button.contains(e.target)) {
             menu.classList.remove('active');
             button.classList.remove('active');
+        }
+
+        // Close desktop user dropdown
+        const userDropdown = document.getElementById('desktopUserDropdown');
+        const userMenu = document.getElementById('desktopUserMenu');
+        if (userDropdown && !userDropdown.contains(e.target)) {
+            userDropdown.classList.remove('active');
+            if (userMenu) userMenu.classList.remove('active');
         }
     });
 }
@@ -463,6 +528,20 @@ function toggleMenu() {
     const button = document.getElementById('menuButton');
     menu.classList.toggle('active');
     button.classList.toggle('active');
+}
+
+function toggleDesktopUserDropdown() {
+    const dropdown = document.getElementById('desktopUserDropdown');
+    const menu = document.getElementById('desktopUserMenu');
+    dropdown.classList.toggle('active');
+    menu.classList.toggle('active');
+}
+
+function closeDesktopUserDropdown() {
+    const dropdown = document.getElementById('desktopUserDropdown');
+    const menu = document.getElementById('desktopUserMenu');
+    dropdown.classList.remove('active');
+    menu.classList.remove('active');
 }
 
 function openModal(modalId) {
