@@ -360,6 +360,35 @@
         </div>
     </div>
 
+    <!-- Update Password Modal (after clicking reset link) -->
+    <div class="modal" id="updatePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Set New Password</h2>
+                <button class="modal-close" id="closeUpdatePasswordModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your new password.</p>
+                <form id="updatePasswordForm">
+                    <div class="form-field">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-field">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" required autocomplete="new-password" minlength="6">
+                    </div>
+                    <div id="updatePasswordError" class="error-message" style="display: none;"></div>
+                    <div id="updatePasswordSuccess" class="success-message" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelUpdatePasswordButton">Cancel</button>
+                <button type="submit" class="btn-primary" id="updatePasswordButton" form="updatePasswordForm">Update Password</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Save Estimate Modal -->
     <div class="modal" id="saveEstimateModal">
         <div class="modal-content">

@@ -1,7 +1,7 @@
 // ===========================
 // Imports
 // ===========================
-import { initAuth, signIn, signOut, resetPassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
+import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
 import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 
 // ===========================
@@ -110,8 +110,14 @@ async function initializeApp() {
     await initAuth();
 
     // Set up auth state listener
-    onAuthStateChange((user) => {
+    onAuthStateChange((user, event) => {
         updateUIForAuthState(user);
+
+        // Handle password recovery event
+        if (event === 'PASSWORD_RECOVERY') {
+            // User clicked password reset link in email
+            openModal('updatePasswordModal');
+        }
     });
 
     // Load defaults (will use Supabase if authenticated, localStorage otherwise)
@@ -311,6 +317,53 @@ async function handlePasswordReset(e) {
     document.getElementById('passwordResetForm').reset();
 }
 
+async function handlePasswordUpdate(e) {
+    e.preventDefault();
+
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorDiv = document.getElementById('updatePasswordError');
+    const successDiv = document.getElementById('updatePasswordSuccess');
+
+    // Hide previous messages
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Passwords do not match';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Update password
+    const { error } = await updatePassword(newPassword);
+
+    if (error) {
+        errorDiv.textContent = error.message || 'Failed to update password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Success
+    successDiv.textContent = 'Password updated successfully! You can now sign in with your new password.';
+    successDiv.style.display = 'block';
+    document.getElementById('updatePasswordForm').reset();
+
+    // Close modal after 2 seconds
+    setTimeout(() => {
+        closeModal('updatePasswordModal');
+        successDiv.style.display = 'none';
+    }, 2000);
+}
+
 // ===========================
 // Event Listeners
 // ===========================
@@ -441,6 +494,11 @@ function attachEventListeners() {
     document.getElementById('closePasswordResetModal').addEventListener('click', () => closeModal('passwordResetModal'));
     document.getElementById('cancelPasswordResetButton').addEventListener('click', () => closeModal('passwordResetModal'));
     document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordReset);
+
+    // Update password modal
+    document.getElementById('closeUpdatePasswordModal').addEventListener('click', () => closeModal('updatePasswordModal'));
+    document.getElementById('cancelUpdatePasswordButton').addEventListener('click', () => closeModal('updatePasswordModal'));
+    document.getElementById('updatePasswordForm').addEventListener('submit', handlePasswordUpdate);
 
     // Save estimate modal
     document.getElementById('closeSaveEstimateModal').addEventListener('click', () => closeModal('saveEstimateModal'));
