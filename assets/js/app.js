@@ -379,6 +379,11 @@ function attachEventListeners() {
     document.getElementById('cancelPasswordResetButton').addEventListener('click', () => closeModal('passwordResetModal'));
     document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordReset);
 
+    // Save estimate modal
+    document.getElementById('closeSaveEstimateModal').addEventListener('click', () => closeModal('saveEstimateModal'));
+    document.getElementById('cancelSaveEstimateButton').addEventListener('click', () => closeModal('saveEstimateModal'));
+    document.getElementById('saveEstimateForm').addEventListener('submit', confirmSaveEstimate);
+
     // Share estimate modal
     document.getElementById('closeShareEstimateModal').addEventListener('click', () => closeModal('shareEstimateModal'));
     document.getElementById('closeShareModalButton').addEventListener('click', () => closeModal('shareEstimateModal'));
@@ -973,9 +978,36 @@ function exportToPDF() {
 // ===========================
 // Save/Load Estimates
 // ===========================
-async function saveEstimateAction() {
-    const name = prompt('Enter a name for this estimate:');
-    if (!name) return;
+function saveEstimateAction() {
+    // Check authentication first
+    if (!isAuthenticated()) {
+        showToast('You must be signed in to save estimates', 'error');
+        return;
+    }
+
+    // Clear previous values and errors
+    document.getElementById('estimateName').value = '';
+    document.getElementById('saveEstimateError').style.display = 'none';
+
+    // Open the modal
+    openModal('saveEstimateModal');
+}
+
+async function confirmSaveEstimate(e) {
+    e.preventDefault();
+
+    const nameInput = document.getElementById('estimateName');
+    const name = nameInput.value.trim();
+    const errorDiv = document.getElementById('saveEstimateError');
+
+    // Hide previous errors
+    errorDiv.style.display = 'none';
+
+    if (!name) {
+        errorDiv.textContent = 'Please enter a name for this estimate';
+        errorDiv.style.display = 'block';
+        return;
+    }
 
     const estimateData = {
         legs: state.legs,
@@ -983,19 +1015,17 @@ async function saveEstimateAction() {
         formData: getFormData()
     };
 
-    // Save to Supabase if authenticated, otherwise show error
-    if (!isAuthenticated()) {
-        showToast('You must be signed in to save estimates', 'error');
-        return;
-    }
-
+    // Save to Supabase
     const { data, error } = await saveEstimate(name, estimateData);
 
     if (error) {
-        showToast('Failed to save estimate: ' + error.message, 'error');
+        errorDiv.textContent = 'Failed to save: ' + error.message;
+        errorDiv.style.display = 'block';
         return;
     }
 
+    // Success!
+    closeModal('saveEstimateModal');
     showToast('Estimate saved successfully!', 'success');
 }
 
