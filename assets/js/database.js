@@ -25,13 +25,9 @@ export async function loadUserDefaults() {
       .from('user_defaults')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // If no defaults found, return null (not an error)
-      if (error.code === 'PGRST116') {
-        return { data: null, error: null };
-      }
       return { data: null, error };
     }
 
