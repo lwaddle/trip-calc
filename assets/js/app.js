@@ -477,6 +477,11 @@ function addLeg() {
     state.legs.push(leg);
     renderLeg(leg);
     updateEstimate();
+
+    // Auto-focus the "From" field in the newly created leg
+    const legRow = document.querySelector(`[data-leg-id="${leg.id}"]`);
+    const fromInput = legRow?.querySelector('.leg-fields input[type="text"]');
+    fromInput?.focus();
 }
 
 function renderLeg(leg) {
