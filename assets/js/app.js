@@ -167,6 +167,28 @@ function attachEventListeners() {
 }
 
 // ===========================
+// Toast Notifications
+// ===========================
+function showToast(message, type = 'success', duration = 3000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icon = type === 'success' ? '✓' : '✕';
+    toast.innerHTML = `
+        <span class="toast-icon">${icon}</span>
+        <span class="toast-message">${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// ===========================
 // Menu Functions
 // ===========================
 function toggleMenu() {
@@ -232,9 +254,13 @@ function renderLeg(leg) {
             <div class="form-field">
                 <label>Flight Time</label>
                 <div class="time-input">
-                    <input type="number" placeholder="HH" min="0" value="${leg.hours}" oninput="updateLegField(${leg.id}, 'hours', this.value)" inputmode="numeric">
+                    <div class="time-input-wrapper">
+                        <input type="number" placeholder="HH" min="0" value="${leg.hours}" oninput="updateLegField(${leg.id}, 'hours', this.value)" inputmode="numeric">
+                    </div>
                     <span class="time-separator">:</span>
-                    <input type="number" placeholder="MM" min="0" max="59" value="${leg.minutes}" oninput="updateLegField(${leg.id}, 'minutes', this.value)" inputmode="numeric">
+                    <div class="time-input-wrapper time-input-wrapper--minutes">
+                        <input type="number" placeholder="MM" min="0" max="59" value="${leg.minutes}" oninput="updateLegField(${leg.id}, 'minutes', this.value)" inputmode="numeric">
+                    </div>
                 </div>
             </div>
             <div class="form-field">
@@ -670,10 +696,10 @@ function formatEstimate(estimate) {
 function copyToClipboard() {
     const estimateText = document.getElementById('tripEstimate').textContent;
     navigator.clipboard.writeText(estimateText).then(() => {
-        alert('Estimate copied to clipboard!');
+        showToast('Estimate copied to clipboard!', 'success');
     }).catch(err => {
         console.error('Failed to copy:', err);
-        alert('Failed to copy to clipboard');
+        showToast('Failed to copy to clipboard', 'error');
     });
 }
 
@@ -718,7 +744,7 @@ function saveEstimate() {
     saved.push(estimate);
     localStorage.setItem('tripCalcEstimates', JSON.stringify(saved));
 
-    alert('Estimate saved!');
+    showToast('Estimate saved!', 'success');
 }
 
 function getSavedEstimates() {
