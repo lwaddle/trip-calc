@@ -962,16 +962,372 @@ function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    const estimateText = document.getElementById('tripEstimate').textContent;
-    const lines = doc.splitTextToSize(estimateText, 180);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let yPos = 20;
 
-    doc.setFont('courier');
+    // Add logo at top left (SVG as base64)
+    const logoSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="b" width="2677.78" height="1278.16" viewBox="0 0 2677.78 1278.16">
+  <g id="c">
+    <g>
+      <path d="m352.43,1275.09l-10.58-34.67h-135.24l-24.5,34.67h-71.17l149.58-204.62h96.74l65.88,204.62h-70.71Zm-23.42-79.46l-23.84-77.62h-12.42l-55,77.62h91.27Zm160.17-125.17h68.46l43.8,153.39h11.66l104.68-153.39h68l-140.84,204.62h-95.77l-60-204.62h0Zm374.34,0h65.34l-41.08,204.62h-65.34l41.08-204.62h0Zm342.3,204.62l-10.58-34.67h-135.24l-24.5,34.67h-71.17l149.58-204.62h96.74l65.88,204.62h-70.71Zm-23.42-79.46l-23.84-77.62h-12.42l-55,77.62h91.27Zm170.04-125.17h247.57l-10.47,52.15h-91.12l-30.61,152.47h-65.34l30.61-152.47h-91.12l10.47-52.15h0Zm329.24,0h65.34l-41.08,204.62h-65.34l41.08-204.62h0Zm298.19-2.76c44.12,0,74.28,1.07,90.41,3.27,23.23,3.22,35.58,14.58,37.09,34,.99,13.4-1.71,36-8.1,67.85-6.41,31.96-12.81,54.66-19.18,68.05-9.32,19.43-26.22,30.78-50.75,34-17.01,2.2-47.39,3.27-91.11,3.27s-74.9-1.07-91.02-3.27c-23.23-3.22-35.58-14.57-37.09-34-.99-13.39,1.8-36.45,8.38-69.23,6.25-31.14,12.56-53.38,18.91-66.67,9.32-19.43,26.22-30.78,50.75-34,16.9-2.2,47.49-3.27,91.72-3.27h0Zm-10.5,53.07c-33.08,0-53.15.87-60.18,2.55-8.07,2-14.04,6.49-17.84,13.45-3.8,6.95-7.75,20.76-11.91,41.47-2.52,12.53-3.67,21.58-3.51,27.15.41,10.43,6.74,16.36,19.06,17.9,9.02,1.17,26.94,1.79,53.74,1.79,25.05,0,41.87-.46,50.32-1.33,8.47-.92,15.01-2.92,19.62-6.03,4.19-2.81,7.42-6.9,9.85-12.37,2.38-5.47,4.83-14.37,7.32-26.79,2.96-14.73,4.61-25.51,5.02-32.41.36-6.9-.38-12.12-2.29-15.59-2.39-4.4-7.31-7.16-14.67-8.18-7.4-1.07-25.55-1.59-54.54-1.59h0Zm242.5-50.31h109.21l76.49,152.77h6.44l29.14-152.77h63.4l-41.08,204.62h-108.34l-76.91-152.77h-6.75l-29.29,152.77h-63.4l41.08-204.62Z" fill="#bc282e" fill-rule="evenodd"></path>
+      <path d="m287.06,741.03C-283.18,506.16-5.34,211.1,1133.97,137.49,247.54,305.95-79.28,481.79,287.06,741.03Z" fill="#bc282e" fill-rule="evenodd"></path>
+      <path d="m450.76,331.77l-69.31,345.23c-6.32,31.49-11.99,53.4-17.14,65.52-5.11,11.95-12.29,21.54-21.89,28.78-22.46,16.29-72.79,24.44-151.34,24.44l-37.71,187.85,16.1.04c101,0,175.33-5.07,222.98-15.21,47.43-9.96,85.93-28.6,114.95-55.93,22.71-21.18,40.58-47.97,53.53-80.01,12.98-32.22,26.35-82.54,40.05-150.78l84.64-421.55c-78.86,20.65-158.22,43.73-234.85,71.61Z" fill="#626365" fill-rule="evenodd"></path>
+      <polygon points="804.6 248.37 659.16 972.78 1196.41 972.78 1164 788.15 927.57 788.15 1035.94 248.37 804.6 248.37" fill="#626365" fill-rule="evenodd"></polygon>
+      <polygon points="1152.57 248.37 1279.73 972.78 1621.3 972.78 1871.4 442.05 1910.2 972.78 2250.68 972.78 2677.78 248.37 2443.91 248.37 2139.75 791.41 2098.3 791.41 2042.43 248.37 1776.16 248.37 1503.32 791.41 1462.41 791.41 1377.39 248.37 1152.57 248.37" fill="#626365" fill-rule="evenodd"></polygon>
+      <path d="m1169.21,103.25c-12.36-17.24-25.37-56.87-60.33-50.95l23.99,73.26-4.72,13.05,177.22-18.34,32.19,35.03c56.46-26.02,64.74-35.75,99.61-42.58,28.02-5.49,55.96-6.82,84.16-11.92,24.61-4.44,50.21-11.44,70.61-24.28,22.98-14.47,18.41-15.72-.46-21.84-9.24-3-19.14-4.73-29.97-5.89-21.57-2.3-40.05-2.1-62.82.62-24.37,2.91-45.74,7.73-67.61,12.6-22.75,5.06-22.89,6.82-42.65,0-26.06-9-47.87-20.46-68.93-31.84-16.37-8.85-34.37-19.7-51.91-26.42-16.07-6.16-23.38-3.72-36.44.4l37.94,80.96-99.87,18.16Z" fill="#bc282e" fill-rule="evenodd"></path>
+    </g>
+  </g>
+</svg>`;
+
+    // Convert SVG to canvas and then to image (simplified approach - embed as data URI)
+    const logoWidth = 40;
+    const logoHeight = (logoWidth * 1278.16) / 2677.78; // maintain aspect ratio
+
+    // Create a temporary canvas to render SVG
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+
+    img.onload = function() {
+        canvas.width = 400;
+        canvas.height = (400 * 1278.16) / 2677.78;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imgData = canvas.toDataURL('image/png');
+
+        // Add logo
+        doc.addImage(imgData, 'PNG', margin, yPos, logoWidth, logoHeight);
+        URL.revokeObjectURL(url);
+
+        // Continue with PDF generation
+        generatePDFContent(doc, pageWidth, margin, yPos + logoHeight + 10);
+    };
+
+    img.src = url;
+}
+
+function generatePDFContent(doc, pageWidth, margin, startY) {
+    let yPos = startY;
+
+    // Add centered title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    const title = 'Trip Cost Estimate';
+    const titleWidth = doc.getTextWidth(title);
+    doc.text(title, (pageWidth - titleWidth) / 2, yPos);
+    yPos += 15;
+
+    // Add date
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(lines, 15, 15);
+    const currentDate = new Date();
+    const dateStr = currentDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const dateWidth = doc.getTextWidth(dateStr);
+    doc.text(dateStr, (pageWidth - dateWidth) / 2, yPos);
+    yPos += 15;
 
+    // Get estimate data
+    const estimate = calculateEstimate();
+
+    // Section: Flight Summary
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Flight Summary', margin, yPos);
+    yPos += 7;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    if (state.legs.length === 0) {
+        doc.text('No flight legs added', margin + 5, yPos);
+        yPos += 6;
+    } else {
+        estimate.legsSummary.forEach(leg => {
+            const legText = `Leg ${leg.index}: ${leg.from} - ${leg.to}`;
+            const legDetails = `${leg.hours}h ${leg.minutes}m (${leg.gallons.toFixed(0)} gallons)`;
+            doc.text(legText, margin + 5, yPos);
+            doc.text(legDetails, pageWidth - margin - doc.getTextWidth(legDetails), yPos);
+            yPos += 6;
+        });
+
+        yPos += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m`, margin + 5, yPos);
+        yPos += 6;
+        doc.text(`Total Fuel: ${estimate.totalFuelGallons.toFixed(0)} gallons`, margin + 5, yPos);
+        yPos += 6;
+
+        if (estimate.includeAPU && estimate.activeLegsCount > 0) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(9);
+            doc.text(`(Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
+            yPos += 6;
+        }
+    }
+
+    yPos += 5;
+
+    // Section: Cost Breakdown
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Cost Breakdown', margin, yPos);
+    yPos += 7;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    // Crew Day Rates
+    if (estimate.crewDetails.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('Crew Day Rates', margin + 5, yPos);
+        yPos += 6;
+
+        doc.setFont('helvetica', 'normal');
+        estimate.crewDetails.forEach(crew => {
+            const crewText = `${crew.role} - ${crew.days} day(s) @ $${formatCurrency(crew.rate)}`;
+            const crewCost = `$${formatCurrency(crew.days * crew.rate)}`;
+            doc.text(crewText, margin + 10, yPos);
+            doc.text(crewCost, pageWidth - margin - doc.getTextWidth(crewCost), yPos);
+            yPos += 5;
+        });
+
+        doc.setFont('helvetica', 'bold');
+        const crewDayTotal = `$${formatCurrency(estimate.crewDayTotal)}`;
+        doc.text('Crew Day Rate Subtotal:', margin + 10, yPos);
+        doc.text(crewDayTotal, pageWidth - margin - doc.getTextWidth(crewDayTotal), yPos);
+        yPos += 8;
+    }
+
+    // Crew Expenses
+    if (estimate.crewExpensesTotal > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Crew Expenses', margin + 5, yPos);
+        yPos += 6;
+
+        doc.setFont('helvetica', 'normal');
+        if (estimate.hotelTotal > 0) {
+            const hotelText = `Hotel (${estimate.crewCount} crew x ${estimate.hotelStays} night(s) x $${formatCurrency(estimate.hotelRate)})`;
+            const hotelCost = `$${formatCurrency(estimate.hotelTotal)}`;
+            doc.text(hotelText, margin + 10, yPos);
+            doc.text(hotelCost, pageWidth - margin - doc.getTextWidth(hotelCost), yPos);
+            yPos += 5;
+        }
+        if (estimate.mealsTotal > 0) {
+            const mealsText = `Meals (${estimate.crewCount} crew x ${estimate.tripDays} day(s) x $${formatCurrency(estimate.mealsRate)})`;
+            const mealsCost = `$${formatCurrency(estimate.mealsTotal)}`;
+            doc.text(mealsText, margin + 10, yPos);
+            doc.text(mealsCost, pageWidth - margin - doc.getTextWidth(mealsCost), yPos);
+            yPos += 5;
+        }
+        if (estimate.otherTotal > 0) {
+            doc.text('Other Expenses', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.otherTotal)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherTotal)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.rentalCar > 0) {
+            doc.text('Rental Car', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.rentalCar)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.rentalCar)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.airfare > 0) {
+            doc.text('Airfare', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.airfare)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.airfare)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.mileage > 0) {
+            doc.text('Mileage', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.mileage)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.mileage)}`), yPos);
+            yPos += 5;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        const crewSubtotal = `$${formatCurrency(estimate.crewSubtotal)}`;
+        doc.text('Crew Subtotal:', margin + 10, yPos);
+        doc.text(crewSubtotal, pageWidth - margin - doc.getTextWidth(crewSubtotal), yPos);
+        yPos += 8;
+    }
+
+    // Hourly Programs
+    if (estimate.hourlySubtotal > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Hourly Programs & Reserves', margin + 5, yPos);
+        yPos += 6;
+
+        doc.setFont('helvetica', 'normal');
+        if (estimate.maintenanceTotal > 0) {
+            const maintText = `Maintenance Programs (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.maintenanceRate)})`;
+            const maintCost = `$${formatCurrency(estimate.maintenanceTotal)}`;
+            doc.text(maintText, margin + 10, yPos);
+            doc.text(maintCost, pageWidth - margin - doc.getTextWidth(maintCost), yPos);
+            yPos += 5;
+        }
+        if (estimate.consumablesTotal > 0) {
+            const consText = `Other Consumables (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.consumablesRate)})`;
+            const consCost = `$${formatCurrency(estimate.consumablesTotal)}`;
+            doc.text(consText, margin + 10, yPos);
+            doc.text(consCost, pageWidth - margin - doc.getTextWidth(consCost), yPos);
+            yPos += 5;
+        }
+        if (estimate.additionalTotal > 0) {
+            const addText = `Additional (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.additionalRate)})`;
+            const addCost = `$${formatCurrency(estimate.additionalTotal)}`;
+            doc.text(addText, margin + 10, yPos);
+            doc.text(addCost, pageWidth - margin - doc.getTextWidth(addCost), yPos);
+            yPos += 5;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        const hourlySubtotal = `$${formatCurrency(estimate.hourlySubtotal)}`;
+        doc.text('Hourly Subtotal:', margin + 10, yPos);
+        doc.text(hourlySubtotal, pageWidth - margin - doc.getTextWidth(hourlySubtotal), yPos);
+        yPos += 8;
+    }
+
+    // Fuel
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fuel', margin + 5, yPos);
+    yPos += 6;
+
+    doc.setFont('helvetica', 'normal');
+    const fuelText = `${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)}`;
+    const fuelCost = `$${formatCurrency(estimate.fuelSubtotal)}`;
+    doc.text(fuelText, margin + 10, yPos);
+    doc.text(fuelCost, pageWidth - margin - doc.getTextWidth(fuelCost), yPos);
+    yPos += 8;
+
+    // Airport & Ground
+    if (estimate.airportSubtotal > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Airport & Ground Services', margin + 5, yPos);
+        yPos += 6;
+
+        doc.setFont('helvetica', 'normal');
+        if (estimate.landingFees > 0) {
+            doc.text('Landing Fees', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.landingFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.landingFees)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.catering > 0) {
+            doc.text('Catering', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.catering)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.catering)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.handling > 0) {
+            doc.text('Handling', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.handling)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.handling)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.passengerTransport > 0) {
+            doc.text('Passenger Ground Transport', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.passengerTransport)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.passengerTransport)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.facilityFees > 0) {
+            doc.text('Facility Fees', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.facilityFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.facilityFees)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.specialEventFees > 0) {
+            doc.text('Special Event Fees', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.specialEventFees)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.specialEventFees)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.rampParking > 0) {
+            doc.text('Ramp/Parking', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.rampParking)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.rampParking)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.customs > 0) {
+            doc.text('Customs', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.customs)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.customs)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.hangar > 0) {
+            doc.text('Hangar', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.hangar)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.hangar)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.otherAirport > 0) {
+            doc.text('Other', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.otherAirport)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherAirport)}`), yPos);
+            yPos += 5;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        const airportSubtotal = `$${formatCurrency(estimate.airportSubtotal)}`;
+        doc.text('Airport & Ground Subtotal:', margin + 10, yPos);
+        doc.text(airportSubtotal, pageWidth - margin - doc.getTextWidth(airportSubtotal), yPos);
+        yPos += 8;
+    }
+
+    // Miscellaneous
+    if (estimate.miscSubtotal > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Miscellaneous', margin + 5, yPos);
+        yPos += 6;
+
+        doc.setFont('helvetica', 'normal');
+        if (estimate.tripCoordinationFee > 0) {
+            doc.text('Trip Coordination Fee', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.tripCoordinationFee)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.tripCoordinationFee)}`), yPos);
+            yPos += 5;
+        }
+        if (estimate.otherMisc > 0) {
+            doc.text('Other', margin + 10, yPos);
+            doc.text(`$${formatCurrency(estimate.otherMisc)}`, pageWidth - margin - doc.getTextWidth(`$${formatCurrency(estimate.otherMisc)}`), yPos);
+            yPos += 5;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        const miscSubtotal = `$${formatCurrency(estimate.miscSubtotal)}`;
+        doc.text('Miscellaneous Subtotal:', margin + 10, yPos);
+        doc.text(miscSubtotal, pageWidth - margin - doc.getTextWidth(miscSubtotal), yPos);
+        yPos += 8;
+    }
+
+    // Total
+    yPos += 5;
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    const totalLabel = 'Estimated Total:';
+    const totalAmount = `$${formatCurrency(estimate.estimatedTotal)}`;
+    doc.text(totalLabel, margin + 5, yPos);
+    doc.text(totalAmount, pageWidth - margin - doc.getTextWidth(totalAmount), yPos);
+    yPos += 10;
+
+    // Trip Notes
+    if (estimate.tripNotes) {
+        yPos += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('Trip Notes', margin, yPos);
+        yPos += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        const notesLines = doc.splitTextToSize(estimate.tripNotes, pageWidth - (margin * 2));
+        doc.text(notesLines, margin + 5, yPos);
+    }
+
+    // Save PDF
     const now = new Date();
     const filename = `trip-estimate-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
-
     doc.save(filename);
 }
 
