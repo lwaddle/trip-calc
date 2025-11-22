@@ -11,6 +11,8 @@ import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, update
 // This must run immediately, before DOMContentLoaded and before Supabase's detectSessionInUrl
 if (window.location.hash.includes('type=recovery')) {
     sessionStorage.setItem('pendingPasswordRecovery', 'true');
+    // Set localStorage flag IMMEDIATELY so all tabs suppress signed-in UI from first auth state change
+    localStorage.setItem('passwordRecoveryInProgress', 'true');
     // Try to get focus immediately (may not work due to browser restrictions, but worth trying)
     window.focus();
     // Try multiple times with delays to fight for focus
