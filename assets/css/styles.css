@@ -870,6 +870,18 @@ button {
     .btn-secondary:hover {
         transform: none;
     }
+
+    /* Stack saved estimate items on mobile */
+    .saved-estimate-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+
+    .saved-estimate-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
 }
 
 @media (max-width: 480px) {
