@@ -18,7 +18,7 @@ CREATE TABLE user_defaults (
 
   -- Crew rates
   pilot_rate NUMERIC(10, 2) DEFAULT 1500,
-  attendant_rate NUMERIC(10, 2) DEFAULT 1200,
+  attendant_rate NUMERIC(10, 2) DEFAULT 800,
 
   -- Expenses
   hotel_rate NUMERIC(10, 2) DEFAULT 200,

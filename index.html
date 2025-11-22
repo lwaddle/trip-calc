@@ -35,7 +35,7 @@
         <section class="section">
             <h2>Flight Legs</h2>
             <div id="flightLegsContainer"></div>
-            <button class="btn-secondary" id="addLegButton">Add Leg</button>
+            <button class="btn-secondary" id="addLegButton" tabindex="0">Add Leg</button>
         </section>
 
         <!-- Section 2: Fuel & Operations -->
@@ -63,7 +63,7 @@
         <section class="section">
             <h2>Crew Day Rates</h2>
             <div id="crewContainer"></div>
-            <button class="btn-secondary" id="addCrewButton">Add Role</button>
+            <button class="btn-secondary" id="addCrewButton" tabindex="0">Add Role</button>
         </section>
 
         <!-- Section 4: Crew Expenses -->
@@ -240,7 +240,7 @@
                 </div>
                 <div class="form-field">
                     <label for="defaultAttendantRate">Flight Attendant Daily Rate ($)</label>
-                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="1200">
+                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="800">
                 </div>
                 <div class="form-field">
                     <label for="defaultHotelRate">Hotel ($/night/person)</label>
@@ -340,7 +340,7 @@
     <div class="modal" id="saveEstimateModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Save Estimate</h2>
+                <h2 id="saveEstimateModalTitle">Save Estimate</h2>
                 <button class="modal-close" id="closeSaveEstimateModal">&times;</button>
             </div>
             <div class="modal-body">
@@ -354,7 +354,8 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelSaveEstimateButton">Cancel</button>
-                <button type="submit" class="btn-primary" id="confirmSaveEstimateButton" form="saveEstimateForm">Save</button>
+                <button type="submit" class="btn-primary" id="confirmUpdateEstimateButton" form="saveEstimateForm" style="display: none;">Update</button>
+                <button type="submit" class="btn-primary" id="confirmSaveEstimateButton" form="saveEstimateForm">Save as New</button>
             </div>
         </div>
     </div>
@@ -380,6 +381,30 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" id="closeShareModalButton">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div class="modal" id="resetConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reset Form</h2>
+                <button class="modal-close" id="closeResetConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reset the form? This will clear all data including:</p>
+                <ul style="margin: 1rem 0; padding-left: 2rem;">
+                    <li>All flight legs</li>
+                    <li>All crew members</li>
+                    <li>Trip details and notes</li>
+                    <li>Any unsaved changes</li>
+                </ul>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelResetButton">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmResetButton">Reset Form</button>
             </div>
         </div>
     </div>

@@ -2,7 +2,7 @@
 // Imports
 // ===========================
 import { initAuth, signIn, signOut, resetPassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
-import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 
 // ===========================
 // App State
@@ -11,7 +11,9 @@ const state = {
     legs: [],
     crew: [],
     nextLegId: 1,
-    nextCrewId: 1
+    nextCrewId: 1,
+    currentEstimateId: null,
+    currentEstimateName: null
 };
 
 // ===========================
@@ -145,7 +147,7 @@ function getDefaults() {
         fuelPrice: 5.93,
         fuelDensity: 6.7,
         pilotRate: 1500,
-        attendantRate: 1200,
+        attendantRate: 800,
         hotelRate: 200,
         mealsRate: 100,
         maintenanceRate: 1048.42,
@@ -158,7 +160,7 @@ async function saveDefaultsAction() {
         fuelPrice: parseFloat(document.getElementById('defaultFuelPrice').value) || 5.93,
         fuelDensity: parseFloat(document.getElementById('defaultFuelDensity').value) || 6.7,
         pilotRate: parseFloat(document.getElementById('defaultPilotRate').value) || 1500,
-        attendantRate: parseFloat(document.getElementById('defaultAttendantRate').value) || 1200,
+        attendantRate: parseFloat(document.getElementById('defaultAttendantRate').value) || 800,
         hotelRate: parseFloat(document.getElementById('defaultHotelRate').value) || 200,
         mealsRate: parseFloat(document.getElementById('defaultMealsRate').value) || 100,
         maintenanceRate: parseFloat(document.getElementById('defaultMaintenanceRate').value) || 1048.42,
@@ -382,12 +384,18 @@ function attachEventListeners() {
     // Save estimate modal
     document.getElementById('closeSaveEstimateModal').addEventListener('click', () => closeModal('saveEstimateModal'));
     document.getElementById('cancelSaveEstimateButton').addEventListener('click', () => closeModal('saveEstimateModal'));
+    document.getElementById('confirmUpdateEstimateButton').addEventListener('click', confirmUpdateEstimate);
     document.getElementById('saveEstimateForm').addEventListener('submit', confirmSaveEstimate);
 
     // Share estimate modal
     document.getElementById('closeShareEstimateModal').addEventListener('click', () => closeModal('shareEstimateModal'));
     document.getElementById('closeShareModalButton').addEventListener('click', () => closeModal('shareEstimateModal'));
     document.getElementById('copyShareLinkButton').addEventListener('click', copyShareLink);
+
+    // Reset confirmation modal
+    document.getElementById('closeResetConfirmModal').addEventListener('click', () => closeModal('resetConfirmModal'));
+    document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
+    document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
 
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
@@ -469,6 +477,11 @@ function addLeg() {
     state.legs.push(leg);
     renderLeg(leg);
     updateEstimate();
+
+    // Auto-focus the "From" field in the newly created leg
+    const legRow = document.querySelector(`[data-leg-id="${leg.id}"]`);
+    const fromInput = legRow?.querySelector('.leg-fields input[type="text"]');
+    fromInput?.focus();
 }
 
 function renderLeg(leg) {
@@ -1407,9 +1420,28 @@ function saveEstimateAction() {
         return;
     }
 
-    // Clear previous values and errors
-    document.getElementById('estimateName').value = '';
+    const updateButton = document.getElementById('confirmUpdateEstimateButton');
+    const saveButton = document.getElementById('confirmSaveEstimateButton');
+    const modalTitle = document.getElementById('saveEstimateModalTitle');
+    const nameInput = document.getElementById('estimateName');
+
+    // Clear errors
     document.getElementById('saveEstimateError').style.display = 'none';
+
+    // Check if we're editing an existing estimate
+    if (state.currentEstimateId) {
+        // Editing mode: show both Update and Save as New
+        nameInput.value = state.currentEstimateName;
+        updateButton.style.display = 'inline-block';
+        saveButton.textContent = 'Save as New';
+        modalTitle.textContent = 'Update Estimate';
+    } else {
+        // New estimate mode: only show Save
+        nameInput.value = '';
+        updateButton.style.display = 'none';
+        saveButton.textContent = 'Save';
+        modalTitle.textContent = 'Save Estimate';
+    }
 
     // Open the modal
     openModal('saveEstimateModal');
@@ -1437,7 +1469,7 @@ async function confirmSaveEstimate(e) {
         formData: getFormData()
     };
 
-    // Save to Supabase
+    // Save to Supabase as new estimate
     const { data, error } = await saveEstimate(name, estimateData);
 
     if (error) {
@@ -1446,9 +1478,58 @@ async function confirmSaveEstimate(e) {
         return;
     }
 
+    // Clear current estimate tracking (we just created a new one)
+    state.currentEstimateId = data.id;
+    state.currentEstimateName = data.name;
+
     // Success!
     closeModal('saveEstimateModal');
     showToast('Estimate saved successfully!', 'success');
+}
+
+async function confirmUpdateEstimate(e) {
+    e.preventDefault();
+
+    const nameInput = document.getElementById('estimateName');
+    const name = nameInput.value.trim();
+    const errorDiv = document.getElementById('saveEstimateError');
+
+    // Hide previous errors
+    errorDiv.style.display = 'none';
+
+    if (!name) {
+        errorDiv.textContent = 'Please enter a name for this estimate';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (!state.currentEstimateId) {
+        errorDiv.textContent = 'No estimate loaded to update';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const estimateData = {
+        legs: state.legs,
+        crew: state.crew,
+        formData: getFormData()
+    };
+
+    // Update existing estimate in Supabase
+    const { error } = await updateEstimateInDB(state.currentEstimateId, name, estimateData);
+
+    if (error) {
+        errorDiv.textContent = 'Failed to update: ' + error.message;
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Update the name in state
+    state.currentEstimateName = name;
+
+    // Success!
+    closeModal('saveEstimateModal');
+    showToast('Estimate updated successfully!', 'success');
 }
 
 async function getSavedEstimatesFromSource() {
@@ -1520,6 +1601,10 @@ function loadEstimateAction(estimate) {
     state.crew = [];
     document.getElementById('flightLegsContainer').innerHTML = '';
     document.getElementById('crewContainer').innerHTML = '';
+
+    // Track the loaded estimate for updates
+    state.currentEstimateId = estimate.id;
+    state.currentEstimateName = estimate.name;
 
     // Get estimate data (handle both Supabase and localStorage formats)
     const estimateData = estimate.estimate_data || estimate.data;
@@ -1699,13 +1784,18 @@ function setFormData(data) {
 // Reset Form
 // ===========================
 function resetForm() {
-    if (!confirm('Are you sure you want to reset the form? This will clear all data.')) return;
+    // Open confirmation modal instead of system dialog
+    openModal('resetConfirmModal');
+}
 
+function confirmReset() {
     // Clear state
     state.legs = [];
     state.crew = [];
     state.nextLegId = 1;
     state.nextCrewId = 1;
+    state.currentEstimateId = null;
+    state.currentEstimateName = null;
 
     // Clear containers
     document.getElementById('flightLegsContainer').innerHTML = '';
@@ -1727,4 +1817,8 @@ function resetForm() {
     addInitialCrew();
     addInitialCrew();
     updateEstimate();
+
+    // Close modal and show success message
+    closeModal('resetConfirmModal');
+    showToast('Form reset successfully', 'success');
 }
