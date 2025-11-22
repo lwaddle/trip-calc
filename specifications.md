@@ -256,15 +256,12 @@ Defaults should persist:
   - Cannot save/load estimates
 - Signed-in users:
   - Can save and load estimates
-  - Can access **Defaults**
 
-**Planning to use:** Firebase Authentication  
+**Planning to use:** Supabase Authentication 
 - Email/password sign-in  
-- Easy integration  
-- Works well with static hosting
 
 ### Storage Options
-- Firebase Firestore
+- Postgres Database
 
 ### Hosting
 Cloudflare Pages
