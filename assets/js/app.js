@@ -1469,28 +1469,32 @@ async function shareViaNative() {
 }
 
 // Copy shareable link to clipboard
-async function copyShareableLink() {
+function copyShareableLink() {
     if (!state.currentEstimateId) {
         showToast('Please save the estimate first', 'error');
         return;
     }
 
-    try {
-        const { shareToken, error } = await createEstimateShare(state.currentEstimateId, state.currentEstimateName);
+    // Start share creation and clipboard write in a way that maintains user gesture for Safari
+    createEstimateShare(state.currentEstimateId, state.currentEstimateName)
+        .then(({ shareToken, error }) => {
+            if (error) {
+                showToast('Failed to create share link: ' + error.message, 'error');
+                return Promise.reject(error);
+            }
 
-        if (error) {
-            showToast('Failed to create share link: ' + error.message, 'error');
-            return;
-        }
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
 
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
-
-        await navigator.clipboard.writeText(shareUrl);
-        showToast('Shareable link copied to clipboard!', 'success');
-    } catch (err) {
-        console.error('Failed to copy link:', err);
-        showToast('Failed to copy link', 'error');
-    }
+            // Call clipboard API within the promise chain to maintain user gesture in Safari
+            return navigator.clipboard.writeText(shareUrl);
+        })
+        .then(() => {
+            showToast('Shareable link copied to clipboard!', 'success');
+        })
+        .catch(err => {
+            console.error('Failed to copy link:', err);
+            showToast('Failed to copy link', 'error');
+        });
 }
 
 // ===========================
