@@ -1273,8 +1273,10 @@ function openEnhancedShareModal() {
     const linkBtn = document.getElementById('shareViaLinkBtn');
     const qrBtn = document.getElementById('shareViaQRBtn');
 
-    if (linkBtn) linkBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
-    if (qrBtn) qrBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
+    // Show shareable link and QR options for all authenticated users
+    // The individual functions will handle the "save first" prompt if needed
+    if (linkBtn) linkBtn.style.display = isAuthenticated ? 'flex' : 'none';
+    if (qrBtn) qrBtn.style.display = isAuthenticated ? 'flex' : 'none';
 
     // Check if Web Share API is available (mobile devices)
     if (navigator.share) {
