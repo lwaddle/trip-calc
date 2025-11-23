@@ -72,6 +72,7 @@ function updateUIForAuthState(user) {
     // Footer buttons
     const saveEstimateButton = document.getElementById('saveEstimateButton');
     const loadEstimateButton = document.getElementById('loadEstimateButton');
+    const authTip = document.getElementById('authTip');
 
     if (isAuth) {
         // Show authenticated UI (mobile)
@@ -84,6 +85,9 @@ function updateUIForAuthState(user) {
         // Show save/load buttons
         if (saveEstimateButton) saveEstimateButton.style.display = 'inline-block';
         if (loadEstimateButton) loadEstimateButton.style.display = 'inline-block';
+
+        // Hide auth tip for authenticated users
+        if (authTip) authTip.style.display = 'none';
     } else {
         // Show anonymous UI (mobile)
         menuUser.style.display = 'none';
@@ -94,6 +98,9 @@ function updateUIForAuthState(user) {
         // Hide save/load buttons for anonymous users
         if (saveEstimateButton) saveEstimateButton.style.display = 'none';
         if (loadEstimateButton) loadEstimateButton.style.display = 'none';
+
+        // Show auth tip for anonymous users
+        if (authTip) authTip.style.display = 'flex';
     }
 
     // Update desktop nav as well
@@ -461,6 +468,12 @@ function attachEventListeners() {
     document.getElementById('menuEstimates').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('menuDefaults').addEventListener('click', () => openModal('defaultsModal'));
     document.getElementById('menuSignOut').addEventListener('click', handleSignOut);
+
+    // Auth tip sign-in link
+    const authTipSignIn = document.getElementById('authTipSignIn');
+    if (authTipSignIn) {
+        authTipSignIn.addEventListener('click', () => openModal('signInModal'));
+    }
 
     // Desktop nav
     const desktopDefaults = document.getElementById('desktopDefaults');

@@ -755,13 +755,50 @@ button {
 }
 
 /* ===========================
+   Auth Tip
+   =========================== */
+.auth-tip {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+    background-color: var(--color-bg-secondary);
+    border-radius: var(--border-radius);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.auth-tip-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--color-primary);
+}
+
+.auth-tip-link {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.auth-tip-link:hover {
+    color: var(--color-primary-dark);
+}
+
+/* ===========================
    Footer Buttons
    =========================== */
 .footer-buttons {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-md);
-    margin-top: var(--spacing-2xl);
+    margin-top: var(--spacing-xl);
     padding-bottom: var(--spacing-2xl);
 }
 
