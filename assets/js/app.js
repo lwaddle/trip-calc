@@ -1492,7 +1492,25 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const title = 'Trip Cost Estimate';
     const titleWidth = doc.getTextWidth(title);
     doc.text(title, (pageWidth - titleWidth) / 2, yPos);
-    yPos += 15;
+    yPos += 10;
+
+    // Add filename if available
+    let estimateName = null;
+    if (window.shareViewData && window.shareViewData.name) {
+        estimateName = window.shareViewData.name;
+    } else if (state.currentEstimateName) {
+        estimateName = state.currentEstimateName;
+    }
+
+    if (estimateName) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        const nameWidth = doc.getTextWidth(estimateName);
+        doc.text(estimateName, (pageWidth - nameWidth) / 2, yPos);
+        yPos += 10;
+    } else {
+        yPos += 5;
+    }
 
     // Get estimate data
     const estimate = calculateEstimate();
@@ -2222,7 +2240,13 @@ function enableShareViewMode(estimateData, shareToken) {
 
 // Update share view metadata display
 function updateShareViewMetadata(estimateData) {
+    const filenameElement = document.getElementById('shareViewFilename');
     const metaElement = document.getElementById('shareViewMeta');
+
+    // Update the filename display
+    if (estimateData.name) {
+        filenameElement.textContent = estimateData.name;
+    }
 
     // Determine if this estimate has been updated
     const createdAt = new Date(estimateData.created_at);
