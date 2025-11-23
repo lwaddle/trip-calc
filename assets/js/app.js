@@ -533,26 +533,62 @@ function attachEventListeners() {
 
     // Prevent negative values and invalid characters in number inputs
     document.querySelectorAll('input[type="number"]').forEach(input => {
-        input.addEventListener('input', function(e) {
-            // Remove any non-numeric characters except decimal point
-            this.value = this.value.replace(/[^0-9.]/g, '');
-            // Ensure only one decimal point
-            const parts = this.value.split('.');
-            if (parts.length > 2) {
-                this.value = parts[0] + '.' + parts.slice(1).join('');
+        // Use beforeinput to prevent invalid input (doesn't cause cursor jump)
+        input.addEventListener('beforeinput', function(e) {
+            // Allow deletion and other special operations
+            if (e.inputType === 'deleteContentBackward' ||
+                e.inputType === 'deleteContentForward' ||
+                e.inputType === 'deleteByCut' ||
+                e.inputType === 'deleteByDrag') {
+                return;
             }
+
+            const data = e.data;
+            if (data) {
+                // Check if this is a time input field (hours or minutes)
+                const isTimeField = this.closest('.time-input-wrapper') || this.closest('.time-input-wrapper--minutes');
+
+                // For time fields, only allow integers (no decimal point)
+                if (isTimeField) {
+                    if (!/^[0-9]$/.test(data)) {
+                        e.preventDefault();
+                        return;
+                    }
+                } else {
+                    // For other numeric fields, allow decimal point
+                    if (!/^[0-9.]$/.test(data)) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    // Prevent multiple decimal points
+                    if (data === '.' && this.value.includes('.')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Use input event only for validation that requires checking the full value
+        input.addEventListener('input', function(e) {
             // Cap minutes field at 59
             if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
                 this.value = '59';
             }
         });
+
         // Prevent paste of invalid content
         input.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             const cleanedText = pastedText.replace(/[^0-9.]/g, '');
-            document.execCommand('insertText', false, cleanedText);
+            // Prevent multiple decimals
+            const parts = cleanedText.split('.');
+            const finalText = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedText;
+            document.execCommand('insertText', false, finalText);
         });
+
         // Also cap on blur to catch any edge cases
         input.addEventListener('blur', function(e) {
             if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
@@ -561,7 +597,7 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for static fields
+    // Auto-select input contents on click for all inputs
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
         input.addEventListener('click', function() {
             this.select();
