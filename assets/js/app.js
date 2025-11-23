@@ -633,8 +633,21 @@ function attachEventListeners() {
     document.getElementById('cancelLoadButton').addEventListener('click', () => closeModal('loadEstimateModal'));
 
     // Sign in modal
-    document.getElementById('closeSignInModal').addEventListener('click', () => closeModal('signInModal'));
-    document.getElementById('cancelSignInButton').addEventListener('click', () => closeModal('signInModal'));
+    const closeSignInBtn = document.getElementById('closeSignInModal');
+    const cancelSignInBtn = document.getElementById('cancelSignInButton');
+
+    closeSignInBtn.addEventListener('click', () => closeModal('signInModal'));
+    closeSignInBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeModal('signInModal');
+    }, { passive: false });
+
+    cancelSignInBtn.addEventListener('click', () => closeModal('signInModal'));
+    cancelSignInBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeModal('signInModal');
+    }, { passive: false });
+
     document.getElementById('signInForm').addEventListener('submit', handleSignIn);
     document.getElementById('forgotPasswordLink').addEventListener('click', () => {
         closeModal('signInModal');
@@ -697,9 +710,29 @@ function attachEventListeners() {
                 } else {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
+                    // Restore scroll position
+                    document.body.style.top = '';
+                    window.scrollTo(0, scrollPosition);
                 }
             }
         });
+
+        // Add touch event fallback for iOS - handles cases where click events don't fire
+        modal.addEventListener('touchend', (e) => {
+            if (e.target === modal) {
+                e.preventDefault(); // Prevent ghost clicks
+                // Special handling for PDF preview modal to cleanup resources
+                if (modal.id === 'pdfPreviewModal') {
+                    closePdfPreview();
+                } else {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                    // Restore scroll position
+                    document.body.style.top = '';
+                    window.scrollTo(0, scrollPosition);
+                }
+            }
+        }, { passive: false });
     });
 
     // Close menus when clicking outside
@@ -768,6 +801,9 @@ function closeDesktopUserDropdown() {
     menu.classList.remove('active');
 }
 
+// Store scroll position to prevent scroll jump on iOS when modal opens
+let scrollPosition = 0;
+
 function openModal(modalId) {
     if (modalId === 'loadEstimateModal') {
         populateLoadEstimateModal();
@@ -779,13 +815,24 @@ function openModal(modalId) {
             emailField.value = getUserEmail();
         }
     }
+
+    // Save current scroll position before locking scroll
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
     document.getElementById(modalId).classList.add('active');
     document.body.classList.add('modal-open');
+
+    // Lock scroll position for better mobile support
+    document.body.style.top = `-${scrollPosition}px`;
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
     document.body.classList.remove('modal-open');
+
+    // Restore scroll position
+    document.body.style.top = '';
+    window.scrollTo(0, scrollPosition);
 }
 
 // ===========================
