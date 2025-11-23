@@ -709,6 +709,13 @@ function openModal(modalId) {
     if (modalId === 'loadEstimateModal') {
         populateLoadEstimateModal();
     }
+    if (modalId === 'updatePasswordModal') {
+        // Populate email field for password managers to associate username with password
+        const emailField = document.getElementById('resetUserEmail');
+        if (emailField && isAuthenticated()) {
+            emailField.value = getUserEmail();
+        }
+    }
     document.getElementById(modalId).classList.add('active');
     document.body.classList.add('modal-open');
 }

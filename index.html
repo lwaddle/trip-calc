@@ -372,6 +372,8 @@
             <div class="modal-body">
                 <p>Please enter your new password.</p>
                 <form id="updatePasswordForm">
+                    <!-- Hidden email field for password managers to associate username with password -->
+                    <input type="email" id="resetUserEmail" autocomplete="username" style="display: none;" tabindex="-1" aria-hidden="true">
                     <div class="form-field">
                         <label for="newPassword">New Password</label>
                         <input type="password" id="newPassword" required autocomplete="new-password" minlength="6">
