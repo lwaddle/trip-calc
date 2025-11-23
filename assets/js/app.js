@@ -2217,6 +2217,9 @@ function enableShareViewMode(estimateData, shareToken) {
     // Add body class for share view mode
     document.body.classList.add('share-view-mode');
 
+    // Update h1 heading
+    document.getElementById('mainHeading').textContent = 'Trip Cost Estimate';
+
     // Hide normal view, show share view
     document.getElementById('normalView').style.display = 'none';
     document.getElementById('shareView').style.display = 'block';
@@ -2224,10 +2227,12 @@ function enableShareViewMode(estimateData, shareToken) {
     // Load estimate data into the form (in background, for PDF export)
     loadEstimateAction(estimateData);
 
-    // Update the share view display
+    // Calculate and format the estimate
+    const estimate = calculateEstimate();
+
+    // Update the share view display with beautiful HTML
     const estimateDisplay = document.getElementById('shareEstimateDisplay');
-    const tripEstimate = document.getElementById('tripEstimate');
-    estimateDisplay.textContent = tripEstimate.textContent;
+    estimateDisplay.innerHTML = formatEstimateHTML(estimate);
 
     // Set up share view event listeners
     setupShareViewEventListeners();
@@ -2239,6 +2244,12 @@ function setupShareViewEventListeners() {
     const exportBtn = document.getElementById('shareExportPDF');
     exportBtn.addEventListener('click', () => {
         exportToPDF();
+    });
+
+    // Share button
+    const shareBtn = document.getElementById('shareEstimateButton');
+    shareBtn.addEventListener('click', () => {
+        openModal('clientShareModal');
     });
 
     // Sign in button
@@ -2253,6 +2264,9 @@ function setupShareViewEventListeners() {
         e.preventDefault();
         window.location.href = '/';
     });
+
+    // Client share modal handlers
+    setupClientShareModal();
 }
 
 // Handle saving shared estimate after user signs in
@@ -2278,6 +2292,294 @@ async function handleShareViewSaveEstimate() {
             window.location.href = '/';
         }
     }
+}
+
+// Format estimate as beautiful HTML
+function formatEstimateHTML(estimate) {
+    if (state.legs.length === 0) {
+        return '<p class="estimate-empty">Add flight legs to see estimate...</p>';
+    }
+
+    let html = '';
+
+    // Legs Summary Section
+    html += '<div class="estimate-section">';
+    html += '<h2 class="estimate-section-title">Flight Summary</h2>';
+    html += '<div class="estimate-legs">';
+    estimate.legsSummary.forEach(leg => {
+        html += `<div class="estimate-leg">`;
+        html += `<span class="leg-route">${leg.from} → ${leg.to}</span>`;
+        html += `<span class="leg-time">${leg.hours}h ${leg.minutes}m</span>`;
+        html += `<span class="leg-fuel">${leg.gallons.toFixed(0)} gal</span>`;
+        html += `</div>`;
+    });
+    html += '</div>';
+
+    html += '<div class="estimate-summary-row">';
+    html += `<span class="summary-label">Total Flight Time</span>`;
+    html += `<span class="summary-value">${estimate.totalHours}h ${estimate.remainingMinutes}m</span>`;
+    html += '</div>';
+    html += '<div class="estimate-summary-row">';
+    html += `<span class="summary-label">Total Fuel</span>`;
+    html += `<span class="summary-value">${estimate.totalFuelGallons.toFixed(0)} gallons</span>`;
+    html += '</div>';
+    if (estimate.includeAPU && estimate.activeLegsCount > 0) {
+        html += '<div class="estimate-note">';
+        html += `Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // Cost Breakdown Section
+    html += '<div class="estimate-section">';
+    html += '<h2 class="estimate-section-title">Cost Breakdown</h2>';
+
+    // Crew Day Rates
+    if (estimate.crewDayTotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Crew Day Rates</h3>';
+        estimate.crewDetails.forEach(crew => {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">${crew.role} (${crew.days} day${crew.days > 1 ? 's' : ''} @ $${formatCurrency(crew.rate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(crew.total)}</span>`;
+            html += '</div>';
+        });
+        html += '<div class="estimate-subtotal">';
+        html += `<span class="subtotal-label">Crew Day Rate Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.crewDayTotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Crew Expenses
+    if (estimate.crewExpensesTotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Crew Expenses</h3>';
+        if (estimate.hotelTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Hotel (${estimate.crewCount} crew × ${estimate.hotelStays} night${estimate.hotelStays > 1 ? 's' : ''} × $${formatCurrency(estimate.hotelRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.hotelTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.mealsTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Meals (${estimate.crewCount} crew × ${estimate.tripDays} day${estimate.tripDays > 1 ? 's' : ''} × $${formatCurrency(estimate.mealsRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.mealsTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.otherTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Other Per-Person Expenses</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.otherTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.rentalCar > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Rental Car</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.rentalCar)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.airfare > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Airfare</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.airfare)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.mileage > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Mileage</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.mileage)}</span>`;
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+
+    // Crew Subtotal
+    if (estimate.crewSubtotal > 0) {
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Crew Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.crewSubtotal)}</span>`;
+        html += '</div>';
+    }
+
+    // Hourly Programs
+    if (estimate.hourlySubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Hourly Programs & Reserves</h3>';
+        if (estimate.maintenanceTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Maintenance Programs (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.maintenanceRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.maintenanceTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.consumablesTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Other Consumables (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.consumablesRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.consumablesTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.additionalTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Additional (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.additionalRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.additionalTotal)}</span>`;
+            html += '</div>';
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Hourly Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.hourlySubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Fuel
+    html += '<div class="estimate-subsection">';
+    html += '<h3 class="estimate-subsection-title">Fuel</h3>';
+    html += '<div class="estimate-line-item">';
+    html += `<span class="item-label">${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)}/gal</span>`;
+    html += `<span class="item-value">$${formatCurrency(estimate.fuelSubtotal)}</span>`;
+    html += '</div>';
+    html += '<div class="estimate-subtotal major">';
+    html += `<span class="subtotal-label">Fuel Subtotal</span>`;
+    html += `<span class="subtotal-value">$${formatCurrency(estimate.fuelSubtotal)}</span>`;
+    html += '</div>';
+    html += '</div>';
+
+    // Airport & Ground
+    if (estimate.airportSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Airport & Ground Services</h3>';
+        if (estimate.landingFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Landing Fees</span><span class="item-value">$${formatCurrency(estimate.landingFees)}</span></div>`;
+        }
+        if (estimate.catering > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Catering</span><span class="item-value">$${formatCurrency(estimate.catering)}</span></div>`;
+        }
+        if (estimate.handling > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Handling</span><span class="item-value">$${formatCurrency(estimate.handling)}</span></div>`;
+        }
+        if (estimate.passengerTransport > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Passenger Ground Transport</span><span class="item-value">$${formatCurrency(estimate.passengerTransport)}</span></div>`;
+        }
+        if (estimate.facilityFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Facility Fees</span><span class="item-value">$${formatCurrency(estimate.facilityFees)}</span></div>`;
+        }
+        if (estimate.specialEventFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Special Event Fees</span><span class="item-value">$${formatCurrency(estimate.specialEventFees)}</span></div>`;
+        }
+        if (estimate.rampParking > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Ramp/Parking</span><span class="item-value">$${formatCurrency(estimate.rampParking)}</span></div>`;
+        }
+        if (estimate.customs > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Customs</span><span class="item-value">$${formatCurrency(estimate.customs)}</span></div>`;
+        }
+        if (estimate.hangar > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Hangar</span><span class="item-value">$${formatCurrency(estimate.hangar)}</span></div>`;
+        }
+        if (estimate.otherAirport > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Other</span><span class="item-value">$${formatCurrency(estimate.otherAirport)}</span></div>`;
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Airport & Ground Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.airportSubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Miscellaneous
+    if (estimate.miscSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Miscellaneous</h3>';
+        if (estimate.tripCoordinationFee > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Trip Coordination Fee</span><span class="item-value">$${formatCurrency(estimate.tripCoordinationFee)}</span></div>`;
+        }
+        if (estimate.otherMisc > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Other</span><span class="item-value">$${formatCurrency(estimate.otherMisc)}</span></div>`;
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Miscellaneous Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.miscSubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+
+    // Total
+    html += '<div class="estimate-total">';
+    html += '<span class="total-label">Estimated Total</span>';
+    html += `<span class="total-value">$${formatCurrency(estimate.estimatedTotal)}</span>`;
+    html += '</div>';
+
+    // Trip Notes
+    if (estimate.tripNotes) {
+        html += '<div class="estimate-section">';
+        html += '<h2 class="estimate-section-title">Trip Notes</h2>';
+        html += `<div class="estimate-notes">${estimate.tripNotes.replace(/\n/g, '<br>')}</div>`;
+        html += '</div>';
+    }
+
+    return html;
+}
+
+// Setup client share modal handlers
+function setupClientShareModal() {
+    // Close button handlers
+    document.getElementById('closeClientShareModal').addEventListener('click', () => {
+        closeModal('clientShareModal');
+    });
+    document.getElementById('closeClientShareButton').addEventListener('click', () => {
+        closeModal('clientShareModal');
+    });
+
+    // Email Estimate
+    document.getElementById('clientShareEmailBtn').addEventListener('click', () => {
+        const estimate = calculateEstimate();
+        const estimateText = formatEstimate(estimate);
+        const subject = encodeURIComponent('Trip Cost Estimate');
+        const body = encodeURIComponent(estimateText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        closeModal('clientShareModal');
+        showToast('Opening email...', 'info');
+    });
+
+    // Copy to Clipboard
+    document.getElementById('clientShareCopyBtn').addEventListener('click', () => {
+        const estimate = calculateEstimate();
+        const estimateText = formatEstimate(estimate);
+        navigator.clipboard.writeText(estimateText)
+            .then(() => {
+                closeModal('clientShareModal');
+                showToast('Estimate copied to clipboard!', 'success');
+            })
+            .catch(() => {
+                showToast('Failed to copy estimate', 'error');
+            });
+    });
+
+    // Share via (native share API)
+    document.getElementById('clientShareViaBtn').addEventListener('click', async () => {
+        if (!navigator.share) {
+            showToast('Share feature not supported on this device', 'error');
+            return;
+        }
+
+        const estimate = calculateEstimate();
+        const estimateText = formatEstimate(estimate);
+
+        try {
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                text: estimateText
+            });
+            closeModal('clientShareModal');
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or error occurred
+            if (err.name !== 'AbortError') {
+                showToast('Failed to share estimate', 'error');
+            }
+        }
+    });
 }
 
 function getFormData() {

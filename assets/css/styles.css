@@ -1561,3 +1561,260 @@ body.share-view-mode .header-menu {
         font-size: 1rem;
     }
 }
+
+/* ===========================
+   Beautiful Estimate Display
+   =========================== */
+
+.share-estimate-beautiful {
+    background: var(--color-bg);
+}
+
+/* Estimate Sections */
+.estimate-section {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+}
+
+.estimate-section-title {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-lg) 0;
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--color-primary);
+}
+
+/* Flight Legs */
+.estimate-legs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.estimate-leg {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg);
+    border-radius: calc(var(--border-radius) / 2);
+    align-items: center;
+}
+
+.leg-route {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.leg-time {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.leg-fuel {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Summary Rows */
+.estimate-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.estimate-summary-row:last-of-type {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.summary-value {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.estimate-note {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-primary);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-md);
+    border-radius: calc(var(--border-radius) / 2);
+}
+
+/* Subsections */
+.estimate-subsection {
+    margin-bottom: var(--spacing-lg);
+}
+
+.estimate-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.estimate-subsection-title {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+/* Line Items */
+.estimate-line-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+    gap: var(--spacing-md);
+}
+
+.estimate-line-item:last-of-type {
+    border-bottom: none;
+}
+
+.item-label {
+    color: var(--color-text);
+    flex: 1;
+}
+
+.item-value {
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+/* Subtotals */
+.estimate-subtotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: var(--spacing-md) 0;
+    margin-top: var(--spacing-md);
+    border-top: 2px solid var(--color-border);
+    gap: var(--spacing-md);
+}
+
+.estimate-subtotal.major {
+    background: var(--color-bg);
+    padding: var(--spacing-md);
+    border-radius: calc(var(--border-radius) / 2);
+    border-top: none;
+    margin-top: var(--spacing-sm);
+}
+
+.subtotal-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.subtotal-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+/* Total */
+.estimate-total {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: var(--spacing-lg) 0;
+    box-shadow: var(--shadow-lg);
+}
+
+.total-label {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.total-value {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Trip Notes */
+.estimate-notes {
+    background: var(--color-bg);
+    padding: var(--spacing-md);
+    border-radius: calc(var(--border-radius) / 2);
+    color: var(--color-text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Empty State */
+.estimate-empty {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--color-text-secondary);
+    font-size: 1.125rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .estimate-section {
+        padding: var(--spacing-md);
+    }
+
+    .estimate-section-title {
+        font-size: 1.25rem;
+    }
+
+    .estimate-leg {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xs);
+    }
+
+    .leg-time, .leg-fuel {
+        font-size: 0.8125rem;
+    }
+
+    .estimate-subsection-title {
+        font-size: 1rem;
+    }
+
+    .estimate-line-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+
+    .item-value {
+        font-size: 1.125rem;
+    }
+
+    .estimate-total {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        text-align: center;
+    }
+
+    .total-label {
+        font-size: 1.25rem;
+    }
+
+    .total-value {
+        font-size: 1.75rem;
+    }
+}
