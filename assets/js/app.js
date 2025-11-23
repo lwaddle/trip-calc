@@ -1413,16 +1413,58 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const bottomMargin = 20;
 
     // Prepare footer data
-    const currentDate = new Date();
-    const dateStr = currentDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
-    const footerText = `Created: ${dateStr} - by ${userEmail}`;
+    // Check if we're in share view mode and have estimate metadata
+    let footerText;
+    if (window.shareViewData && (window.shareViewData.created_at || window.shareViewData.updated_at)) {
+        // Use the estimate's actual creation/update data
+        const createdAt = new Date(window.shareViewData.created_at);
+        const updatedAt = new Date(window.shareViewData.updated_at);
+        const hasBeenUpdated = updatedAt > createdAt;
+        const displayDate = hasBeenUpdated ? updatedAt : createdAt;
+        const label = hasBeenUpdated ? 'Last updated' : 'Created';
+
+        const dateStr = displayDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + displayDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        const creatorEmail = window.shareViewData.creator_email || 'Guest';
+        footerText = `${label}: ${dateStr} - by ${creatorEmail}`;
+    } else if (state.currentEstimateId) {
+        // If we have a current estimate loaded, try to get its metadata
+        // For now, fall back to current behavior
+        const currentDate = new Date();
+        const dateStr = currentDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + currentDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+        footerText = `Created: ${dateStr} - by ${userEmail}`;
+    } else {
+        // No estimate metadata available, use current date/user
+        const currentDate = new Date();
+        const dateStr = currentDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + currentDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+        footerText = `Created: ${dateStr} - by ${userEmail}`;
+    }
 
     // Helper function to add footer to current page
     const addFooter = () => {
