@@ -374,6 +374,9 @@ async function handleSignOut() {
 
     showToast('Signed out successfully', 'success');
 
+    // Explicitly update UI to signed-out state
+    updateUIForAuthState(null);
+
     // Reload defaults from localStorage
     await loadDefaultsFromSource();
 }
@@ -645,10 +648,8 @@ function attachEventListeners() {
     document.getElementById('shareViaEmailBtn').addEventListener('click', shareViaEmail);
     document.getElementById('shareViaCopyBtn').addEventListener('click', copyToClipboard);
     document.getElementById('shareViaLinkBtn').addEventListener('click', copyShareableLink);
-    document.getElementById('shareViaQRBtn').addEventListener('click', generateShareQR);
-    document.getElementById('shareViaPDFBtn').addEventListener('click', exportToPDFFromShare);
     document.getElementById('shareViaNativeBtn').addEventListener('click', shareViaNative);
-    document.getElementById('hideQRBtn').addEventListener('click', hideQRCode);
+    document.getElementById('exportPDFButton').addEventListener('click', exportToPDF);
 
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
@@ -1276,22 +1277,16 @@ function openEnhancedShareModal() {
 
     // Show/hide authenticated-only options
     const linkBtn = document.getElementById('shareViaLinkBtn');
-    const qrBtn = document.getElementById('shareViaQRBtn');
 
-    // Show shareable link and QR options for all authenticated users
-    // The individual functions will handle the "save first" prompt if needed
+    // Show shareable link option for authenticated users
+    // The function will handle the "save first" prompt if needed
     if (linkBtn) linkBtn.style.display = userAuthenticated ? 'flex' : 'none';
-    if (qrBtn) qrBtn.style.display = userAuthenticated ? 'flex' : 'none';
 
     // Check if Web Share API is available (mobile devices)
     if (navigator.share) {
         const nativeBtn = document.getElementById('shareViaNativeBtn');
         if (nativeBtn) nativeBtn.style.display = 'flex';
     }
-
-    // Hide QR code container if it was previously shown
-    const qrContainer = document.getElementById('qrCodeContainer');
-    if (qrContainer) qrContainer.style.display = 'none';
 
     openModal('enhancedShareModal');
 }
@@ -1332,55 +1327,6 @@ async function shareViaNative() {
     }
 }
 
-// Generate QR code for shareable link
-async function generateShareQR() {
-    if (!state.currentEstimateId) {
-        showToast('Please save the estimate first', 'error');
-        return;
-    }
-
-    try {
-        // Create or get share link
-        const { shareToken, error } = await createEstimateShare(state.currentEstimateId, state.currentEstimateName);
-
-        if (error) {
-            showToast('Failed to create share link: ' + error.message, 'error');
-            return;
-        }
-
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
-
-        // Show QR container
-        const qrContainer = document.getElementById('qrCodeContainer');
-        const qrCodeDiv = document.getElementById('qrCode');
-
-        // Clear previous QR code
-        qrCodeDiv.innerHTML = '';
-
-        // Generate QR code
-        new QRCode(qrCodeDiv, {
-            text: shareUrl,
-            width: 256,
-            height: 256,
-            colorDark: '#0f172a',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        qrContainer.style.display = 'block';
-        showToast('QR code generated!', 'success');
-    } catch (err) {
-        console.error('Failed to generate QR code:', err);
-        showToast('Failed to generate QR code', 'error');
-    }
-}
-
-// Hide QR code
-function hideQRCode() {
-    const qrContainer = document.getElementById('qrCodeContainer');
-    if (qrContainer) qrContainer.style.display = 'none';
-}
-
 // Copy shareable link to clipboard
 async function copyShareableLink() {
     if (!state.currentEstimateId) {
@@ -1404,15 +1350,6 @@ async function copyShareableLink() {
         console.error('Failed to copy link:', err);
         showToast('Failed to copy link', 'error');
     }
-}
-
-// Export to PDF from share modal (closes share modal first)
-function exportToPDFFromShare() {
-    closeModal('enhancedShareModal');
-    // Small delay to allow modal close animation to start
-    setTimeout(() => {
-        exportToPDF();
-    }, 100);
 }
 
 // ===========================

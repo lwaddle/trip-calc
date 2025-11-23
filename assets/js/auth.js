@@ -86,7 +86,22 @@ export async function signIn(email, password) {
  */
 export async function signOut() {
   try {
+    // Check if there's a session to sign out from
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // If no session exists, treat as successful sign out (already signed out)
+    if (!session) {
+      currentUser = null;
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signOut();
+
+    // Treat "auth session missing" errors as success (already signed out)
+    if (error && error.message && error.message.toLowerCase().includes('session')) {
+      currentUser = null;
+      return { error: null };
+    }
 
     if (error) {
       return { error };
@@ -95,6 +110,11 @@ export async function signOut() {
     currentUser = null;
     return { error: null };
   } catch (error) {
+    // If it's a session-related error, treat as success
+    if (error.message && error.message.toLowerCase().includes('session')) {
+      currentUser = null;
+      return { error: null };
+    }
     return { error };
   }
 }
