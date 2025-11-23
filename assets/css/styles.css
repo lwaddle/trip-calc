@@ -1437,6 +1437,11 @@ body.share-view-mode .header-menu {
     display: none;
 }
 
+/* Make header non-sticky in share view mode */
+body.share-view-mode .header {
+    position: static;
+}
+
 /* Share View Header */
 .share-view-header {
     text-align: center;
@@ -1449,7 +1454,7 @@ body.share-view-mode .header-menu {
 
 .share-view-title {
     font-family: var(--font-heading);
-    font-size: 2.0rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--color-text);
     margin: 0 0 var(--spacing-sm) 0;
@@ -1585,6 +1590,10 @@ body.share-view-mode .header-menu {
 
 /* Responsive adjustments for share view */
 @media (max-width: 768px) {
+    .share-view-title {
+        font-size: 1.4rem;
+    }
+
     .share-header h2 {
         font-size: 1.5rem;
     }
