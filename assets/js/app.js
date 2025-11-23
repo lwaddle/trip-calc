@@ -2584,9 +2584,11 @@ function formatEstimateHTML(estimate) {
 
     // Crew Subtotal
     if (estimate.crewSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
         html += '<div class="estimate-subtotal major">';
         html += `<span class="subtotal-label">Crew Subtotal</span>`;
         html += `<span class="subtotal-value">$${formatCurrency(estimate.crewSubtotal)}</span>`;
+        html += '</div>';
         html += '</div>';
     }
 
