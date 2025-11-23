@@ -2154,12 +2154,15 @@ function enableShareViewMode(estimateData, shareToken) {
     // Add body class for share view mode
     document.body.classList.add('share-view-mode');
 
-    // Update h1 heading
-    document.getElementById('mainHeading').textContent = 'Trip Cost Estimate';
+    // Hide the main heading (we have one in share view now)
+    document.getElementById('mainHeading').style.display = 'none';
 
     // Hide normal view, show share view
     document.getElementById('normalView').style.display = 'none';
     document.getElementById('shareView').style.display = 'block';
+
+    // Update the metadata display
+    updateShareViewMetadata(estimateData);
 
     // Load estimate data into the form (in background, for PDF export)
     loadEstimateAction(estimateData);
@@ -2173,6 +2176,37 @@ function enableShareViewMode(estimateData, shareToken) {
 
     // Set up share view event listeners
     setupShareViewEventListeners();
+}
+
+// Update share view metadata display
+function updateShareViewMetadata(estimateData) {
+    const metaElement = document.getElementById('shareViewMeta');
+
+    // Determine if this estimate has been updated
+    const createdAt = new Date(estimateData.created_at);
+    const updatedAt = new Date(estimateData.updated_at);
+    const hasBeenUpdated = updatedAt > createdAt;
+
+    // Use updated_at if it exists and is different from created_at, otherwise use created_at
+    const displayDate = hasBeenUpdated ? updatedAt : createdAt;
+    const label = hasBeenUpdated ? 'Last updated' : 'Created';
+
+    const formattedDate = displayDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    const formattedTime = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    // Get creator info (email or "Guest")
+    const creatorInfo = estimateData.creator_email || 'Guest';
+
+    // Update the meta display
+    metaElement.textContent = `${label}: ${formattedDate} at ${formattedTime} by ${creatorInfo}`;
 }
 
 // Set up event listeners for share view mode

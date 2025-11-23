@@ -4,7 +4,7 @@
  */
 
 import { supabase } from './supabase.js';
-import { getUserId } from './auth.js';
+import { getUserId, getUserEmail } from './auth.js';
 
 // ============================================================================
 // USER DEFAULTS
@@ -94,12 +94,15 @@ export async function saveEstimate(name, estimateData) {
       return { data: null, error: new Error('User not authenticated') };
     }
 
+    const userEmail = getUserEmail();
+
     const { data, error } = await supabase
       .from('estimates')
       .insert({
         user_id: userId,
         name,
-        estimate_data: estimateData
+        estimate_data: estimateData,
+        creator_email: userEmail
       })
       .select()
       .single();
@@ -299,7 +302,10 @@ export async function loadSharedEstimate(shareToken) {
           id,
           name,
           estimate_data,
-          created_at
+          created_at,
+          updated_at,
+          user_id,
+          creator_email
         )
       `)
       .eq('share_token', shareToken)
@@ -313,7 +319,15 @@ export async function loadSharedEstimate(shareToken) {
       return { data: null, error: new Error('Shared estimate not found') };
     }
 
-    return { data: shareData.estimates, error: null };
+    const estimate = shareData.estimates;
+
+    // Try to fetch the creator's email using Supabase auth admin
+    // Note: This requires the user_id to email mapping
+    // Since we can't query auth.users directly due to RLS,
+    // we'll use the RPC function or store email in estimates table
+    // For now, we'll rely on the email being available through other means
+
+    return { data: estimate, error: null };
   } catch (error) {
     return { data: null, error };
   }

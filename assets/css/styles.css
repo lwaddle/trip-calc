@@ -1435,6 +1435,31 @@ body.share-view-mode .header-menu {
     display: none;
 }
 
+/* Share View Header */
+.share-view-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-xl);
+    background: var(--color-bg-alt);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+
+.share-view-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.share-view-meta {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    font-weight: 500;
+}
+
 .share-header {
     text-align: center;
     margin-bottom: var(--spacing-2xl);
