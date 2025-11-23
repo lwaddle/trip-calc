@@ -2385,9 +2385,10 @@ function updateShareViewMetadata(estimateData) {
     const filenameElement = document.getElementById('shareViewFilename');
     const metaElement = document.getElementById('shareViewMeta');
 
-    // Update the filename display
+    // Update the filename display and HTML title
     if (estimateData.name) {
         filenameElement.textContent = estimateData.name;
+        document.title = `Trip Cost Calculator - ${estimateData.name}`;
     }
 
     // Determine if this estimate has been updated
