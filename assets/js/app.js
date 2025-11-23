@@ -178,26 +178,34 @@ async function initializeApp() {
 
         // Handle password recovery event (backup in case event does fire)
         if (event === 'PASSWORD_RECOVERY') {
-            // PASSWORD_RECOVERY event only fires in the tab that has the recovery URL
-            // Other tabs receive SIGNED_IN event instead when session syncs via localStorage
-            localStorage.setItem('passwordRecoveryInProgress', 'true');
-            // Open the password reset modal
-            openModal('updatePasswordModal');
+            // PASSWORD_RECOVERY event should only fire in the tab that has the recovery URL
+            // However, as a safety measure, only open the modal if this tab detected the recovery hash
+            // This prevents the modal from opening in other tabs if Supabase syncs the event
+            if (sessionStorage.getItem('pendingPasswordRecovery') === 'true') {
+                sessionStorage.removeItem('pendingPasswordRecovery');
+                localStorage.setItem('passwordRecoveryInProgress', 'true');
+                // Open the password reset modal
+                openModal('updatePasswordModal');
 
-            // Aggressive focus strategy - try everything to bring this tab forward
-            window.focus();
-            setTimeout(() => {
+                // Aggressive focus strategy - try everything to bring this tab forward
                 window.focus();
-                document.getElementById('newPassword')?.focus();
-            }, 50);
-            setTimeout(() => {
-                window.focus();
-                document.getElementById('newPassword')?.focus();
-            }, 150);
-            setTimeout(() => {
-                document.getElementById('newPassword')?.focus();
-                window.focus();
-            }, 300);
+                setTimeout(() => {
+                    window.focus();
+                    document.getElementById('newPassword')?.focus();
+                }, 50);
+                setTimeout(() => {
+                    window.focus();
+                    document.getElementById('newPassword')?.focus();
+                }, 150);
+                setTimeout(() => {
+                    document.getElementById('newPassword')?.focus();
+                    window.focus();
+                }, 300);
+            } else {
+                // This tab received PASSWORD_RECOVERY but wasn't the tab with the hash
+                // Just set the flag to suppress signed-in UI, but don't open the modal
+                localStorage.setItem('passwordRecoveryInProgress', 'true');
+            }
         }
     });
 
