@@ -357,6 +357,11 @@ async function handleSignIn(e) {
 
     // Reload defaults from Supabase
     await loadDefaultsFromSource();
+
+    // If we're in share view mode, save the estimate to the user's account
+    if (window.shareViewToken && window.shareViewData) {
+        await handleShareViewSaveEstimate();
+    }
 }
 
 async function handleSignOut() {
@@ -2199,30 +2204,80 @@ async function checkForSharedEstimate() {
         return;
     }
 
-    // Ask user if they want to load it or copy it
-    if (isAuthenticated()) {
-        const action = confirm('Would you like to save this shared estimate to your account?\n\nOK = Save to account\nCancel = Just view it');
+    // Enable share view mode
+    enableShareViewMode(data, shareToken);
+}
 
-        if (action) {
-            // Copy to user's account
-            const { error: copyError } = await copySharedEstimate(shareToken);
-            if (copyError) {
-                showToast('Failed to save estimate: ' + copyError.message, 'error');
-                return;
-            }
-            showToast('Shared estimate saved to your account!', 'success');
-        } else {
-            // Just load it for viewing
-            loadEstimateAction(data);
+// Enable share view mode with read-only presentation
+function enableShareViewMode(estimateData, shareToken) {
+    // Store the share token and estimate data for later use
+    window.shareViewToken = shareToken;
+    window.shareViewData = estimateData;
+
+    // Add body class for share view mode
+    document.body.classList.add('share-view-mode');
+
+    // Hide normal view, show share view
+    document.getElementById('normalView').style.display = 'none';
+    document.getElementById('shareView').style.display = 'block';
+
+    // Load estimate data into the form (in background, for PDF export)
+    loadEstimateAction(estimateData);
+
+    // Update the share view display
+    const estimateDisplay = document.getElementById('shareEstimateDisplay');
+    const tripEstimate = document.getElementById('tripEstimate');
+    estimateDisplay.textContent = tripEstimate.textContent;
+
+    // Set up share view event listeners
+    setupShareViewEventListeners();
+}
+
+// Set up event listeners for share view mode
+function setupShareViewEventListeners() {
+    // Export to PDF button
+    const exportBtn = document.getElementById('shareExportPDF');
+    exportBtn.addEventListener('click', () => {
+        exportToPDF();
+    });
+
+    // Sign in button
+    const signInBtn = document.getElementById('shareSignInButton');
+    signInBtn.addEventListener('click', () => {
+        openModal('signInModal');
+    });
+
+    // Create own estimate link
+    const createOwnLink = document.getElementById('createOwnEstimateLink');
+    createOwnLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+    });
+}
+
+// Handle saving shared estimate after user signs in
+async function handleShareViewSaveEstimate() {
+    const action = confirm('Would you like to save this estimate to your account?');
+
+    if (action) {
+        // Copy the shared estimate to user's account
+        const { error: copyError } = await copySharedEstimate(window.shareViewToken);
+
+        if (copyError) {
+            showToast('Failed to save estimate: ' + copyError.message, 'error');
+            return;
         }
-    } else {
-        // Anonymous user - just load it
-        loadEstimateAction(data);
-        showToast('Viewing shared estimate. Sign in to save it to your account.', 'info');
-    }
 
-    // Remove share token from URL
-    window.history.replaceState({}, document.title, window.location.pathname);
+        showToast('Estimate saved to your account!', 'success');
+
+        // Ask if they want to switch to editing mode
+        const switchToEdit = confirm('Would you like to edit this estimate now?');
+
+        if (switchToEdit) {
+            // Redirect to normal view (removes share parameter)
+            window.location.href = '/';
+        }
+    }
 }
 
 function getFormData() {
