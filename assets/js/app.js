@@ -22,6 +22,24 @@ if (window.location.hash.includes('type=recovery')) {
 }
 
 // ===========================
+// Early Share View Detection
+// ===========================
+// Detect share view BEFORE DOM renders to prevent flash
+// This must run immediately to set the proper initial state
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareToken = urlParams.get('share');
+
+    if (shareToken) {
+        // Mark as share mode - will be used later to determine when to remove loading class
+        document.documentElement.setAttribute('data-share-mode', 'true');
+    } else {
+        // Normal mode - mark for early removal of loading class
+        document.documentElement.setAttribute('data-share-mode', 'false');
+    }
+})();
+
+// ===========================
 // App State
 // ===========================
 const state = {
@@ -220,6 +238,11 @@ async function initializeApp() {
 
     // Check for shared estimate in URL
     await checkForSharedEstimate();
+
+    // Remove loading class for normal view (share view removes it in enableShareViewMode)
+    if (document.documentElement.getAttribute('data-share-mode') === 'false') {
+        document.body.classList.remove('initial-load');
+    }
 }
 
 // ===========================
@@ -2352,6 +2375,9 @@ function enableShareViewMode(estimateData, shareToken) {
 
     // Set up share view event listeners
     setupShareViewEventListeners();
+
+    // Remove loading class now that share view is ready
+    document.body.classList.remove('initial-load');
 }
 
 // Update share view metadata display
