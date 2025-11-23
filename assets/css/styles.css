@@ -1705,7 +1705,7 @@ body.share-view-mode .header {
 .estimate-note {
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--color-bg);
-    border-left: 3px solid var(--color-primary);
+    border-left: 3px solid #3b82f6;
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     margin-top: var(--spacing-md);
@@ -1850,10 +1850,10 @@ body.share-view-mode .header {
     }
 
     .estimate-subsection-title {
-        font-size: 1.125rem;
+        font-size: 1.05rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.025em;
+        letter-spacing: 0;
         margin-bottom: 0.75rem;
     }
 

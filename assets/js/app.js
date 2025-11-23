@@ -1257,7 +1257,8 @@ function calculateEstimate() {
         includeAPU,
         apuBurn,
         totalAPUFuel,
-        activeLegsCount
+        activeLegsCount,
+        fuelDensity
     };
 }
 
@@ -1275,7 +1276,8 @@ function formatEstimate(estimate) {
     output += `\nTotal Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m\n`;
     output += `Total Fuel Used: ${estimate.totalFuelGallons.toFixed(0)} gallons\n`;
     if (estimate.includeAPU && estimate.activeLegsCount > 0) {
-        output += `  (Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
+        const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+        output += `  (Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
     }
 
     output += '\n\nESTIMATE\n';
@@ -1690,7 +1692,8 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             checkPageBreak(6);
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);
-            doc.text(`(Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
+            const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+            doc.text(`(Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
             yPos += 6;
         }
     }
@@ -2226,7 +2229,7 @@ async function populateLoadEstimateModal() {
     });
 }
 
-function loadEstimateAction(estimate) {
+function loadEstimateAction(estimate, options = {}) {
     // Clear existing
     state.legs = [];
     state.crew = [];
@@ -2259,7 +2262,11 @@ function loadEstimateAction(estimate) {
 
     closeModal('loadEstimateModal');
     updateEstimate();
-    showToast('Estimate loaded successfully', 'success');
+
+    // Only show toast if not suppressed (e.g., in share view mode)
+    if (!options.suppressToast) {
+        showToast('Estimate loaded successfully', 'success');
+    }
 }
 
 async function deleteEstimateAction(estimate) {
@@ -2364,7 +2371,7 @@ function enableShareViewMode(estimateData, shareToken) {
     updateShareViewMetadata(estimateData);
 
     // Load estimate data into the form (in background, for PDF export)
-    loadEstimateAction(estimateData);
+    loadEstimateAction(estimateData, { suppressToast: true });
 
     // Calculate and format the estimate
     const estimate = calculateEstimate();
@@ -2505,7 +2512,8 @@ function formatEstimateHTML(estimate) {
     html += '</div>';
     if (estimate.includeAPU && estimate.activeLegsCount > 0) {
         html += '<div class="estimate-note">';
-        html += `Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
+        const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+        html += `Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
         html += '</div>';
     }
     html += '</div>';
