@@ -1469,32 +1469,39 @@ async function shareViaNative() {
 }
 
 // Copy shareable link to clipboard
-function copyShareableLink() {
+async function copyShareableLink() {
     if (!state.currentEstimateId) {
         showToast('Please save the estimate first', 'error');
         return;
     }
 
-    // Start share creation and clipboard write in a way that maintains user gesture for Safari
-    createEstimateShare(state.currentEstimateId, state.currentEstimateName)
-        .then(({ shareToken, error }) => {
-            if (error) {
-                showToast('Failed to create share link: ' + error.message, 'error');
-                return Promise.reject(error);
-            }
+    // Show loading state
+    showToast('Creating share link...', 'success');
 
-            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+    // Create share link
+    const { shareToken, error } = await createEstimateShare(
+        state.currentEstimateId,
+        state.currentEstimateName
+    );
 
-            // Call clipboard API within the promise chain to maintain user gesture in Safari
-            return navigator.clipboard.writeText(shareUrl);
-        })
-        .then(() => {
-            showToast('Shareable link copied to clipboard!', 'success');
-        })
-        .catch(err => {
-            console.error('Failed to copy link:', err);
-            showToast('Failed to copy link', 'error');
-        });
+    if (error) {
+        showToast('Failed to create share link: ' + error.message, 'error');
+        return;
+    }
+
+    // Display share link in modal (works reliably in Safari)
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+    document.getElementById('shareLink').value = shareUrl;
+
+    // Show success message
+    const successDiv = document.getElementById('shareSuccess');
+    successDiv.textContent = 'Share link created! Click "Copy" to copy to clipboard.';
+    successDiv.style.display = 'block';
+    document.getElementById('shareError').style.display = 'none';
+
+    // Close enhanced share modal and open share estimate modal
+    closeModal('enhancedShareModal');
+    openModal('shareEstimateModal');
 }
 
 // ===========================
