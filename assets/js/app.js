@@ -1267,7 +1267,7 @@ function copyToClipboard() {
 // Open the enhanced share modal
 function openEnhancedShareModal() {
     // Check if user is authenticated to show link/QR options
-    const isAuthenticated = window.supabaseClient && currentUser;
+    const userAuthenticated = isAuthenticated();
 
     // Show/hide authenticated-only options
     const linkBtn = document.getElementById('shareViaLinkBtn');
@@ -1275,8 +1275,8 @@ function openEnhancedShareModal() {
 
     // Show shareable link and QR options for all authenticated users
     // The individual functions will handle the "save first" prompt if needed
-    if (linkBtn) linkBtn.style.display = isAuthenticated ? 'flex' : 'none';
-    if (qrBtn) qrBtn.style.display = isAuthenticated ? 'flex' : 'none';
+    if (linkBtn) linkBtn.style.display = userAuthenticated ? 'flex' : 'none';
+    if (qrBtn) qrBtn.style.display = userAuthenticated ? 'flex' : 'none';
 
     // Check if Web Share API is available (mobile devices)
     if (navigator.share) {
@@ -1329,14 +1329,20 @@ async function shareViaNative() {
 
 // Generate QR code for shareable link
 async function generateShareQR() {
-    if (!currentEstimateId) {
+    if (!state.currentEstimateId) {
         showToast('Please save the estimate first', 'error');
         return;
     }
 
     try {
         // Create or get share link
-        const shareToken = await createEstimateShare(currentEstimateId);
+        const { shareToken, error } = await createEstimateShare(state.currentEstimateId, state.currentEstimateName);
+
+        if (error) {
+            showToast('Failed to create share link: ' + error.message, 'error');
+            return;
+        }
+
         const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
 
         // Show QR container
@@ -1372,13 +1378,19 @@ function hideQRCode() {
 
 // Copy shareable link to clipboard
 async function copyShareableLink() {
-    if (!currentEstimateId) {
+    if (!state.currentEstimateId) {
         showToast('Please save the estimate first', 'error');
         return;
     }
 
     try {
-        const shareToken = await createEstimateShare(currentEstimateId);
+        const { shareToken, error } = await createEstimateShare(state.currentEstimateId, state.currentEstimateName);
+
+        if (error) {
+            showToast('Failed to create share link: ' + error.message, 'error');
+            return;
+        }
+
         const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
 
         await navigator.clipboard.writeText(shareUrl);
