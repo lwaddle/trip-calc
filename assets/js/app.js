@@ -1341,24 +1341,57 @@ function shareViaEmail() {
 
 // Share via Web Share API (native mobile sharing)
 async function shareViaNative() {
-    const estimateText = document.getElementById('tripEstimate').textContent;
-
     if (!navigator.share) {
         showToast('Native sharing not supported on this device', 'error');
         return;
     }
 
-    try {
-        await navigator.share({
-            title: 'Trip Cost Estimate',
-            text: estimateText
-        });
-        showToast('Shared successfully!', 'success');
-    } catch (err) {
-        // User cancelled or sharing failed
-        if (err.name !== 'AbortError') {
-            console.error('Share failed:', err);
-            showToast('Failed to share', 'error');
+    // Smart sharing: Share link if estimate is saved, otherwise share text
+    if (state.currentEstimateId) {
+        // Estimate is saved - share the link
+        try {
+            const { shareToken, error } = await createEstimateShare(
+                state.currentEstimateId,
+                state.currentEstimateName
+            );
+
+            if (error) {
+                showToast('Failed to create share link: ' + error.message, 'error');
+                return;
+            }
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                url: shareUrl
+            });
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or sharing failed
+            if (err.name !== 'AbortError') {
+                console.error('Share failed:', err);
+                showToast('Failed to share', 'error');
+            }
+        }
+    } else {
+        // Estimate is not saved - share as text
+        const estimateText = document.getElementById('tripEstimate').textContent;
+        // Remove the title from the text since we're passing it separately
+        const textWithoutTitle = estimateText.replace(/^Trip Cost Estimate\n\n/, '\n');
+
+        try {
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                text: textWithoutTitle
+            });
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or sharing failed
+            if (err.name !== 'AbortError') {
+                console.error('Share failed:', err);
+                showToast('Failed to share', 'error');
+            }
         }
     }
 }
@@ -2636,13 +2669,13 @@ function setupClientShareModal() {
             return;
         }
 
-        const estimate = calculateEstimate();
-        const estimateText = formatEstimate(estimate);
+        // In client share view, we always have a share token, so share the link
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${window.shareViewToken}`;
 
         try {
             await navigator.share({
                 title: 'Trip Cost Estimate',
-                text: estimateText
+                url: shareUrl
             });
             closeModal('clientShareModal');
             showToast('Shared successfully!', 'success');
