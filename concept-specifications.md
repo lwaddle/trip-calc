@@ -100,7 +100,7 @@ Other rules:
 - **Other ($/day/person)**  
 All must be positive dollar amounts.
 
-#### 3.3 Total Trip Expenses
+#### 3.3 Flat Rate Expenses
 - **Rental Car ($)**
 - **Airfare ($)**
 - **Mileage ($)**  
