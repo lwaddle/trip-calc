@@ -501,7 +501,10 @@ function attachEventListeners() {
     // Auth tip sign-in link
     const authTipSignIn = document.getElementById('authTipSignIn');
     if (authTipSignIn) {
-        authTipSignIn.addEventListener('click', () => openModal('signInModal'));
+        authTipSignIn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('signInModal');
+        });
     }
 
     // Desktop nav
