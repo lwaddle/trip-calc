@@ -5,6 +5,9 @@ export default defineConfig({
   // Serve files from root directory
   root: './',
 
+  // Public directory for static assets
+  publicDir: 'assets',
+
   // Build output directory
   build: {
     outDir: 'dist',

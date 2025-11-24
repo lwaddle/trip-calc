@@ -11,11 +11,16 @@ export async function onRequest(context) {
 
   // If no share parameter, serve index.html for SPA routing
   if (!shareToken) {
-    const indexUrl = new URL('/index.html', url.origin);
-    return context.env.ASSETS.fetch(indexUrl.toString());
+    return context.env.ASSETS.fetch(context.request);
   }
 
   try {
+    // Validate environment variables
+    if (!context.env.SUPABASE_URL || !context.env.SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return context.env.ASSETS.fetch(context.request);
+    }
+
     // Fetch estimate name from Supabase
     const estimateName = await fetchEstimateNameFromSupabase(
       shareToken,
@@ -23,18 +28,21 @@ export async function onRequest(context) {
       context.env.SUPABASE_ANON_KEY
     );
 
-    // Fetch the base HTML (index.html)
-    const indexUrl = new URL('/index.html', url.origin);
-    const response = await context.env.ASSETS.fetch(indexUrl.toString());
+    // Fetch the base HTML using the original request
+    const response = await context.env.ASSETS.fetch(context.request);
 
-    // If estimate not found or error, return original HTML
+    // If estimate not found, return original HTML
     if (!estimateName) {
+      console.warn('No estimate name found for token:', shareToken);
       return response;
     }
 
-    // Generate dynamic title
+    // Generate dynamic title and URLs
     const dynamicTitle = `Trip Cost Estimate - ${estimateName}`;
     const dynamicUrl = url.toString();
+    const dynamicImageUrl = `${url.origin}/img/og-image.jpg`;
+
+    console.log('Injecting dynamic metadata:', dynamicTitle);
 
     // Use HTMLRewriter to inject dynamic metadata
     return new HTMLRewriter()
@@ -63,13 +71,22 @@ export async function onRequest(context) {
           el.setAttribute('content', dynamicUrl);
         }
       })
+      .on('meta[property="og:image"]', {
+        element(el) {
+          el.setAttribute('content', dynamicImageUrl);
+        }
+      })
+      .on('meta[name="twitter:image"]', {
+        element(el) {
+          el.setAttribute('content', dynamicImageUrl);
+        }
+      })
       .transform(response);
 
   } catch (error) {
     // On any error, fallback to serving index.html
     console.error('Error generating dynamic metadata:', error);
-    const indexUrl = new URL('/index.html', url.origin);
-    return context.env.ASSETS.fetch(indexUrl.toString());
+    return context.env.ASSETS.fetch(context.request);
   }
 }
 
@@ -83,29 +100,32 @@ export async function onRequest(context) {
  */
 async function fetchEstimateNameFromSupabase(shareToken, supabaseUrl, supabaseKey) {
   try {
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/estimate_shares?share_token=eq.${shareToken}&select=share_name`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
+    const fetchUrl = `${supabaseUrl}/rest/v1/estimate_shares?share_token=eq.${shareToken}&select=share_name`;
+
+    console.log('Fetching from Supabase for token:', shareToken);
+
+    const response = await fetch(fetchUrl, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
       }
-    );
+    });
 
     if (!response.ok) {
-      console.error('Supabase query failed:', response.status);
+      console.error('Supabase query failed:', response.status, await response.text());
       return null;
     }
 
     const data = await response.json();
+    console.log('Supabase response:', JSON.stringify(data));
 
     // Check if we got a result
     if (data && data.length > 0 && data[0].share_name) {
       return data[0].share_name;
     }
 
+    console.warn('No share_name in response');
     return null;
 
   } catch (error) {
