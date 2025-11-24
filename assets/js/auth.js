@@ -18,6 +18,35 @@ let currentUser = null;
 const authStateCallbacks = [];
 
 /**
+ * Helper function to clear Supabase auth data from localStorage
+ * This is especially important for Safari which may not clear reliably
+ */
+function clearSupabaseStorage() {
+  try {
+    const keysToRemove = [];
+
+    // Find all Supabase auth keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.includes('supabase.auth'))) {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all found keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+
+    if (keysToRemove.length > 0) {
+      console.log('Cleared Supabase auth keys:', keysToRemove);
+    }
+  } catch (error) {
+    console.error('Error clearing Supabase storage:', error);
+  }
+}
+
+/**
  * Initialize authentication
  * Sets up auth state listener and checks for existing session
  */
@@ -44,6 +73,12 @@ export async function initAuth() {
         currentUser = session.user;
       } else {
         currentUser = null;
+
+        // Defensively clear storage on sign out events
+        // This handles cases where signOut() may not have been called directly
+        if (event === 'SIGNED_OUT') {
+          clearSupabaseStorage();
+        }
       }
 
       notifyAuthStateChange(currentUser, event);
@@ -92,6 +127,8 @@ export async function signOut() {
     // If no session exists, treat as successful sign out (already signed out)
     if (!session) {
       currentUser = null;
+      // Defensively clear any lingering Supabase auth data
+      clearSupabaseStorage();
       return { error: null };
     }
 
@@ -100,6 +137,7 @@ export async function signOut() {
     // Treat "auth session missing" errors as success (already signed out)
     if (error && error.message && error.message.toLowerCase().includes('session')) {
       currentUser = null;
+      clearSupabaseStorage();
       return { error: null };
     }
 
@@ -108,11 +146,24 @@ export async function signOut() {
     }
 
     currentUser = null;
+
+    // Explicitly clear Supabase auth data from localStorage
+    // This is especially important for Safari which may not clear reliably
+    clearSupabaseStorage();
+
+    // Verify session is actually cleared
+    const { data: { session: verifySession } } = await supabase.auth.getSession();
+    if (verifySession) {
+      console.warn('Session still exists after signOut, forcing clear');
+      clearSupabaseStorage();
+    }
+
     return { error: null };
   } catch (error) {
     // If it's a session-related error, treat as success
     if (error.message && error.message.toLowerCase().includes('session')) {
       currentUser = null;
+      clearSupabaseStorage();
       return { error: null };
     }
     return { error };
