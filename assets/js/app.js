@@ -225,6 +225,13 @@ async function initializeApp() {
                 localStorage.setItem('passwordRecoveryInProgress', 'true');
             }
         }
+
+        // Handle import after sign-in from share view
+        const importIntent = sessionStorage.getItem('importAfterSignIn');
+        if (importIntent && user) {
+            sessionStorage.removeItem('importAfterSignIn');
+            handlePostSignInImport(importIntent);
+        }
     });
 
     // Load defaults (will use Supabase if authenticated, localStorage otherwise)
@@ -238,6 +245,18 @@ async function initializeApp() {
 
     // Check for shared estimate in URL
     await checkForSharedEstimate();
+
+    // Check for imported estimate to load (from post-sign-in import)
+    const importedEstimateJson = sessionStorage.getItem('loadImportedEstimate');
+    if (importedEstimateJson && document.documentElement.getAttribute('data-share-mode') === 'false') {
+        try {
+            sessionStorage.removeItem('loadImportedEstimate');
+            const importedEstimate = JSON.parse(importedEstimateJson);
+            loadEstimateAction(importedEstimate, { suppressToast: false });
+        } catch (error) {
+            console.error('Error loading imported estimate:', error);
+        }
+    }
 
     // Remove loading class for normal view (share view removes it in enableShareViewMode)
     if (document.documentElement.getAttribute('data-share-mode') === 'false') {
@@ -375,6 +394,12 @@ async function handleSignIn(e) {
 
     // Success - reload the page to trigger password manager prompt
     // This gives Safari (and other browsers) the signal to save credentials
+
+    // If user is signing in from share view, store intent to import estimate
+    if (window.shareViewToken) {
+        sessionStorage.setItem('importAfterSignIn', window.shareViewToken);
+    }
+
     window.location.reload();
 }
 
@@ -2468,6 +2493,33 @@ function setupShareViewEventListeners() {
 
     // Client share modal handlers
     setupClientShareModal();
+}
+
+// Handle importing estimate after sign-in from share view
+async function handlePostSignInImport(shareToken) {
+    try {
+        // Copy the shared estimate to user's account
+        const { data: savedEstimate, error: copyError } = await copySharedEstimate(shareToken);
+
+        if (copyError) {
+            showToast('Failed to import estimate: ' + copyError.message, 'error');
+            // Remove share parameter and redirect to home
+            window.location.href = '/';
+            return;
+        }
+
+        showToast('Estimate imported successfully! You can now edit and save it.', 'success');
+
+        // Store the full estimate object to load after redirect
+        sessionStorage.setItem('loadImportedEstimate', JSON.stringify(savedEstimate));
+
+        // Redirect to normal view (removes share parameter)
+        window.location.href = '/';
+    } catch (error) {
+        console.error('Error importing estimate:', error);
+        showToast('Failed to import estimate', 'error');
+        window.location.href = '/';
+    }
 }
 
 // Handle saving shared estimate after user signs in
