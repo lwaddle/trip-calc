@@ -21,6 +21,7 @@ export default defineConfig({
           writeBundle() {
             copyFileSync('_headers', 'dist/_headers');
             copyFileSync('_redirects', 'dist/_redirects');
+            copyFileSync('_routes.json', 'dist/_routes.json');
           }
         }]
       }
