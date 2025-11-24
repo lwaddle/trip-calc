@@ -9,9 +9,10 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const shareToken = url.searchParams.get('share');
 
-  // If no share parameter, serve static file as-is
+  // If no share parameter, serve index.html for SPA routing
   if (!shareToken) {
-    return context.env.ASSETS.fetch(context.request);
+    const indexUrl = new URL('/index.html', url.origin);
+    return context.env.ASSETS.fetch(indexUrl.toString());
   }
 
   try {
@@ -22,8 +23,9 @@ export async function onRequest(context) {
       context.env.SUPABASE_ANON_KEY
     );
 
-    // Fetch the base HTML
-    const response = await context.env.ASSETS.fetch(context.request);
+    // Fetch the base HTML (index.html)
+    const indexUrl = new URL('/index.html', url.origin);
+    const response = await context.env.ASSETS.fetch(indexUrl.toString());
 
     // If estimate not found or error, return original HTML
     if (!estimateName) {
@@ -64,9 +66,10 @@ export async function onRequest(context) {
       .transform(response);
 
   } catch (error) {
-    // On any error, fallback to serving original static HTML
+    // On any error, fallback to serving index.html
     console.error('Error generating dynamic metadata:', error);
-    return context.env.ASSETS.fetch(context.request);
+    const indexUrl = new URL('/index.html', url.origin);
+    return context.env.ASSETS.fetch(indexUrl.toString());
   }
 }
 
