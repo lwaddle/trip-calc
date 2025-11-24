@@ -373,18 +373,9 @@ async function handleSignIn(e) {
         return;
     }
 
-    // Success
-    closeModal('signInModal');
-    document.getElementById('signInForm').reset();
-    showToast('Signed in successfully', 'success');
-
-    // Reload defaults from Supabase
-    await loadDefaultsFromSource();
-
-    // If we're in share view mode, save the estimate to the user's account
-    if (window.shareViewToken && window.shareViewData) {
-        await handleShareViewSaveEstimate();
-    }
+    // Success - reload the page to trigger password manager prompt
+    // This gives Safari (and other browsers) the signal to save credentials
+    window.location.reload();
 }
 
 async function handleSignOut() {
