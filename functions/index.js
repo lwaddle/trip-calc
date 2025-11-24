@@ -37,9 +37,10 @@ export async function onRequest(context) {
       return response;
     }
 
-    // Generate dynamic title
+    // Generate dynamic title and URLs
     const dynamicTitle = `Trip Cost Estimate - ${estimateName}`;
     const dynamicUrl = url.toString();
+    const dynamicImageUrl = `${url.origin}/img/og-image.jpg`;
 
     console.log('Injecting dynamic metadata:', dynamicTitle);
 
@@ -68,6 +69,16 @@ export async function onRequest(context) {
       .on('meta[name="twitter:url"]', {
         element(el) {
           el.setAttribute('content', dynamicUrl);
+        }
+      })
+      .on('meta[property="og:image"]', {
+        element(el) {
+          el.setAttribute('content', dynamicImageUrl);
+        }
+      })
+      .on('meta[name="twitter:image"]', {
+        element(el) {
+          el.setAttribute('content', dynamicImageUrl);
         }
       })
       .transform(response);
