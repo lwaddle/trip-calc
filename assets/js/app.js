@@ -2395,6 +2395,44 @@ function copyShareLink() {
         });
 }
 
+// Show error state when shared estimate cannot be loaded
+function showShareErrorState() {
+    // Hide the main heading
+    const mainHeading = document.getElementById('mainHeading');
+    if (mainHeading) mainHeading.style.display = 'none';
+
+    // Hide normal view, show share view
+    const normalView = document.getElementById('normalView');
+    const shareView = document.getElementById('shareView');
+    if (normalView) normalView.style.display = 'none';
+    if (shareView) shareView.style.display = 'block';
+
+    // Hide share content, show error state
+    const shareHeader = document.querySelector('.share-view-header');
+    const estimateDisplay = document.getElementById('shareEstimateDisplay');
+    const shareActions = document.querySelector('.share-actions');
+    const shareFooter = document.querySelector('.share-footer-link');
+    const errorState = document.getElementById('shareErrorState');
+
+    if (shareHeader) shareHeader.style.display = 'none';
+    if (estimateDisplay) estimateDisplay.style.display = 'none';
+    if (shareActions) shareActions.style.display = 'none';
+    if (shareFooter) shareFooter.style.display = 'none';
+    if (errorState) errorState.style.display = 'block';
+
+    // Remove loading class to stop the spinner
+    document.body.classList.remove('initial-load');
+
+    // Set up the "Create Your Own Estimate" button
+    const createButton = document.getElementById('createOwnEstimateButton');
+    if (createButton) {
+        createButton.addEventListener('click', () => {
+            // Redirect to home page (normal calculator view)
+            window.location.href = window.location.pathname;
+        });
+    }
+}
+
 // Check for shared estimate on page load
 async function checkForSharedEstimate() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -2406,7 +2444,7 @@ async function checkForSharedEstimate() {
     const { data, error } = await loadSharedEstimate(shareToken);
 
     if (error) {
-        showToast('Failed to load shared estimate: ' + error.message, 'error');
+        showShareErrorState();
         return;
     }
 
