@@ -68,6 +68,10 @@ function formatCurrency(amount) {
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatNumber(number, decimals = 0) {
+    return number.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
 // ===========================
 // Auth UI Management
 // ===========================
@@ -1298,14 +1302,14 @@ function formatEstimate(estimate) {
     let output = 'Trip Cost Estimate\n\nLEGS SUMMARY\n';
 
     estimate.legsSummary.forEach(leg => {
-        output += `Leg ${leg.index}: ${leg.from} - ${leg.to} ${leg.hours}h ${leg.minutes}m (${leg.gallons.toFixed(0)} gallons)\n`;
+        output += `Leg ${leg.index}: ${leg.from} - ${leg.to} ${leg.hours}h ${leg.minutes}m (${formatNumber(leg.gallons, 0)} gallons)\n`;
     });
 
     output += `\nTotal Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m\n`;
-    output += `Total Fuel Used: ${estimate.totalFuelGallons.toFixed(0)} gallons\n`;
+    output += `Total Fuel Used: ${formatNumber(estimate.totalFuelGallons, 0)} gallons\n`;
     if (estimate.includeAPU && estimate.activeLegsCount > 0) {
         const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
-        output += `  (Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
+        output += `  (Includes ${formatNumber(apuGallons, 0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
     }
 
     output += '\n\nESTIMATE\n';
@@ -1356,7 +1360,7 @@ function formatEstimate(estimate) {
 
     // Fuel
     output += `Fuel Subtotal: $${formatCurrency(estimate.fuelSubtotal)}\n`;
-    output += `  (${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)})\n`;
+    output += `  (${formatNumber(estimate.totalFuelGallons, 0)} gallons @ $${formatCurrency(estimate.fuelPrice)})\n`;
 
     // Airport & Ground
     if (estimate.airportSubtotal > 0) {
@@ -1713,7 +1717,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         estimate.legsSummary.forEach(leg => {
             checkPageBreak(6);
             const legText = `Leg ${leg.index}: ${leg.from} - ${leg.to}`;
-            const legDetails = `${leg.hours}h ${leg.minutes}m (${leg.gallons.toFixed(0)} gallons)`;
+            const legDetails = `${leg.hours}h ${leg.minutes}m (${formatNumber(leg.gallons, 0)} gallons)`;
             doc.text(legText, margin + 5, yPos);
             doc.text(legDetails, pageWidth - margin - doc.getTextWidth(legDetails), yPos);
             yPos += 6;
@@ -1724,7 +1728,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
         doc.setFont('helvetica', 'bold');
         doc.text(`Total Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m`, margin + 5, yPos);
         yPos += 6;
-        doc.text(`Total Fuel: ${estimate.totalFuelGallons.toFixed(0)} gallons`, margin + 5, yPos);
+        doc.text(`Total Fuel: ${formatNumber(estimate.totalFuelGallons, 0)} gallons`, margin + 5, yPos);
         yPos += 6;
 
         if (estimate.includeAPU && estimate.activeLegsCount > 0) {
@@ -1732,7 +1736,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);
             const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
-            doc.text(`(Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
+            doc.text(`(Includes ${formatNumber(apuGallons, 0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
             yPos += 6;
         }
     }
@@ -1880,7 +1884,7 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     yPos += 6;
 
     doc.setFont('helvetica', 'normal');
-    const fuelText = `${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)}`;
+    const fuelText = `${formatNumber(estimate.totalFuelGallons, 0)} gallons @ $${formatCurrency(estimate.fuelPrice)}`;
     const fuelCost = `$${formatCurrency(estimate.fuelSubtotal)}`;
     doc.text(fuelText, margin + 10, yPos);
     doc.text(fuelCost, pageWidth - margin - doc.getTextWidth(fuelCost), yPos);
@@ -2563,7 +2567,7 @@ function formatEstimateHTML(estimate) {
         html += `<div class="estimate-leg">`;
         html += `<span class="leg-route">${leg.from} → ${leg.to}</span>`;
         html += `<span class="leg-time">${leg.hours}h ${leg.minutes}m</span>`;
-        html += `<span class="leg-fuel">${leg.gallons.toFixed(0)} gal</span>`;
+        html += `<span class="leg-fuel">${formatNumber(leg.gallons, 0)} gal</span>`;
         html += `</div>`;
     });
     html += '</div>';
@@ -2574,12 +2578,12 @@ function formatEstimateHTML(estimate) {
     html += '</div>';
     html += '<div class="estimate-summary-row">';
     html += `<span class="summary-label">Total Fuel</span>`;
-    html += `<span class="summary-value">${estimate.totalFuelGallons.toFixed(0)} gallons</span>`;
+    html += `<span class="summary-value">${formatNumber(estimate.totalFuelGallons, 0)} gallons</span>`;
     html += '</div>';
     if (estimate.includeAPU && estimate.activeLegsCount > 0) {
         html += '<div class="estimate-note">';
         const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
-        html += `Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
+        html += `Includes ${formatNumber(apuGallons, 0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
         html += '</div>';
     }
     html += '</div>';
@@ -2691,7 +2695,7 @@ function formatEstimateHTML(estimate) {
     html += '<div class="estimate-subsection">';
     html += '<h3 class="estimate-subsection-title">Fuel</h3>';
     html += '<div class="estimate-line-item">';
-    html += `<span class="item-label">${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)}/gal</span>`;
+    html += `<span class="item-label">${formatNumber(estimate.totalFuelGallons, 0)} gallons @ $${formatCurrency(estimate.fuelPrice)}/gal</span>`;
     html += `<span class="item-value">$${formatCurrency(estimate.fuelSubtotal)}</span>`;
     html += '</div>';
     html += '<div class="estimate-subtotal major">';
