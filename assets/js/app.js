@@ -479,21 +479,20 @@ async function handlePasswordUpdate(e) {
     }
 
     // Success - sign out and require re-authentication for security
-    successDiv.textContent = 'Password updated successfully! Please sign in with your new password.';
+    successDiv.textContent = 'Password updated successfully! Refreshing...';
     successDiv.style.display = 'block';
     document.getElementById('updatePasswordForm').reset();
 
-    // Sign out after successful password update and open sign-in modal
+    // Sign out after successful password update and refresh page
+    // This allows password managers to detect and save the new password
     setTimeout(async () => {
-        closeModal('updatePasswordModal');
-        successDiv.style.display = 'none';
         localStorage.removeItem('passwordRecoveryInProgress');
 
         // Sign out to clear the recovery session
         await signOut();
 
-        // Open sign-in modal for user to authenticate with new password
-        openModal('signInModal');
+        // Refresh the page to trigger password manager save prompt
+        window.location.reload();
     }, 2000);
 }
 
@@ -847,6 +846,16 @@ function openModal(modalId) {
 
     // Lock scroll position for better mobile support
     document.body.style.top = `-${scrollPosition}px`;
+
+    // Set focus for sign-in modal
+    if (modalId === 'signInModal') {
+        setTimeout(() => {
+            const emailInput = document.getElementById('signInEmail');
+            if (emailInput) {
+                emailInput.focus();
+            }
+        }, 50);
+    }
 }
 
 function closeModal(modalId) {
