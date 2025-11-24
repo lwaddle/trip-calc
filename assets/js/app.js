@@ -22,6 +22,24 @@ if (window.location.hash.includes('type=recovery')) {
 }
 
 // ===========================
+// Early Share View Detection
+// ===========================
+// Detect share view BEFORE DOM renders to prevent flash
+// This must run immediately to set the proper initial state
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareToken = urlParams.get('share');
+
+    if (shareToken) {
+        // Mark as share mode - will be used later to determine when to remove loading class
+        document.documentElement.setAttribute('data-share-mode', 'true');
+    } else {
+        // Normal mode - mark for early removal of loading class
+        document.documentElement.setAttribute('data-share-mode', 'false');
+    }
+})();
+
+// ===========================
 // App State
 // ===========================
 const state = {
@@ -220,6 +238,11 @@ async function initializeApp() {
 
     // Check for shared estimate in URL
     await checkForSharedEstimate();
+
+    // Remove loading class for normal view (share view removes it in enableShareViewMode)
+    if (document.documentElement.getAttribute('data-share-mode') === 'false') {
+        document.body.classList.remove('initial-load');
+    }
 }
 
 // ===========================
@@ -357,6 +380,11 @@ async function handleSignIn(e) {
 
     // Reload defaults from Supabase
     await loadDefaultsFromSource();
+
+    // If we're in share view mode, save the estimate to the user's account
+    if (window.shareViewToken && window.shareViewData) {
+        await handleShareViewSaveEstimate();
+    }
 }
 
 async function handleSignOut() {
@@ -368,6 +396,9 @@ async function handleSignOut() {
     }
 
     showToast('Signed out successfully', 'success');
+
+    // Explicitly update UI to signed-out state
+    updateUIForAuthState(null);
 
     // Reload defaults from localStorage
     await loadDefaultsFromSource();
@@ -525,26 +556,62 @@ function attachEventListeners() {
 
     // Prevent negative values and invalid characters in number inputs
     document.querySelectorAll('input[type="number"]').forEach(input => {
-        input.addEventListener('input', function(e) {
-            // Remove any non-numeric characters except decimal point
-            this.value = this.value.replace(/[^0-9.]/g, '');
-            // Ensure only one decimal point
-            const parts = this.value.split('.');
-            if (parts.length > 2) {
-                this.value = parts[0] + '.' + parts.slice(1).join('');
+        // Use beforeinput to prevent invalid input (doesn't cause cursor jump)
+        input.addEventListener('beforeinput', function(e) {
+            // Allow deletion and other special operations
+            if (e.inputType === 'deleteContentBackward' ||
+                e.inputType === 'deleteContentForward' ||
+                e.inputType === 'deleteByCut' ||
+                e.inputType === 'deleteByDrag') {
+                return;
             }
+
+            const data = e.data;
+            if (data) {
+                // Check if this is a time input field (hours or minutes)
+                const isTimeField = this.closest('.time-input-wrapper') || this.closest('.time-input-wrapper--minutes');
+
+                // For time fields, only allow integers (no decimal point)
+                if (isTimeField) {
+                    if (!/^[0-9]$/.test(data)) {
+                        e.preventDefault();
+                        return;
+                    }
+                } else {
+                    // For other numeric fields, allow decimal point
+                    if (!/^[0-9.]$/.test(data)) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    // Prevent multiple decimal points
+                    if (data === '.' && this.value.includes('.')) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Use input event only for validation that requires checking the full value
+        input.addEventListener('input', function(e) {
             // Cap minutes field at 59
             if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
                 this.value = '59';
             }
         });
+
         // Prevent paste of invalid content
         input.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             const cleanedText = pastedText.replace(/[^0-9.]/g, '');
-            document.execCommand('insertText', false, cleanedText);
+            // Prevent multiple decimals
+            const parts = cleanedText.split('.');
+            const finalText = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedText;
+            document.execCommand('insertText', false, finalText);
         });
+
         // Also cap on blur to catch any edge cases
         input.addEventListener('blur', function(e) {
             if (this.closest('.time-input-wrapper--minutes') && parseFloat(this.value) > 59) {
@@ -553,7 +620,7 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for static fields
+    // Auto-select input contents on click for all inputs
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
         input.addEventListener('click', function() {
             this.select();
@@ -589,8 +656,21 @@ function attachEventListeners() {
     document.getElementById('cancelLoadButton').addEventListener('click', () => closeModal('loadEstimateModal'));
 
     // Sign in modal
-    document.getElementById('closeSignInModal').addEventListener('click', () => closeModal('signInModal'));
-    document.getElementById('cancelSignInButton').addEventListener('click', () => closeModal('signInModal'));
+    const closeSignInBtn = document.getElementById('closeSignInModal');
+    const cancelSignInBtn = document.getElementById('cancelSignInButton');
+
+    closeSignInBtn.addEventListener('click', () => closeModal('signInModal'));
+    closeSignInBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeModal('signInModal');
+    }, { passive: false });
+
+    cancelSignInBtn.addEventListener('click', () => closeModal('signInModal'));
+    cancelSignInBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        closeModal('signInModal');
+    }, { passive: false });
+
     document.getElementById('signInForm').addEventListener('submit', handleSignIn);
     document.getElementById('forgotPasswordLink').addEventListener('click', () => {
         closeModal('signInModal');
@@ -640,10 +720,8 @@ function attachEventListeners() {
     document.getElementById('shareViaEmailBtn').addEventListener('click', shareViaEmail);
     document.getElementById('shareViaCopyBtn').addEventListener('click', copyToClipboard);
     document.getElementById('shareViaLinkBtn').addEventListener('click', copyShareableLink);
-    document.getElementById('shareViaQRBtn').addEventListener('click', generateShareQR);
-    document.getElementById('shareViaPDFBtn').addEventListener('click', exportToPDFFromShare);
     document.getElementById('shareViaNativeBtn').addEventListener('click', shareViaNative);
-    document.getElementById('hideQRBtn').addEventListener('click', hideQRCode);
+    document.getElementById('exportPDFButton').addEventListener('click', exportToPDF);
 
     // Close modals on backdrop click
     document.querySelectorAll('.modal').forEach(modal => {
@@ -655,9 +733,29 @@ function attachEventListeners() {
                 } else {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
+                    // Restore scroll position
+                    document.body.style.top = '';
+                    window.scrollTo(0, scrollPosition);
                 }
             }
         });
+
+        // Add touch event fallback for iOS - handles cases where click events don't fire
+        modal.addEventListener('touchend', (e) => {
+            if (e.target === modal) {
+                e.preventDefault(); // Prevent ghost clicks
+                // Special handling for PDF preview modal to cleanup resources
+                if (modal.id === 'pdfPreviewModal') {
+                    closePdfPreview();
+                } else {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                    // Restore scroll position
+                    document.body.style.top = '';
+                    window.scrollTo(0, scrollPosition);
+                }
+            }
+        }, { passive: false });
     });
 
     // Close menus when clicking outside
@@ -726,6 +824,9 @@ function closeDesktopUserDropdown() {
     menu.classList.remove('active');
 }
 
+// Store scroll position to prevent scroll jump on iOS when modal opens
+let scrollPosition = 0;
+
 function openModal(modalId) {
     if (modalId === 'loadEstimateModal') {
         populateLoadEstimateModal();
@@ -737,13 +838,24 @@ function openModal(modalId) {
             emailField.value = getUserEmail();
         }
     }
+
+    // Save current scroll position before locking scroll
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
     document.getElementById(modalId).classList.add('active');
     document.body.classList.add('modal-open');
+
+    // Lock scroll position for better mobile support
+    document.body.style.top = `-${scrollPosition}px`;
 }
 
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
     document.body.classList.remove('modal-open');
+
+    // Restore scroll position
+    document.body.style.top = '';
+    window.scrollTo(0, scrollPosition);
 }
 
 // ===========================
@@ -1145,7 +1257,8 @@ function calculateEstimate() {
         includeAPU,
         apuBurn,
         totalAPUFuel,
-        activeLegsCount
+        activeLegsCount,
+        fuelDensity
     };
 }
 
@@ -1163,7 +1276,8 @@ function formatEstimate(estimate) {
     output += `\nTotal Flight Time: ${estimate.totalHours}h ${estimate.remainingMinutes}m\n`;
     output += `Total Fuel Used: ${estimate.totalFuelGallons.toFixed(0)} gallons\n`;
     if (estimate.includeAPU && estimate.activeLegsCount > 0) {
-        output += `  (Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
+        const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+        output += `  (Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})\n`;
     }
 
     output += '\n\nESTIMATE\n';
@@ -1267,24 +1381,20 @@ function copyToClipboard() {
 // Open the enhanced share modal
 function openEnhancedShareModal() {
     // Check if user is authenticated to show link/QR options
-    const isAuthenticated = window.supabaseClient && currentUser;
+    const userAuthenticated = isAuthenticated();
 
     // Show/hide authenticated-only options
     const linkBtn = document.getElementById('shareViaLinkBtn');
-    const qrBtn = document.getElementById('shareViaQRBtn');
 
-    if (linkBtn) linkBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
-    if (qrBtn) qrBtn.style.display = isAuthenticated && currentEstimateId ? 'flex' : 'none';
+    // Show shareable link option for authenticated users
+    // The function will handle the "save first" prompt if needed
+    if (linkBtn) linkBtn.style.display = userAuthenticated ? 'flex' : 'none';
 
     // Check if Web Share API is available (mobile devices)
     if (navigator.share) {
         const nativeBtn = document.getElementById('shareViaNativeBtn');
         if (nativeBtn) nativeBtn.style.display = 'flex';
     }
-
-    // Hide QR code container if it was previously shown
-    const qrContainer = document.getElementById('qrCodeContainer');
-    if (qrContainer) qrContainer.style.display = 'none';
 
     openModal('enhancedShareModal');
 }
@@ -1303,97 +1413,95 @@ function shareViaEmail() {
 
 // Share via Web Share API (native mobile sharing)
 async function shareViaNative() {
-    const estimateText = document.getElementById('tripEstimate').textContent;
-
     if (!navigator.share) {
         showToast('Native sharing not supported on this device', 'error');
         return;
     }
 
-    try {
-        await navigator.share({
-            title: 'Trip Cost Estimate',
-            text: estimateText
-        });
-        showToast('Shared successfully!', 'success');
-    } catch (err) {
-        // User cancelled or sharing failed
-        if (err.name !== 'AbortError') {
-            console.error('Share failed:', err);
-            showToast('Failed to share', 'error');
+    // Smart sharing: Share link if estimate is saved, otherwise share text
+    if (state.currentEstimateId) {
+        // Estimate is saved - share the link
+        try {
+            const { shareToken, error } = await createEstimateShare(
+                state.currentEstimateId,
+                state.currentEstimateName
+            );
+
+            if (error) {
+                showToast('Failed to create share link: ' + error.message, 'error');
+                return;
+            }
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                url: shareUrl
+            });
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or sharing failed
+            if (err.name !== 'AbortError') {
+                console.error('Share failed:', err);
+                showToast('Failed to share', 'error');
+            }
+        }
+    } else {
+        // Estimate is not saved - share as text
+        const estimateText = document.getElementById('tripEstimate').textContent;
+        // Remove the title from the text since we're passing it separately
+        const textWithoutTitle = estimateText.replace(/^Trip Cost Estimate\n\n/, '\n');
+
+        try {
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                text: textWithoutTitle
+            });
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or sharing failed
+            if (err.name !== 'AbortError') {
+                console.error('Share failed:', err);
+                showToast('Failed to share', 'error');
+            }
         }
     }
 }
 
-// Generate QR code for shareable link
-async function generateShareQR() {
-    if (!currentEstimateId) {
-        showToast('Please save the estimate first', 'error');
-        return;
-    }
-
-    try {
-        // Create or get share link
-        const shareToken = await createEstimateShare(currentEstimateId);
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
-
-        // Show QR container
-        const qrContainer = document.getElementById('qrCodeContainer');
-        const qrCodeDiv = document.getElementById('qrCode');
-
-        // Clear previous QR code
-        qrCodeDiv.innerHTML = '';
-
-        // Generate QR code
-        new QRCode(qrCodeDiv, {
-            text: shareUrl,
-            width: 256,
-            height: 256,
-            colorDark: '#0f172a',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        qrContainer.style.display = 'block';
-        showToast('QR code generated!', 'success');
-    } catch (err) {
-        console.error('Failed to generate QR code:', err);
-        showToast('Failed to generate QR code', 'error');
-    }
-}
-
-// Hide QR code
-function hideQRCode() {
-    const qrContainer = document.getElementById('qrCodeContainer');
-    if (qrContainer) qrContainer.style.display = 'none';
-}
-
 // Copy shareable link to clipboard
 async function copyShareableLink() {
-    if (!currentEstimateId) {
+    if (!state.currentEstimateId) {
         showToast('Please save the estimate first', 'error');
         return;
     }
 
-    try {
-        const shareToken = await createEstimateShare(currentEstimateId);
-        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+    // Show loading state
+    showToast('Creating share link...', 'success');
 
-        await navigator.clipboard.writeText(shareUrl);
-        showToast('Shareable link copied to clipboard!', 'success');
-    } catch (err) {
-        console.error('Failed to copy link:', err);
-        showToast('Failed to copy link', 'error');
+    // Create share link
+    const { shareToken, error } = await createEstimateShare(
+        state.currentEstimateId,
+        state.currentEstimateName
+    );
+
+    if (error) {
+        showToast('Failed to create share link: ' + error.message, 'error');
+        return;
     }
-}
 
-// Export to PDF from share modal (closes share modal first)
-function exportToPDFFromShare() {
+    // Display share link in modal (works reliably in Safari)
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+    document.getElementById('shareLink').value = shareUrl;
+
+    // Show success message
+    const successDiv = document.getElementById('shareSuccess');
+    successDiv.textContent = 'Share link created! Click "Copy" to copy to clipboard.';
+    successDiv.style.display = 'block';
+    document.getElementById('shareError').style.display = 'none';
+
+    // Close enhanced share modal and open share estimate modal
     closeModal('enhancedShareModal');
-    // Small delay to allow modal close animation to start
-    setTimeout(() => {
-        exportToPDF();
-    }, 100);
+    openModal('shareEstimateModal');
 }
 
 // ===========================
@@ -1457,16 +1565,58 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const bottomMargin = 20;
 
     // Prepare footer data
-    const currentDate = new Date();
-    const dateStr = currentDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
-    const footerText = `Created: ${dateStr} - by ${userEmail}`;
+    // Check if we're in share view mode and have estimate metadata
+    let footerText;
+    if (window.shareViewData && (window.shareViewData.created_at || window.shareViewData.updated_at)) {
+        // Use the estimate's actual creation/update data
+        const createdAt = new Date(window.shareViewData.created_at);
+        const updatedAt = new Date(window.shareViewData.updated_at);
+        const hasBeenUpdated = updatedAt > createdAt;
+        const displayDate = hasBeenUpdated ? updatedAt : createdAt;
+        const label = hasBeenUpdated ? 'Last updated' : 'Created';
+
+        const dateStr = displayDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + displayDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        const creatorEmail = window.shareViewData.creator_email || 'Guest';
+        footerText = `${label}: ${dateStr} - by ${creatorEmail}`;
+    } else if (state.currentEstimateId) {
+        // If we have a current estimate loaded, try to get its metadata
+        // For now, fall back to current behavior
+        const currentDate = new Date();
+        const dateStr = currentDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + currentDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+        footerText = `Created: ${dateStr} - by ${userEmail}`;
+    } else {
+        // No estimate metadata available, use current date/user
+        const currentDate = new Date();
+        const dateStr = currentDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + ' at ' + currentDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        const userEmail = isAuthenticated() ? getUserEmail() : 'Guest';
+        footerText = `Created: ${dateStr} - by ${userEmail}`;
+    }
 
     // Helper function to add footer to current page
     const addFooter = () => {
@@ -1494,7 +1644,25 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const title = 'Trip Cost Estimate';
     const titleWidth = doc.getTextWidth(title);
     doc.text(title, (pageWidth - titleWidth) / 2, yPos);
-    yPos += 15;
+    yPos += 10;
+
+    // Add filename if available
+    let estimateName = null;
+    if (window.shareViewData && window.shareViewData.name) {
+        estimateName = window.shareViewData.name;
+    } else if (state.currentEstimateName) {
+        estimateName = state.currentEstimateName;
+    }
+
+    if (estimateName) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        const nameWidth = doc.getTextWidth(estimateName);
+        doc.text(estimateName, (pageWidth - nameWidth) / 2, yPos);
+        yPos += 10;
+    } else {
+        yPos += 5;
+    }
 
     // Get estimate data
     const estimate = calculateEstimate();
@@ -1535,7 +1703,8 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
             checkPageBreak(6);
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(9);
-            doc.text(`(Includes ${estimate.totalAPUFuel.toFixed(0)} lbs APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
+            const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+            doc.text(`(Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''})`, margin + 10, yPos);
             yPos += 6;
         }
     }
@@ -2071,7 +2240,7 @@ async function populateLoadEstimateModal() {
     });
 }
 
-function loadEstimateAction(estimate) {
+function loadEstimateAction(estimate, options = {}) {
     // Clear existing
     state.legs = [];
     state.crew = [];
@@ -2104,7 +2273,11 @@ function loadEstimateAction(estimate) {
 
     closeModal('loadEstimateModal');
     updateEstimate();
-    showToast('Estimate loaded successfully', 'success');
+
+    // Only show toast if not suppressed (e.g., in share view mode)
+    if (!options.suppressToast) {
+        showToast('Estimate loaded successfully', 'success');
+    }
 }
 
 async function deleteEstimateAction(estimate) {
@@ -2185,30 +2358,429 @@ async function checkForSharedEstimate() {
         return;
     }
 
-    // Ask user if they want to load it or copy it
-    if (isAuthenticated()) {
-        const action = confirm('Would you like to save this shared estimate to your account?\n\nOK = Save to account\nCancel = Just view it');
+    // Enable share view mode
+    enableShareViewMode(data, shareToken);
+}
 
-        if (action) {
-            // Copy to user's account
-            const { error: copyError } = await copySharedEstimate(shareToken);
-            if (copyError) {
-                showToast('Failed to save estimate: ' + copyError.message, 'error');
-                return;
-            }
-            showToast('Shared estimate saved to your account!', 'success');
-        } else {
-            // Just load it for viewing
-            loadEstimateAction(data);
-        }
-    } else {
-        // Anonymous user - just load it
-        loadEstimateAction(data);
-        showToast('Viewing shared estimate. Sign in to save it to your account.', 'info');
+// Enable share view mode with read-only presentation
+function enableShareViewMode(estimateData, shareToken) {
+    // Store the share token and estimate data for later use
+    window.shareViewToken = shareToken;
+    window.shareViewData = estimateData;
+
+    // Add body class for share view mode
+    document.body.classList.add('share-view-mode');
+
+    // Hide the main heading (we have one in share view now)
+    document.getElementById('mainHeading').style.display = 'none';
+
+    // Hide normal view, show share view
+    document.getElementById('normalView').style.display = 'none';
+    document.getElementById('shareView').style.display = 'block';
+
+    // Update the metadata display
+    updateShareViewMetadata(estimateData);
+
+    // Load estimate data into the form (in background, for PDF export)
+    loadEstimateAction(estimateData, { suppressToast: true });
+
+    // Calculate and format the estimate
+    const estimate = calculateEstimate();
+
+    // Update the share view display with beautiful HTML
+    const estimateDisplay = document.getElementById('shareEstimateDisplay');
+    estimateDisplay.innerHTML = formatEstimateHTML(estimate);
+
+    // Set up share view event listeners
+    setupShareViewEventListeners();
+
+    // Remove loading class now that share view is ready
+    document.body.classList.remove('initial-load');
+}
+
+// Update share view metadata display
+function updateShareViewMetadata(estimateData) {
+    const filenameElement = document.getElementById('shareViewFilename');
+    const metaElement = document.getElementById('shareViewMeta');
+
+    // Update the filename display and HTML title
+    if (estimateData.name) {
+        filenameElement.textContent = estimateData.name;
+        document.title = `Trip Cost Calculator - ${estimateData.name}`;
     }
 
-    // Remove share token from URL
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Determine if this estimate has been updated
+    const createdAt = new Date(estimateData.created_at);
+    const updatedAt = new Date(estimateData.updated_at);
+    const hasBeenUpdated = updatedAt > createdAt;
+
+    // Use updated_at if it exists and is different from created_at, otherwise use created_at
+    const displayDate = hasBeenUpdated ? updatedAt : createdAt;
+    const label = hasBeenUpdated ? 'Last updated' : 'Created';
+
+    const formattedDate = displayDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+    const formattedTime = displayDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    // Get creator info (email or "Guest")
+    const creatorInfo = estimateData.creator_email || 'Guest';
+
+    // Update the meta display
+    metaElement.textContent = `${label}: ${formattedDate} at ${formattedTime} by ${creatorInfo}`;
+}
+
+// Set up event listeners for share view mode
+function setupShareViewEventListeners() {
+    // Export to PDF button
+    const exportBtn = document.getElementById('shareExportPDF');
+    exportBtn.addEventListener('click', () => {
+        exportToPDF();
+    });
+
+    // Share button
+    const shareBtn = document.getElementById('shareEstimateButton');
+    shareBtn.addEventListener('click', () => {
+        openModal('clientShareModal');
+    });
+
+    // Sign in button
+    const signInBtn = document.getElementById('shareSignInButton');
+    signInBtn.addEventListener('click', () => {
+        openModal('signInModal');
+    });
+
+    // Create own estimate link
+    const createOwnLink = document.getElementById('createOwnEstimateLink');
+    createOwnLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+    });
+
+    // Client share modal handlers
+    setupClientShareModal();
+}
+
+// Handle saving shared estimate after user signs in
+async function handleShareViewSaveEstimate() {
+    const action = confirm('Would you like to save this estimate to your account?');
+
+    if (action) {
+        // Copy the shared estimate to user's account
+        const { error: copyError } = await copySharedEstimate(window.shareViewToken);
+
+        if (copyError) {
+            showToast('Failed to save estimate: ' + copyError.message, 'error');
+            return;
+        }
+
+        showToast('Estimate saved to your account!', 'success');
+
+        // Ask if they want to switch to editing mode
+        const switchToEdit = confirm('Would you like to edit this estimate now?');
+
+        if (switchToEdit) {
+            // Redirect to normal view (removes share parameter)
+            window.location.href = '/';
+        }
+    }
+}
+
+// Format estimate as beautiful HTML
+function formatEstimateHTML(estimate) {
+    if (state.legs.length === 0) {
+        return '<p class="estimate-empty">Add flight legs to see estimate...</p>';
+    }
+
+    let html = '';
+
+    // Legs Summary Section
+    html += '<div class="estimate-section">';
+    html += '<h2 class="estimate-section-title">Flight Summary</h2>';
+    html += '<div class="estimate-legs">';
+    estimate.legsSummary.forEach(leg => {
+        html += `<div class="estimate-leg">`;
+        html += `<span class="leg-route">${leg.from} → ${leg.to}</span>`;
+        html += `<span class="leg-time">${leg.hours}h ${leg.minutes}m</span>`;
+        html += `<span class="leg-fuel">${leg.gallons.toFixed(0)} gal</span>`;
+        html += `</div>`;
+    });
+    html += '</div>';
+
+    html += '<div class="estimate-summary-row">';
+    html += `<span class="summary-label">Total Flight Time</span>`;
+    html += `<span class="summary-value">${estimate.totalHours}h ${estimate.remainingMinutes}m</span>`;
+    html += '</div>';
+    html += '<div class="estimate-summary-row">';
+    html += `<span class="summary-label">Total Fuel</span>`;
+    html += `<span class="summary-value">${estimate.totalFuelGallons.toFixed(0)} gallons</span>`;
+    html += '</div>';
+    if (estimate.includeAPU && estimate.activeLegsCount > 0) {
+        html += '<div class="estimate-note">';
+        const apuGallons = estimate.totalAPUFuel / estimate.fuelDensity;
+        html += `Includes ${apuGallons.toFixed(0)} gal. APU burn for ${estimate.activeLegsCount} active leg${estimate.activeLegsCount > 1 ? 's' : ''}`;
+        html += '</div>';
+    }
+    html += '</div>';
+
+    // Cost Breakdown Section
+    html += '<div class="estimate-section">';
+    html += '<h2 class="estimate-section-title">Cost Breakdown</h2>';
+
+    // Crew Day Rates
+    if (estimate.crewDayTotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Crew Day Rates</h3>';
+        estimate.crewDetails.forEach(crew => {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">${crew.role} (${crew.days} day${crew.days > 1 ? 's' : ''} @ $${formatCurrency(crew.rate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(crew.total)}</span>`;
+            html += '</div>';
+        });
+        html += '<div class="estimate-subtotal">';
+        html += `<span class="subtotal-label">Crew Day Rate Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.crewDayTotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Crew Expenses
+    if (estimate.crewExpensesTotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Crew Expenses</h3>';
+        if (estimate.hotelTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Hotel (${estimate.crewCount} crew × ${estimate.hotelStays} night${estimate.hotelStays > 1 ? 's' : ''} × $${formatCurrency(estimate.hotelRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.hotelTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.mealsTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Meals (${estimate.crewCount} crew × ${estimate.tripDays} day${estimate.tripDays > 1 ? 's' : ''} × $${formatCurrency(estimate.mealsRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.mealsTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.otherTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Other Per-Person Expenses</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.otherTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.rentalCar > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Rental Car</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.rentalCar)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.airfare > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Airfare</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.airfare)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.mileage > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Mileage</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.mileage)}</span>`;
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+
+    // Crew Subtotal
+    if (estimate.crewSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Crew Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.crewSubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Hourly Programs
+    if (estimate.hourlySubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Hourly Programs & Reserves</h3>';
+        if (estimate.maintenanceTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Maintenance Programs (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.maintenanceRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.maintenanceTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.consumablesTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Other Consumables (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.consumablesRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.consumablesTotal)}</span>`;
+            html += '</div>';
+        }
+        if (estimate.additionalTotal > 0) {
+            html += '<div class="estimate-line-item">';
+            html += `<span class="item-label">Additional (${estimate.totalFlightHours.toFixed(2)} hrs @ $${formatCurrency(estimate.additionalRate)})</span>`;
+            html += `<span class="item-value">$${formatCurrency(estimate.additionalTotal)}</span>`;
+            html += '</div>';
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Hourly Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.hourlySubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Fuel
+    html += '<div class="estimate-subsection">';
+    html += '<h3 class="estimate-subsection-title">Fuel</h3>';
+    html += '<div class="estimate-line-item">';
+    html += `<span class="item-label">${estimate.totalFuelGallons.toFixed(0)} gallons @ $${formatCurrency(estimate.fuelPrice)}/gal</span>`;
+    html += `<span class="item-value">$${formatCurrency(estimate.fuelSubtotal)}</span>`;
+    html += '</div>';
+    html += '<div class="estimate-subtotal major">';
+    html += `<span class="subtotal-label">Fuel Subtotal</span>`;
+    html += `<span class="subtotal-value">$${formatCurrency(estimate.fuelSubtotal)}</span>`;
+    html += '</div>';
+    html += '</div>';
+
+    // Airport & Ground
+    if (estimate.airportSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Airport & Ground Services</h3>';
+        if (estimate.landingFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Landing Fees</span><span class="item-value">$${formatCurrency(estimate.landingFees)}</span></div>`;
+        }
+        if (estimate.catering > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Catering</span><span class="item-value">$${formatCurrency(estimate.catering)}</span></div>`;
+        }
+        if (estimate.handling > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Handling</span><span class="item-value">$${formatCurrency(estimate.handling)}</span></div>`;
+        }
+        if (estimate.passengerTransport > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Passenger Ground Transport</span><span class="item-value">$${formatCurrency(estimate.passengerTransport)}</span></div>`;
+        }
+        if (estimate.facilityFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Facility Fees</span><span class="item-value">$${formatCurrency(estimate.facilityFees)}</span></div>`;
+        }
+        if (estimate.specialEventFees > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Special Event Fees</span><span class="item-value">$${formatCurrency(estimate.specialEventFees)}</span></div>`;
+        }
+        if (estimate.rampParking > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Ramp/Parking</span><span class="item-value">$${formatCurrency(estimate.rampParking)}</span></div>`;
+        }
+        if (estimate.customs > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Customs</span><span class="item-value">$${formatCurrency(estimate.customs)}</span></div>`;
+        }
+        if (estimate.hangar > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Hangar</span><span class="item-value">$${formatCurrency(estimate.hangar)}</span></div>`;
+        }
+        if (estimate.otherAirport > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Other</span><span class="item-value">$${formatCurrency(estimate.otherAirport)}</span></div>`;
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Airport & Ground Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.airportSubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    // Miscellaneous
+    if (estimate.miscSubtotal > 0) {
+        html += '<div class="estimate-subsection">';
+        html += '<h3 class="estimate-subsection-title">Miscellaneous</h3>';
+        if (estimate.tripCoordinationFee > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Trip Coordination Fee</span><span class="item-value">$${formatCurrency(estimate.tripCoordinationFee)}</span></div>`;
+        }
+        if (estimate.otherMisc > 0) {
+            html += `<div class="estimate-line-item"><span class="item-label">Other</span><span class="item-value">$${formatCurrency(estimate.otherMisc)}</span></div>`;
+        }
+        html += '<div class="estimate-subtotal major">';
+        html += `<span class="subtotal-label">Miscellaneous Subtotal</span>`;
+        html += `<span class="subtotal-value">$${formatCurrency(estimate.miscSubtotal)}</span>`;
+        html += '</div>';
+        html += '</div>';
+    }
+
+    html += '</div>';
+
+    // Total
+    html += '<div class="estimate-total">';
+    html += '<span class="total-label">Estimated Total</span>';
+    html += `<span class="total-value">$${formatCurrency(estimate.estimatedTotal)}</span>`;
+    html += '</div>';
+
+    // Trip Notes
+    if (estimate.tripNotes) {
+        html += '<div class="estimate-section">';
+        html += '<h2 class="estimate-section-title">Trip Notes</h2>';
+        html += `<div class="estimate-notes">${estimate.tripNotes.replace(/\n/g, '<br>')}</div>`;
+        html += '</div>';
+    }
+
+    return html;
+}
+
+// Setup client share modal handlers
+function setupClientShareModal() {
+    // Close button handlers
+    document.getElementById('closeClientShareModal').addEventListener('click', () => {
+        closeModal('clientShareModal');
+    });
+    document.getElementById('closeClientShareButton').addEventListener('click', () => {
+        closeModal('clientShareModal');
+    });
+
+    // Email Estimate
+    document.getElementById('clientShareEmailBtn').addEventListener('click', () => {
+        const estimate = calculateEstimate();
+        const estimateText = formatEstimate(estimate);
+        const subject = encodeURIComponent('Trip Cost Estimate');
+        const body = encodeURIComponent(estimateText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        closeModal('clientShareModal');
+        showToast('Opening email...', 'info');
+    });
+
+    // Copy to Clipboard
+    document.getElementById('clientShareCopyBtn').addEventListener('click', () => {
+        const estimate = calculateEstimate();
+        const estimateText = formatEstimate(estimate);
+        navigator.clipboard.writeText(estimateText)
+            .then(() => {
+                closeModal('clientShareModal');
+                showToast('Estimate copied to clipboard!', 'success');
+            })
+            .catch(() => {
+                showToast('Failed to copy estimate', 'error');
+            });
+    });
+
+    // Share via (native share API)
+    document.getElementById('clientShareViaBtn').addEventListener('click', async () => {
+        if (!navigator.share) {
+            showToast('Share feature not supported on this device', 'error');
+            return;
+        }
+
+        // In client share view, we always have a share token, so share the link
+        const shareUrl = `${window.location.origin}${window.location.pathname}?share=${window.shareViewToken}`;
+
+        try {
+            await navigator.share({
+                title: 'Trip Cost Estimate',
+                url: shareUrl
+            });
+            closeModal('clientShareModal');
+            showToast('Shared successfully!', 'success');
+        } catch (err) {
+            // User cancelled or error occurred
+            if (err.name !== 'AbortError') {
+                showToast('Failed to share estimate', 'error');
+            }
+        }
+    });
 }
 
 function getFormData() {

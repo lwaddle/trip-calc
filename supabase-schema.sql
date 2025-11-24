@@ -132,6 +132,18 @@ CREATE POLICY "Users can view own estimates"
   FOR SELECT
   USING (auth.uid() = user_id);
 
+-- Anyone can view estimates that have been shared
+-- This allows unauthenticated users to view shared estimates via share token
+CREATE POLICY "Anyone can view shared estimates"
+  ON estimates
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM estimate_shares
+      WHERE estimate_shares.estimate_id = estimates.id
+    )
+  );
+
 -- Users can insert their own estimates
 CREATE POLICY "Users can insert own estimates"
   ON estimates
