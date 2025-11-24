@@ -5,6 +5,9 @@ export default defineConfig({
   // Serve files from root directory
   root: './',
 
+  // Public directory for static assets
+  publicDir: 'assets',
+
   // Build output directory
   build: {
     outDir: 'dist',
@@ -21,6 +24,7 @@ export default defineConfig({
           writeBundle() {
             copyFileSync('_headers', 'dist/_headers');
             copyFileSync('_redirects', 'dist/_redirects');
+            copyFileSync('_routes.json', 'dist/_routes.json');
           }
         }]
       }

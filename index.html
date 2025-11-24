@@ -12,14 +12,17 @@
     <meta property="og:url" content="">
     <meta property="og:title" content="Trip Cost Calculator">
     <meta property="og:description" content="View this detailed trip cost breakdown and estimate">
-    <meta property="og:image" content="/assets/img/logo.svg">
+    <meta property="og:image" content="/img/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/jpeg">
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary">
-    <meta property="twitter:url" content="">
-    <meta property="twitter:title" content="Trip Cost Calculator">
-    <meta property="twitter:description" content="View this detailed trip cost breakdown and estimate">
-    <meta property="twitter:image" content="/assets/img/logo.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="">
+    <meta name="twitter:title" content="Trip Cost Calculator">
+    <meta name="twitter:description" content="View this detailed trip cost breakdown and estimate">
+    <meta name="twitter:image" content="/img/og-image.jpg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -547,6 +550,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelResetButton">Cancel</button>
                 <button type="button" class="btn-danger" id="confirmResetButton">Reset Form</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Estimate Confirmation Modal -->
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Estimate</h2>
+                <button class="modal-close" id="closeDeleteConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this estimate?</p>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelDeleteButton">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDeleteButton">Delete Estimate</button>
             </div>
         </div>
     </div>

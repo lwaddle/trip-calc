@@ -731,6 +731,11 @@ function attachEventListeners() {
     document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
     document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
 
+    // Delete estimate confirmation modal
+    document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => closeModal('deleteConfirmModal'));
+    document.getElementById('cancelDeleteButton').addEventListener('click', () => closeModal('deleteConfirmModal'));
+    document.getElementById('confirmDeleteButton').addEventListener('click', confirmDeleteEstimate);
+
     // PDF preview modal
     document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
     document.getElementById('closePdfPreviewButton').addEventListener('click', closePdfPreview);
@@ -2312,18 +2317,33 @@ function loadEstimateAction(estimate, options = {}) {
     }
 }
 
+// Store estimate pending deletion
+let estimatePendingDeletion = null;
+
 async function deleteEstimateAction(estimate) {
-    if (!confirm('Are you sure you want to delete this estimate?')) return;
+    // Store the estimate and open confirmation modal
+    estimatePendingDeletion = estimate;
+    openModal('deleteConfirmModal');
+}
+
+async function confirmDeleteEstimate() {
+    if (!estimatePendingDeletion) return;
 
     // Delete from Supabase if it has an ID
-    if (estimate.id) {
-        const { error } = await deleteEstimate(estimate.id);
+    if (estimatePendingDeletion.id) {
+        const { error } = await deleteEstimate(estimatePendingDeletion.id);
         if (error) {
             showToast('Failed to delete estimate: ' + error.message, 'error');
+            closeModal('deleteConfirmModal');
+            estimatePendingDeletion = null;
             return;
         }
         showToast('Estimate deleted successfully', 'success');
     }
+
+    // Close modal and clear pending deletion
+    closeModal('deleteConfirmModal');
+    estimatePendingDeletion = null;
 
     // Refresh the list
     await populateLoadEstimateModal();
