@@ -1,8 +1,9 @@
 // ===========================
 // Imports
 // ===========================
-import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
+import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail, getUserId } from './auth.js';
 import { getUserProfiles, getDefaultProfile, createProfile, updateProfile, deleteProfile, setDefaultProfile, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { supabase } from './supabase.js';
 
 // ===========================
 // Early Password Recovery Detection
@@ -142,6 +143,11 @@ const state = {
 let currentPdfDoc = null;
 let currentPdfBlob = null;
 let currentPdfFilename = null;
+
+// Profile Editor State
+let currentEditingProfileId = null;
+let currentProfileImageUrl = null; // Track existing image URL when editing
+let shouldRemoveProfileImage = false; // Track if user wants to remove the image
 
 // Password Recovery State (using localStorage to sync across tabs)
 // Check: localStorage.getItem('passwordRecoveryInProgress') === 'true'
@@ -414,6 +420,7 @@ async function loadUserProfilesFromDB() {
             mealsRate: parseFloat(p.meals_rate),
             maintenanceRate: parseFloat(p.maintenance_rate),
             apuBurn: parseInt(p.apu_burn),
+            profileImageUrl: p.profile_image_url || null,
             isDefault: p.is_default,
             isStandard: false
         }));
@@ -658,8 +665,6 @@ function importProfile(jsonString) {
 // Profiles View Management
 // ===========================
 
-let currentEditingProfileId = null;
-
 /**
  * Open the profiles view
  */
@@ -709,7 +714,7 @@ function renderProfilesList() {
             </div>
             <div class="profile-card-content">
                 <div class="profile-card-icon">
-                    <img src="assets/images/default-profile-placeholder.jpg" alt="Profile aircraft" />
+                    <img src="${profile.profileImageUrl || 'assets/images/default-profile-placeholder.jpg'}" alt="Profile aircraft" />
                 </div>
                 <div class="profile-card-details">
                     <div><strong>Pilots:</strong> ${profile.pilotsRequired} @ $${profile.pilotRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>
@@ -756,6 +761,8 @@ function renderProfilesList() {
  */
 function openNewProfileEditor() {
     currentEditingProfileId = null;
+    currentProfileImageUrl = null;
+    shouldRemoveProfileImage = false;
     document.getElementById('profileEditorTitle').textContent = 'New Profile';
 
     // Reset form to defaults
@@ -772,6 +779,10 @@ function openNewProfileEditor() {
     document.getElementById('profileApuBurn').value = '120';
     document.getElementById('profileIsDefault').checked = false;
 
+    // Reset image input and preview
+    document.getElementById('profileImageInput').value = '';
+    document.getElementById('profileImagePreview').style.display = 'none';
+
     openModal('profileEditorModal');
 }
 
@@ -784,6 +795,8 @@ function editProfile(profileId) {
     if (!profile) return;
 
     currentEditingProfileId = profileId;
+    currentProfileImageUrl = profile.profileImageUrl || null;
+    shouldRemoveProfileImage = false;
     document.getElementById('profileEditorTitle').textContent = 'Edit Profile';
 
     // Populate form
@@ -800,6 +813,15 @@ function editProfile(profileId) {
     document.getElementById('profileApuBurn').value = profile.apuBurn;
     document.getElementById('profileIsDefault').checked = profile.isDefault;
 
+    // Handle image preview
+    document.getElementById('profileImageInput').value = '';
+    if (profile.profileImageUrl) {
+        document.getElementById('profileImagePreviewImg').src = profile.profileImageUrl;
+        document.getElementById('profileImagePreview').style.display = 'block';
+    } else {
+        document.getElementById('profileImagePreview').style.display = 'none';
+    }
+
     openModal('profileEditorModal');
 }
 
@@ -811,6 +833,55 @@ async function saveProfileAction() {
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
+    }
+
+    let imageUrl = currentProfileImageUrl; // Start with existing image URL
+
+    // Handle image upload if file selected
+    const fileInput = document.getElementById('profileImageInput');
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+
+        // Validate file
+        const validationError = validateProfileImage(file);
+        if (validationError) {
+            showToast(validationError, 'error');
+            return;
+        }
+
+        // Upload to Supabase Storage
+        const userId = getUserId();
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('profile-images')
+            .upload(`${userId}/${fileName}`, file);
+
+        if (uploadError) {
+            showToast('Failed to upload image: ' + uploadError.message, 'error');
+            return;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+            .from('profile-images')
+            .getPublicUrl(`${userId}/${fileName}`);
+
+        imageUrl = urlData.publicUrl;
+
+        // Delete old image if replacing
+        if (currentProfileImageUrl && currentProfileImageUrl.includes('profile-images')) {
+            const oldPath = currentProfileImageUrl.split('profile-images/')[1];
+            await supabase.storage.from('profile-images').remove([oldPath]);
+        }
+    } else if (shouldRemoveProfileImage) {
+        // User removed the image
+        if (currentProfileImageUrl && currentProfileImageUrl.includes('profile-images')) {
+            const oldPath = currentProfileImageUrl.split('profile-images/')[1];
+            await supabase.storage.from('profile-images').remove([oldPath]);
+        }
+        imageUrl = null;
     }
 
     const profileData = {
@@ -825,6 +896,7 @@ async function saveProfileAction() {
         mealsRate: document.getElementById('profileMealsRate').value,
         maintenanceRate: document.getElementById('profileMaintenanceRate').value,
         apuBurn: document.getElementById('profileApuBurn').value,
+        profileImageUrl: imageUrl,
         isDefault: document.getElementById('profileIsDefault').checked
     };
 
@@ -852,6 +924,58 @@ async function saveProfileAction() {
     renderProfileSelector();
 
     closeModal('profileEditorModal');
+}
+
+/**
+ * Validate profile image file
+ * @param {File} file - Image file to validate
+ * @returns {string|null} Error message or null if valid
+ */
+function validateProfileImage(file) {
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!validTypes.includes(file.type)) {
+        return 'Invalid file type. Please upload a JPEG, PNG, or WebP image.';
+    }
+    if (file.size > maxSize) {
+        return 'File too large. Maximum size is 2MB.';
+    }
+    return null;
+}
+
+/**
+ * Handle profile image file selection
+ */
+function handleProfileImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file
+    const validationError = validateProfileImage(file);
+    if (validationError) {
+        showToast(validationError, 'error');
+        event.target.value = ''; // Reset file input
+        return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('profileImagePreviewImg').src = e.target.result;
+        document.getElementById('profileImagePreview').style.display = 'block';
+        shouldRemoveProfileImage = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Handle removing profile image
+ */
+function handleRemoveProfileImage() {
+    document.getElementById('profileImageInput').value = '';
+    document.getElementById('profileImagePreview').style.display = 'none';
+    shouldRemoveProfileImage = true;
 }
 
 /**
@@ -1405,6 +1529,16 @@ function attachEventListeners() {
     const saveProfileButton = document.getElementById('saveProfileButton');
     if (saveProfileButton) {
         saveProfileButton.addEventListener('click', saveProfileAction);
+    }
+
+    // Profile Image Upload
+    const profileImageInput = document.getElementById('profileImageInput');
+    if (profileImageInput) {
+        profileImageInput.addEventListener('change', handleProfileImageSelect);
+    }
+    const removeProfileImageButton = document.getElementById('removeProfileImageButton');
+    if (removeProfileImageButton) {
+        removeProfileImageButton.addEventListener('click', handleRemoveProfileImage);
     }
 
     // Import Profile Modal

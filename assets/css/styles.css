@@ -2331,6 +2331,39 @@ body.share-view-mode .header {
     margin-left: var(--spacing-xs);
 }
 
+/* Profile Image Upload */
+.profile-image-preview {
+    margin-top: var(--spacing-md);
+    position: relative;
+    max-width: 220px;
+}
+
+.profile-image-preview img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--color-border);
+    display: block;
+}
+
+.btn-remove-image {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--color-danger);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-remove-image:hover {
+    background: #c82333;
+}
+
 /* ===========================
    Empty State
    =========================== */

@@ -101,6 +101,7 @@ export async function createProfile(profileData) {
         meals_rate: parseFloat(profileData.mealsRate) || 0,
         maintenance_rate: parseFloat(profileData.maintenanceRate) || 0,
         apu_burn: parseInt(profileData.apuBurn) || 0,
+        profile_image_url: profileData.profileImageUrl || null,
         is_default: profileData.isDefault || false
       })
       .select()
@@ -153,6 +154,7 @@ export async function updateProfile(profileId, profileData) {
         meals_rate: parseFloat(profileData.mealsRate) || 0,
         maintenance_rate: parseFloat(profileData.maintenanceRate) || 0,
         apu_burn: parseInt(profileData.apuBurn) || 0,
+        profile_image_url: profileData.profileImageUrl || null,
         is_default: profileData.isDefault || false,
         updated_at: new Date().toISOString()
       })

@@ -19,6 +19,7 @@ CREATE TABLE user_profiles (
     meals_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
     maintenance_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
     apu_burn INTEGER NOT NULL DEFAULT 0,
+    profile_image_url TEXT,
     is_default BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

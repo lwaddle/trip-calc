@@ -463,6 +463,16 @@
                         </div>
                     </div>
 
+                    <div class="form-section-title">Profile Image</div>
+                    <div class="form-field">
+                        <label for="profileImageInput">Upload Image (optional)</label>
+                        <input type="file" id="profileImageInput" accept="image/jpeg,image/png,image/webp">
+                        <div id="profileImagePreview" class="profile-image-preview" style="display: none;">
+                            <img id="profileImagePreviewImg" alt="Profile preview">
+                            <button type="button" class="btn-remove-image" id="removeProfileImageButton">Remove</button>
+                        </div>
+                    </div>
+
                     <div class="form-field" style="margin-top: var(--spacing-md);">
                         <label>
                             <input type="checkbox" id="profileIsDefault">
