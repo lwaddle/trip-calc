@@ -694,7 +694,7 @@ function renderProfilesList() {
 
         profileCard.innerHTML = `
             <div class="profile-card-header">
-                <h3>${profile.name}</h3>
+                <h3 class="profile-card-name">${profile.name}</h3>
                 ${profile.isDefault ? '<span class="profile-badge">Default</span>' : ''}
             </div>
             <div class="profile-card-details">
