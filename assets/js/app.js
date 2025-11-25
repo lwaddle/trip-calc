@@ -715,7 +715,7 @@ function renderProfilesList() {
             </div>
             <div class="profile-card-content">
                 <div class="profile-card-icon">
-                    <img src="${profile.profileImageUrl || 'assets/images/default-profile-placeholder.jpg'}" alt="Profile aircraft" />
+                    <img src="${profile.profileImageUrl || '/img/default-profile-placeholder.jpg'}" alt="Profile aircraft" />
                 </div>
                 <div class="profile-card-details">
                     <div><strong>Pilots:</strong> ${profile.pilotsRequired} @ $${profile.pilotRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>
