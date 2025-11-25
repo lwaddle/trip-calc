@@ -4,6 +4,7 @@
 import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail, getUserId } from './auth.js';
 import { getUserProfiles, getDefaultProfile, createProfile, updateProfile, deleteProfile, setDefaultProfile, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 import { supabase } from './supabase.js';
+import imageCompression from 'browser-image-compression';
 
 // ===========================
 // Early Password Recovery Detection
@@ -840,12 +841,26 @@ async function saveProfileAction() {
     // Handle image upload if file selected
     const fileInput = document.getElementById('profileImageInput');
     if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
+        let file = fileInput.files[0];
 
-        // Validate file
+        // Validate file type
         const validationError = validateProfileImage(file);
         if (validationError) {
             showToast(validationError, 'error');
+            return;
+        }
+
+        // Compress image before upload
+        const compressionOptions = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 800,
+            useWebWorker: true
+        };
+
+        try {
+            file = await imageCompression(file, compressionOptions);
+        } catch (error) {
+            showToast('Failed to process image: ' + error.message, 'error');
             return;
         }
 
@@ -932,15 +947,12 @@ async function saveProfileAction() {
  * @returns {string|null} Error message or null if valid
  */
 function validateProfileImage(file) {
-    const maxSize = 2 * 1024 * 1024; // 2MB
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
     if (!validTypes.includes(file.type)) {
         return 'Invalid file type. Please upload a JPEG, PNG, or WebP image.';
     }
-    if (file.size > maxSize) {
-        return 'File too large. Maximum size is 2MB.';
-    }
+    // File size check removed - compression handles this automatically
     return null;
 }
 
