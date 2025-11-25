@@ -1931,6 +1931,468 @@ body.share-view-mode .header {
 }
 
 /* ===========================
+   Profile Selector (Calculator Page)
+   =========================== */
+.profile-selector-container {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.profile-dropdown-wrapper {
+    flex: 1;
+    min-width: 250px;
+}
+
+.profile-dropdown {
+    width: 100%;
+}
+
+.profile-action {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.profile-action .btn-primary,
+.profile-action .btn-secondary {
+    white-space: nowrap;
+}
+
+.profile-signin-message {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.profile-signin-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--transition-base);
+}
+
+.profile-signin-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .profile-selector-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .profile-dropdown-wrapper {
+        width: 100%;
+    }
+
+    .profile-action {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .profile-action button {
+        width: 100%;
+    }
+}
+
+/* ===========================
+   Profiles View (Full Page)
+   =========================== */
+.profiles-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--color-bg);
+    z-index: var(--z-sticky);
+    overflow-y: auto;
+}
+
+.profiles-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    min-height: 100vh;
+}
+
+.profiles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.profiles-header h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    background: none;
+    border: none;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-base);
+}
+
+.btn-back:hover {
+    background-color: var(--color-bg-alt);
+    color: var(--color-primary);
+}
+
+.btn-back:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: var(--spacing-sm);
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-icon:hover {
+    background-color: var(--color-bg-alt);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-icon:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.btn-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ===========================
+   Profiles List
+   =========================== */
+.profiles-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.profile-card {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.profile-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.profile-card.default-profile {
+    border-color: var(--color-primary);
+    background: linear-gradient(to bottom, var(--color-bg), var(--color-bg-alt));
+}
+
+.profile-card.default-profile::before {
+    content: 'Default';
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    background-color: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: calc(var(--border-radius) / 2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-card.standard-profile {
+    opacity: 0.9;
+}
+
+.profile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+}
+
+.profile-card-name {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+    word-wrap: break-word;
+    flex: 1;
+}
+
+.profile-card-badge {
+    display: inline-block;
+    background-color: var(--color-secondary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: calc(var(--border-radius) / 2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.profile-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.profile-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.875rem;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.profile-detail-row:last-child {
+    border-bottom: none;
+}
+
+.profile-detail-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.profile-detail-value {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.profile-card-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.profile-card-actions button {
+    flex: 1;
+}
+
+.btn-card-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.btn-card-action svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ===========================
+   Add Profile Button
+   =========================== */
+.btn-add-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    background-color: var(--color-primary);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.btn-add-profile:hover {
+    background-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.btn-add-profile:active {
+    transform: translateY(0);
+}
+
+.btn-add-profile:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.btn-add-profile svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ===========================
+   Profile Editor Modal
+   =========================== */
+.modal-large {
+    max-width: 800px;
+}
+
+.form-section-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.form-section-title:first-child {
+    margin-top: 0;
+}
+
+.required {
+    color: var(--color-danger);
+    margin-left: var(--spacing-xs);
+}
+
+/* ===========================
+   Empty State
+   =========================== */
+.profiles-empty {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--color-text-secondary);
+}
+
+.profiles-empty svg {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-lg);
+    color: var(--color-border);
+}
+
+.profiles-empty h3 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+    border: none;
+}
+
+.profiles-empty p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: var(--spacing-xl);
+}
+
+/* ===========================
+   Responsive Profiles View
+   =========================== */
+@media (max-width: 768px) {
+    .profiles-container {
+        padding: var(--spacing-lg);
+    }
+
+    .profiles-header {
+        flex-direction: row;
+        gap: var(--spacing-md);
+    }
+
+    .profiles-header h1 {
+        font-size: 1.5rem;
+        flex: 1;
+        text-align: center;
+    }
+
+    .profiles-list {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .profile-card-actions {
+        flex-direction: column;
+    }
+
+    .profile-card-actions button {
+        width: 100%;
+    }
+
+    .btn-add-profile {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .profiles-header {
+        gap: var(--spacing-sm);
+    }
+
+    .btn-back {
+        padding: var(--spacing-sm);
+        font-size: 0.875rem;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .profile-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .profile-card-badge {
+        align-self: flex-start;
+    }
+}
+
+/* ===========================
    Initial Loading State
    =========================== */
 body.initial-load #normalView,
