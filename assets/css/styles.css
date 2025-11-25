@@ -2142,10 +2142,14 @@ body.share-view-mode .header {
 
 .profile-card-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    flex-direction: column;
     margin-bottom: var(--spacing-md);
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+.profile-card-header > span {
+    align-self: flex-end;
+    order: -1; /* Move span before h3 visually */
 }
 
 .profile-card-name {
@@ -2155,7 +2159,21 @@ body.share-view-mode .header {
     color: var(--color-text);
     margin: 0;
     word-wrap: break-word;
-    flex: 1;
+    width: 100%;
+    order: 0; /* Keep h3 after span */
+}
+
+.profile-badge {
+    display: inline-block;
+    background-color: #3b82f6; /* Informational blue */
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50rem; /* Pill shape - very large radius creates rounded ends */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1;
 }
 
 .profile-card-badge {
@@ -2164,11 +2182,12 @@ body.share-view-mode .header {
     color: white;
     font-size: 0.75rem;
     font-weight: 600;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: calc(var(--border-radius) / 2);
+    padding: 0.35rem 0.75rem;
+    border-radius: 50rem; /* Pill shape - very large radius creates rounded ends */
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex-shrink: 0;
+    line-height: 1;
 }
 
 .profile-card-details {
@@ -2227,6 +2246,20 @@ body.share-view-mode .header {
 .btn-card-action svg {
     width: 14px;
     height: 14px;
+}
+
+/* Delete button styling in profile cards */
+.profile-card-actions .btn-danger {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.profile-card-actions .btn-danger:hover {
+    background-color: var(--color-danger-hover);
+}
+
+.profile-card-actions .btn-danger svg {
+    color: white;
 }
 
 /* ===========================
@@ -2380,15 +2413,6 @@ body.share-view-mode .header {
     .btn-icon {
         width: 36px;
         height: 36px;
-    }
-
-    .profile-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .profile-card-badge {
-        align-self: flex-start;
     }
 }
 
