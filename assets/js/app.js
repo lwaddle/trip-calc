@@ -850,11 +850,22 @@ async function saveProfileAction() {
             return;
         }
 
+        // Crop to 4:3 aspect ratio first
+        try {
+            file = await cropImageTo4x3(file);
+        } catch (error) {
+            showToast('Failed to crop image: ' + error.message, 'error');
+            return;
+        }
+
         // Compress image before upload
         const compressionOptions = {
-            maxSizeMB: 1,
+            maxSizeMB: 0.2,              // Reduced from 1MB to 200KB
             maxWidthOrHeight: 800,
-            useWebWorker: true
+            useWebWorker: true,
+            initialQuality: 0.7,         // Set initial compression quality (0-1)
+            alwaysKeepResolution: false, // Allow resolution reduction to meet size target
+            fileType: 'image/jpeg'       // Convert to JPEG for better compression
         };
 
         try {
@@ -954,6 +965,70 @@ function validateProfileImage(file) {
     }
     // File size check removed - compression handles this automatically
     return null;
+}
+
+/**
+ * Crop image to 4:3 aspect ratio
+ * @param {File} file - Image file to crop
+ * @returns {Promise<File>} Cropped image file
+ */
+async function cropImageTo4x3(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate 4:3 dimensions
+                const targetRatio = 4 / 3;
+                const currentRatio = img.width / img.height;
+
+                let cropWidth = img.width;
+                let cropHeight = img.height;
+                let offsetX = 0;
+                let offsetY = 0;
+
+                if (currentRatio > targetRatio) {
+                    // Image is wider than 4:3, crop width
+                    cropWidth = img.height * targetRatio;
+                    offsetX = (img.width - cropWidth) / 2;
+                } else if (currentRatio < targetRatio) {
+                    // Image is taller than 4:3, crop height
+                    cropHeight = img.width / targetRatio;
+                    offsetY = (img.height - cropHeight) / 2;
+                }
+
+                canvas.width = cropWidth;
+                canvas.height = cropHeight;
+
+                // Draw cropped image
+                ctx.drawImage(
+                    img,
+                    offsetX, offsetY, cropWidth, cropHeight,
+                    0, 0, cropWidth, cropHeight
+                );
+
+                // Convert canvas to blob
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const croppedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(croppedFile);
+                    } else {
+                        reject(new Error('Failed to crop image'));
+                    }
+                }, 'image/jpeg', 0.95);
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
 }
 
 /**
