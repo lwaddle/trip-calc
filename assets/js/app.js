@@ -1851,8 +1851,10 @@ function calculateEstimate() {
     const fuelDensity = parseFloat(document.getElementById('fuelDensity').value) || 6.7;
     const fuelPrice = parseFloat(document.getElementById('fuelPrice').value) || 5.93;
     const includeAPU = document.getElementById('includeAPU').checked;
-    const defaults = getDefaults();
-    const apuBurn = defaults.apuBurn;
+
+    // Get APU burn from current profile
+    const currentProfile = getProfileById(state.selectedProfileId);
+    const apuBurn = currentProfile ? currentProfile.apuBurn : 100;
 
     let totalMinutes = 0;
     let totalFuelLbs = 0;
