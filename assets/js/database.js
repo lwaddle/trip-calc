@@ -7,14 +7,14 @@ import { supabase } from './supabase.js';
 import { getUserId, getUserEmail } from './auth.js';
 
 // ============================================================================
-// USER DEFAULTS
+// USER PROFILES
 // ============================================================================
 
 /**
- * Load user defaults from Supabase
- * @returns {Promise<{data: object | null, error: Error | null}>}
+ * Load all user profiles from Supabase
+ * @returns {Promise<{data: Array | null, error: Error | null}>}
  */
-export async function loadUserDefaults() {
+export async function getUserProfiles() {
   try {
     const userId = getUserId();
     if (!userId) {
@@ -22,9 +22,37 @@ export async function loadUserDefaults() {
     }
 
     const { data, error } = await supabase
-      .from('user_defaults')
+      .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
+      .order('name', { ascending: true });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+/**
+ * Get user's default profile
+ * @returns {Promise<{data: object | null, error: Error | null}>}
+ */
+export async function getDefaultProfile() {
+  try {
+    const userId = getUserId();
+    if (!userId) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_default', true)
       .maybeSingle();
 
     if (error) {
@@ -38,34 +66,174 @@ export async function loadUserDefaults() {
 }
 
 /**
- * Save user defaults to Supabase
- * @param {object} defaults - User defaults object
+ * Create a new profile
+ * @param {object} profileData - Profile data object
+ * @returns {Promise<{data: object | null, error: Error | null}>}
+ */
+export async function createProfile(profileData) {
+  try {
+    const userId = getUserId();
+    if (!userId) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
+    // If this profile is being set as default, unset all other defaults first
+    if (profileData.isDefault) {
+      await supabase
+        .from('user_profiles')
+        .update({ is_default: false })
+        .eq('user_id', userId)
+        .eq('is_default', true);
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        user_id: userId,
+        name: profileData.name,
+        fuel_price: parseFloat(profileData.fuelPrice) || 0,
+        fuel_density: parseFloat(profileData.fuelDensity) || 6.7,
+        pilots_required: parseInt(profileData.pilotsRequired) || 1,
+        pilot_rate: parseFloat(profileData.pilotRate) || 0,
+        attendants_required: parseInt(profileData.attendantsRequired) || 0,
+        attendant_rate: parseFloat(profileData.attendantRate) || 0,
+        hotel_rate: parseFloat(profileData.hotelRate) || 0,
+        meals_rate: parseFloat(profileData.mealsRate) || 0,
+        maintenance_rate: parseFloat(profileData.maintenanceRate) || 0,
+        apu_burn: parseInt(profileData.apuBurn) || 0,
+        is_default: profileData.isDefault || false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+/**
+ * Update an existing profile
+ * @param {string} profileId - UUID of the profile
+ * @param {object} profileData - Profile data object
+ * @returns {Promise<{data: object | null, error: Error | null}>}
+ */
+export async function updateProfile(profileId, profileData) {
+  try {
+    const userId = getUserId();
+    if (!userId) {
+      return { data: null, error: new Error('User not authenticated') };
+    }
+
+    // If this profile is being set as default, unset all other defaults first
+    if (profileData.isDefault) {
+      await supabase
+        .from('user_profiles')
+        .update({ is_default: false })
+        .eq('user_id', userId)
+        .eq('is_default', true)
+        .neq('id', profileId);
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({
+        name: profileData.name,
+        fuel_price: parseFloat(profileData.fuelPrice) || 0,
+        fuel_density: parseFloat(profileData.fuelDensity) || 6.7,
+        pilots_required: parseInt(profileData.pilotsRequired) || 1,
+        pilot_rate: parseFloat(profileData.pilotRate) || 0,
+        attendants_required: parseInt(profileData.attendantsRequired) || 0,
+        attendant_rate: parseFloat(profileData.attendantRate) || 0,
+        hotel_rate: parseFloat(profileData.hotelRate) || 0,
+        meals_rate: parseFloat(profileData.mealsRate) || 0,
+        maintenance_rate: parseFloat(profileData.maintenanceRate) || 0,
+        apu_burn: parseInt(profileData.apuBurn) || 0,
+        is_default: profileData.isDefault || false,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', profileId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+}
+
+/**
+ * Delete a profile
+ * @param {string} profileId - UUID of the profile
+ * @returns {Promise<{error: Error | null, wasDefault: boolean}>}
+ */
+export async function deleteProfile(profileId) {
+  try {
+    const userId = getUserId();
+    if (!userId) {
+      return { error: new Error('User not authenticated'), wasDefault: false };
+    }
+
+    // Check if this is the default profile before deleting
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('is_default')
+      .eq('id', profileId)
+      .eq('user_id', userId)
+      .single();
+
+    const wasDefault = profile?.is_default || false;
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .delete()
+      .eq('id', profileId)
+      .eq('user_id', userId);
+
+    if (error) {
+      return { error, wasDefault: false };
+    }
+
+    return { error: null, wasDefault };
+  } catch (error) {
+    return { error, wasDefault: false };
+  }
+}
+
+/**
+ * Set a profile as the default
+ * @param {string} profileId - UUID of the profile
  * @returns {Promise<{error: Error | null}>}
  */
-export async function saveUserDefaults(defaults) {
+export async function setDefaultProfile(profileId) {
   try {
     const userId = getUserId();
     if (!userId) {
       return { error: new Error('User not authenticated') };
     }
 
-    // Upsert (insert or update) defaults
+    // Unset all defaults first
+    await supabase
+      .from('user_profiles')
+      .update({ is_default: false })
+      .eq('user_id', userId)
+      .eq('is_default', true);
+
+    // Set the new default
     const { error } = await supabase
-      .from('user_defaults')
-      .upsert({
-        user_id: userId,
-        fuel_price: parseFloat(defaults.fuelPrice),
-        fuel_density: parseFloat(defaults.fuelDensity),
-        pilot_rate: parseFloat(defaults.pilotRate),
-        attendant_rate: parseFloat(defaults.attendantRate),
-        hotel_rate: parseFloat(defaults.hotelRate),
-        meals_rate: parseFloat(defaults.mealsRate),
-        maintenance_rate: parseFloat(defaults.maintenanceRate),
-        apu_burn: parseFloat(defaults.apuBurn),
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      });
+      .from('user_profiles')
+      .update({ is_default: true })
+      .eq('id', profileId)
+      .eq('user_id', userId);
 
     if (error) {
       return { error };
