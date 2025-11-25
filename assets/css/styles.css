@@ -2161,10 +2161,10 @@ body.share-view-mode .header {
 
 .profile-card-icon {
     flex-shrink: 0;
-    width: 80px;
-    height: 80px;
-    min-width: 80px;
-    min-height: 80px;
+    width: 220px;
+    height: 165px;
+    min-width: 220px;
+    min-height: 165px;
     background: var(--color-bg);
     border: 2px solid var(--color-border);
     border-radius: var(--border-radius);
@@ -2172,20 +2172,28 @@ body.share-view-mode .header {
     align-items: center;
     justify-content: center;
     font-size: 2rem;
+    overflow: hidden;
+}
+
+.profile-card-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .profile-badge {
     display: inline-block;
-    background-color: var(--color-primary);
+    background-color: #3b82f6;
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.6rem;
     font-weight: 600;
     padding: 0.35rem 0.75rem;
     border-radius: 50rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     line-height: 1;
-    margin-bottom: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    align-self: flex-start;
 }
 
 .profile-card-details {
@@ -2377,34 +2385,6 @@ body.share-view-mode .header {
         gap: var(--spacing-md);
     }
 
-    .profile-card-content {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .profile-card-icon {
-        margin-bottom: var(--spacing-sm);
-    }
-
-    .profile-card-actions {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-    }
-
-    .profile-card-actions-left,
-    .profile-card-actions-right {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    .profile-card-actions-left {
-        flex-direction: column;
-    }
-
-    .profile-card-actions button {
-        width: 100%;
-    }
-
     .btn-add-profile {
         max-width: 100%;
     }
@@ -2413,6 +2393,19 @@ body.share-view-mode .header {
 @media (max-width: 480px) {
     .profiles-header {
         gap: var(--spacing-sm);
+    }
+
+    .profile-card-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .profile-card-icon {
+        width: 100%;
+        height: auto;
+        min-width: 100%;
+        min-height: auto;
+        margin-bottom: var(--spacing-sm);
     }
 
     .btn-back {

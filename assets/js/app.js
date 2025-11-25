@@ -709,16 +709,16 @@ function renderProfilesList() {
             </div>
             <div class="profile-card-content">
                 <div class="profile-card-icon">
-                    ✈️
+                    <img src="assets/images/profile-placeholder.jpg" alt="Profile aircraft" />
                 </div>
                 <div class="profile-card-details">
                     <div><strong>Pilots:</strong> ${profile.pilotsRequired} @ $${profile.pilotRate.toFixed(2)}/day</div>
                     <div><strong>Attendants:</strong> ${profile.attendantsRequired} @ $${profile.attendantRate.toFixed(2)}/day</div>
                     <div><strong>Fuel:</strong> $${profile.fuelPrice.toFixed(2)}/gal</div>
                     <div><strong>Maintenance:</strong> $${profile.maintenanceRate.toFixed(2)}/hr</div>
+                    ${profile.isDefault ? '<span class="profile-badge">Default</span>' : ''}
                 </div>
             </div>
-            ${profile.isDefault ? '<span class="profile-badge">Default</span>' : ''}
             <div class="profile-card-actions">
                 <div class="profile-card-actions-left">
                     <button class="btn-icon" onclick="editProfile('${profile.id}')" title="Edit Profile">
