@@ -134,7 +134,8 @@ const state = {
     currentEstimateName: null,
     selectedProfileId: null, // Currently selected profile ID
     userProfiles: [], // User's custom profiles from database
-    isSaved: false // Whether the current estimate has been saved
+    isSaved: false, // Whether the current estimate has been saved
+    profileIdToDelete: null // Profile ID pending deletion confirmation
 };
 
 // PDF Preview State
@@ -323,6 +324,16 @@ async function initializeApp() {
         if (importIntent && user) {
             sessionStorage.removeItem('importAfterSignIn');
             handlePostSignInImport(importIntent);
+        }
+
+        // Handle opening profiles view after sign-in from the "Sign in to create profile" link
+        const openProfilesIntent = sessionStorage.getItem('openProfilesAfterSignIn');
+        if (openProfilesIntent === 'true' && user && event === 'SIGNED_IN') {
+            sessionStorage.removeItem('openProfilesAfterSignIn');
+            // Small delay to ensure profiles have been loaded
+            setTimeout(() => {
+                openProfilesView();
+            }, 100);
         }
     });
 
@@ -566,7 +577,7 @@ function renderProfileSelector() {
     if (isAuthenticated()) {
         actionButton.innerHTML = '<button class="btn-secondary" onclick="openProfilesView()">New Profile</button>';
     } else {
-        actionButton.innerHTML = '<p class="auth-message"><a href="#" onclick="openModal(\'signInModal\'); return false;">Sign in</a> to create a profile</p>';
+        actionButton.innerHTML = '<p class="auth-message"><a href="#" onclick="sessionStorage.setItem(\'openProfilesAfterSignIn\', \'true\'); openModal(\'signInModal\'); return false;">Sign in</a> to create a profile</p>';
     }
 
     // Update profile section visibility
@@ -879,13 +890,27 @@ async function deleteProfileAction(profileId) {
     const profile = state.userProfiles.find(p => p.id === profileId);
     if (!profile) return;
 
-    if (!confirm(`Are you sure you want to delete the profile "${profile.name}"?`)) {
-        return;
-    }
+    // Store the profile ID for the confirmation handler
+    state.profileIdToDelete = profileId;
+
+    // Update the modal with the profile name
+    document.getElementById('deleteProfileName').textContent = profile.name;
+
+    // Open the confirmation modal
+    openModal('deleteProfileConfirmModal');
+}
+
+/**
+ * Confirm and execute profile deletion
+ */
+async function confirmDeleteProfile() {
+    const profileId = state.profileIdToDelete;
+    if (!profileId) return;
 
     const { error, wasDefault } = await deleteProfile(profileId);
     if (error) {
         showToast('Failed to delete profile: ' + error.message, 'error');
+        closeModal('deleteProfileConfirmModal');
         return;
     }
 
@@ -897,6 +922,10 @@ async function deleteProfileAction(profileId) {
     } else {
         showToast('Profile deleted successfully', 'success');
     }
+
+    // Clean up
+    state.profileIdToDelete = null;
+    closeModal('deleteProfileConfirmModal');
 
     // Reload profiles and update UI
     await loadUserProfilesFromDB();
@@ -980,6 +1009,8 @@ window.duplicateProfile = duplicateProfile;
 window.deleteProfileAction = deleteProfileAction;
 window.exportProfileAction = exportProfileAction;
 window.openProfilesView = openProfilesView;
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 // Legacy function for backwards compatibility - can be removed later
 async function saveDefaultsAction() {
@@ -1060,6 +1091,21 @@ async function handleSignOut() {
 
     // Explicitly update UI to signed-out state
     updateUIForAuthState(null);
+
+    // Clear user profiles and re-render profile UI
+    state.userProfiles = [];
+    renderProfileSelector();
+
+    // Close profiles view if open
+    const profilesView = document.getElementById('profilesView');
+    if (profilesView && profilesView.style.display !== 'none') {
+        closeProfilesView();
+    }
+
+    // Clear estimate state
+    state.currentEstimateId = null;
+    state.currentEstimateName = null;
+    state.isSaved = false;
 
     // Reload defaults from localStorage
     await loadDefaultsFromSource();
@@ -1428,6 +1474,11 @@ function attachEventListeners() {
     document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => closeModal('deleteConfirmModal'));
     document.getElementById('cancelDeleteButton').addEventListener('click', () => closeModal('deleteConfirmModal'));
     document.getElementById('confirmDeleteButton').addEventListener('click', confirmDeleteEstimate);
+
+    // Delete profile confirmation modal
+    document.getElementById('closeDeleteProfileConfirmModal').addEventListener('click', () => closeModal('deleteProfileConfirmModal'));
+    document.getElementById('cancelDeleteProfileButton').addEventListener('click', () => closeModal('deleteProfileConfirmModal'));
+    document.getElementById('confirmDeleteProfileButton').addEventListener('click', confirmDeleteProfile);
 
     // PDF preview modal
     document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
