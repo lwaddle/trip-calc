@@ -2084,6 +2084,9 @@ body.share-view-mode .header {
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: all var(--transition-base);
+    color: var(--color-text);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 .btn-icon:hover {
