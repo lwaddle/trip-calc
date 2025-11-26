@@ -171,15 +171,24 @@ function formatNumber(number, decimals = 0) {
  */
 function updateMainHeading() {
     const mainHeading = document.getElementById('mainHeading');
+    const renameIcon = document.getElementById('renameEstimateIcon');
 
     if (state.currentEstimateName) {
         // Show estimate name as heading
         mainHeading.textContent = state.currentEstimateName;
         document.title = `${state.currentEstimateName} - Trip Cost Calculator`;
+        // Show rename icon when estimate is loaded
+        if (renameIcon) {
+            renameIcon.style.display = 'flex';
+        }
     } else {
         // Show default heading
         mainHeading.textContent = 'Trip Cost Calculator';
         document.title = 'Trip Cost Calculator';
+        // Hide rename icon when no estimate is loaded
+        if (renameIcon) {
+            renameIcon.style.display = 'none';
+        }
     }
 }
 
@@ -1731,6 +1740,9 @@ function attachEventListeners() {
     document.getElementById('saveEstimateButton').addEventListener('click', saveEstimateAction);
     document.getElementById('loadEstimateButton').addEventListener('click', () => openModal('loadEstimateModal'));
     document.getElementById('resetButton').addEventListener('click', resetForm);
+
+    // Rename icon button (opens Update Estimate modal)
+    document.getElementById('renameEstimateIcon').addEventListener('click', saveEstimateAction);
 
     // Defaults modal
     // Profiles View
