@@ -5,20 +5,44 @@
  * dynamic <title> and OpenGraph meta tags for link previews.
  */
 
+/**
+ * Creates cache headers to prevent iOS Safari/iMessage WebView from caching
+ *
+ * @returns {Object} Headers object with no-cache directives
+ */
+function getNoCacheHeaders() {
+  return {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+}
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const shareToken = url.searchParams.get('share');
 
   // If no share parameter, serve index.html for SPA routing
   if (!shareToken) {
-    return context.env.ASSETS.fetch(context.request);
+    const response = await context.env.ASSETS.fetch(context.request);
+    // Clone response and add no-cache headers
+    const newResponse = new Response(response.body, response);
+    Object.entries(getNoCacheHeaders()).forEach(([key, value]) => {
+      newResponse.headers.set(key, value);
+    });
+    return newResponse;
   }
 
   try {
     // Validate environment variables
     if (!context.env.SUPABASE_URL || !context.env.SUPABASE_ANON_KEY) {
       console.error('Missing Supabase environment variables');
-      return context.env.ASSETS.fetch(context.request);
+      const response = await context.env.ASSETS.fetch(context.request);
+      const newResponse = new Response(response.body, response);
+      Object.entries(getNoCacheHeaders()).forEach(([key, value]) => {
+        newResponse.headers.set(key, value);
+      });
+      return newResponse;
     }
 
     // Fetch estimate name from Supabase
@@ -31,10 +55,14 @@ export async function onRequest(context) {
     // Fetch the base HTML using the original request
     const response = await context.env.ASSETS.fetch(context.request);
 
-    // If estimate not found, return original HTML
+    // If estimate not found, return original HTML with no-cache headers
     if (!estimateName) {
       console.warn('No estimate name found for token:', shareToken);
-      return response;
+      const newResponse = new Response(response.body, response);
+      Object.entries(getNoCacheHeaders()).forEach(([key, value]) => {
+        newResponse.headers.set(key, value);
+      });
+      return newResponse;
     }
 
     // Generate dynamic title and URLs
@@ -45,7 +73,7 @@ export async function onRequest(context) {
     console.log('Injecting dynamic metadata:', dynamicTitle);
 
     // Use HTMLRewriter to inject dynamic metadata
-    return new HTMLRewriter()
+    const transformedResponse = new HTMLRewriter()
       .on('title', {
         element(el) {
           el.setInnerContent(dynamicTitle);
@@ -83,10 +111,22 @@ export async function onRequest(context) {
       })
       .transform(response);
 
+    // Add no-cache headers to transformed response
+    Object.entries(getNoCacheHeaders()).forEach(([key, value]) => {
+      transformedResponse.headers.set(key, value);
+    });
+
+    return transformedResponse;
+
   } catch (error) {
-    // On any error, fallback to serving index.html
+    // On any error, fallback to serving index.html with no-cache headers
     console.error('Error generating dynamic metadata:', error);
-    return context.env.ASSETS.fetch(context.request);
+    const response = await context.env.ASSETS.fetch(context.request);
+    const newResponse = new Response(response.body, response);
+    Object.entries(getNoCacheHeaders()).forEach(([key, value]) => {
+      newResponse.headers.set(key, value);
+    });
+    return newResponse;
   }
 }
 
