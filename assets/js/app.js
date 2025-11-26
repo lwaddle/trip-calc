@@ -766,18 +766,18 @@ function openNewProfileEditor() {
     shouldRemoveProfileImage = false;
     document.getElementById('profileEditorTitle').textContent = 'New Profile';
 
-    // Reset form to defaults
+    // Reset form to blank values
     document.getElementById('profileName').value = '';
-    document.getElementById('profileFuelPrice').value = '6.00';
-    document.getElementById('profileFuelDensity').value = '6.7';
-    document.getElementById('profilePilotsRequired').value = '2';
-    document.getElementById('profilePilotRate').value = '1600.00';
-    document.getElementById('profileAttendantsRequired').value = '0';
-    document.getElementById('profileAttendantRate').value = '800.00';
-    document.getElementById('profileHotelRate').value = '250.00';
-    document.getElementById('profileMealsRate').value = '100.00';
-    document.getElementById('profileMaintenanceRate').value = '1100.00';
-    document.getElementById('profileApuBurn').value = '120';
+    document.getElementById('profileFuelPrice').value = '';
+    document.getElementById('profileFuelDensity').value = '';
+    document.getElementById('profilePilotsRequired').value = '';
+    document.getElementById('profilePilotRate').value = '';
+    document.getElementById('profileAttendantsRequired').value = '';
+    document.getElementById('profileAttendantRate').value = '';
+    document.getElementById('profileHotelRate').value = '';
+    document.getElementById('profileMealsRate').value = '';
+    document.getElementById('profileMaintenanceRate').value = '';
+    document.getElementById('profileApuBurn').value = '';
     document.getElementById('profileIsDefault').checked = false;
 
     // Reset image input and preview
