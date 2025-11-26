@@ -166,6 +166,23 @@ function formatNumber(number, decimals = 0) {
     return number.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+/**
+ * Updates the main heading and browser title based on current estimate
+ */
+function updateMainHeading() {
+    const mainHeading = document.getElementById('mainHeading');
+
+    if (state.currentEstimateName) {
+        // Show estimate name as heading
+        mainHeading.textContent = state.currentEstimateName;
+        document.title = `${state.currentEstimateName} - Trip Cost Calculator`;
+    } else {
+        // Show default heading
+        mainHeading.textContent = 'Trip Cost Calculator';
+        document.title = 'Trip Cost Calculator';
+    }
+}
+
 // ===========================
 // View Management
 // ===========================
@@ -1432,6 +1449,9 @@ async function handleSignOut() {
     state.currentEstimateId = null;
     state.currentEstimateName = null;
     state.isSaved = false;
+
+    // Reset main heading to default
+    updateMainHeading();
 
     // Reload defaults from localStorage
     await loadDefaultsFromSource();
@@ -3302,6 +3322,9 @@ async function confirmSaveEstimate(e) {
     state.currentEstimateName = data.name;
     state.isSaved = true;
 
+    // Update main heading to show estimate name
+    updateMainHeading();
+
     // Hide profile section after save
     updateProfileSectionVisibility();
 
@@ -3350,6 +3373,9 @@ async function confirmUpdateEstimate(e) {
     // Update the name in state
     state.currentEstimateName = name;
     state.isSaved = true;
+
+    // Update main heading to show updated estimate name
+    updateMainHeading();
 
     // Hide profile section after update
     updateProfileSectionVisibility();
@@ -3433,6 +3459,9 @@ function loadEstimateAction(estimate, options = {}) {
     state.currentEstimateId = estimate.id;
     state.currentEstimateName = estimate.name;
     state.isSaved = true; // Loading an estimate means it's saved
+
+    // Update main heading to show estimate name
+    updateMainHeading();
 
     // Hide profile section since this is a saved estimate
     updateProfileSectionVisibility();
@@ -4111,6 +4140,9 @@ function confirmReset() {
     state.currentEstimateId = null;
     state.currentEstimateName = null;
     state.isSaved = false; // Reset to unsaved state
+
+    // Reset main heading to default
+    updateMainHeading();
 
     // Clear containers
     document.getElementById('flightLegsContainer').innerHTML = '';
