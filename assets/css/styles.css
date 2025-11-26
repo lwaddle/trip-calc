@@ -2335,6 +2335,58 @@ body.share-view-mode .header {
 }
 
 /* Profile Image Upload */
+.profile-image-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.profile-image-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    background-color: var(--color-primary);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    border: none;
+    align-self: flex-start;
+}
+
+.profile-image-button:hover {
+    background-color: var(--color-primary-hover);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.profile-image-button:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.profile-image-button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.camera-icon {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
 .profile-image-preview {
     margin-top: var(--spacing-md);
     position: relative;
@@ -2365,6 +2417,24 @@ body.share-view-mode .header {
 
 .btn-remove-image:hover {
     background: #c82333;
+}
+
+/* Default Profile Option */
+.default-profile-option {
+    background: linear-gradient(to bottom, #f8f9fa, #f0f2f5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.default-profile-option label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    margin: 0;
+    font-weight: 500;
 }
 
 /* ===========================
