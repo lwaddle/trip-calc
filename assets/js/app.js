@@ -1,8 +1,10 @@
 // ===========================
 // Imports
 // ===========================
-import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail } from './auth.js';
-import { loadUserDefaults, saveUserDefaults, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail, getUserId } from './auth.js';
+import { getUserProfiles, getDefaultProfile, createProfile, updateProfile, deleteProfile, setDefaultProfile, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { supabase } from './supabase.js';
+import imageCompression from 'browser-image-compression';
 
 // ===========================
 // Early Password Recovery Detection
@@ -40,6 +42,89 @@ if (window.location.hash.includes('type=recovery')) {
 })();
 
 // ===========================
+// Standard Profiles
+// ===========================
+const STANDARD_PROFILES = [
+    {
+        id: 'jet-large',
+        name: 'Jet - Large',
+        fuelPrice: 6.00,
+        fuelDensity: 6.7,
+        pilotsRequired: 2,
+        pilotRate: 2500.00,
+        attendantsRequired: 1,
+        attendantRate: 1000.00,
+        hotelRate: 300.00,
+        mealsRate: 150.00,
+        maintenanceRate: 1800.00,
+        apuBurn: 225,
+        isStandard: true
+    },
+    {
+        id: 'jet-medium',
+        name: 'Jet - Medium',
+        fuelPrice: 6.00,
+        fuelDensity: 6.7,
+        pilotsRequired: 2,
+        pilotRate: 1600.00,
+        attendantsRequired: 0,
+        attendantRate: 800.00,
+        hotelRate: 250.00,
+        mealsRate: 100.00,
+        maintenanceRate: 1100.00,
+        apuBurn: 120,
+        isStandard: true
+    },
+    {
+        id: 'jet-small',
+        name: 'Jet - Small',
+        fuelPrice: 6.00,
+        fuelDensity: 6.7,
+        pilotsRequired: 1,
+        pilotRate: 1300.00,
+        attendantsRequired: 0,
+        attendantRate: 500.00,
+        hotelRate: 250.00,
+        mealsRate: 100.00,
+        maintenanceRate: 800.00,
+        apuBurn: 0,
+        isStandard: true
+    },
+    {
+        id: 'turboprop-twin',
+        name: 'Turboprop - Twin',
+        fuelPrice: 6.00,
+        fuelDensity: 6.7,
+        pilotsRequired: 1,
+        pilotRate: 1000.00,
+        attendantsRequired: 0,
+        attendantRate: 500.00,
+        hotelRate: 250.00,
+        mealsRate: 100.00,
+        maintenanceRate: 800.00,
+        apuBurn: 0,
+        isStandard: true
+    },
+    {
+        id: 'turboprop-single',
+        name: 'Turboprop - Single',
+        fuelPrice: 6.00,
+        fuelDensity: 6.7,
+        pilotsRequired: 1,
+        pilotRate: 1000.00,
+        attendantsRequired: 0,
+        attendantRate: 500.00,
+        hotelRate: 250.00,
+        mealsRate: 100.00,
+        maintenanceRate: 500.00,
+        apuBurn: 0,
+        isStandard: true
+    }
+];
+
+const DEFAULT_PROFILE_ID = 'jet-medium';
+
+// ===========================
 // App State
 // ===========================
 const state = {
@@ -48,13 +133,22 @@ const state = {
     nextLegId: 1,
     nextCrewId: 1,
     currentEstimateId: null,
-    currentEstimateName: null
+    currentEstimateName: null,
+    selectedProfileId: null, // Currently selected profile ID
+    userProfiles: [], // User's custom profiles from database
+    isSaved: false, // Whether the current estimate has been saved
+    profileIdToDelete: null // Profile ID pending deletion confirmation
 };
 
 // PDF Preview State
 let currentPdfDoc = null;
 let currentPdfBlob = null;
 let currentPdfFilename = null;
+
+// Profile Editor State
+let currentEditingProfileId = null;
+let currentProfileImageUrl = null; // Track existing image URL when editing
+let shouldRemoveProfileImage = false; // Track if user wants to remove the image
 
 // Password Recovery State (using localStorage to sync across tabs)
 // Check: localStorage.getItem('passwordRecoveryInProgress') === 'true'
@@ -89,6 +183,7 @@ function updateUIForAuthState(user) {
     const menuUser = document.getElementById('menuUser');
     const menuSignIn = document.getElementById('menuSignIn');
     const menuEstimates = document.getElementById('menuEstimates');
+    const menuProfiles = document.getElementById('menuProfiles');
     const menuSignOut = document.getElementById('menuSignOut');
 
     // Footer buttons
@@ -102,6 +197,7 @@ function updateUIForAuthState(user) {
         menuUser.style.display = 'block';
         menuSignIn.style.display = 'none';
         menuEstimates.style.display = 'block';
+        if (menuProfiles) menuProfiles.style.display = 'block';
         menuSignOut.style.display = 'block';
 
         // Show save/load buttons
@@ -115,6 +211,7 @@ function updateUIForAuthState(user) {
         menuUser.style.display = 'none';
         menuSignIn.style.display = 'block';
         menuEstimates.style.display = 'none';
+        if (menuProfiles) menuProfiles.style.display = 'none';
         menuSignOut.style.display = 'none';
 
         // Hide save/load buttons for anonymous users
@@ -136,7 +233,6 @@ function updateDesktopNavForAuthState(user) {
     const isAuth = user !== null;
 
     // Desktop nav elements
-    const desktopDefaults = document.getElementById('desktopDefaults');
     const desktopEstimates = document.getElementById('desktopEstimates');
     const desktopSignIn = document.getElementById('desktopSignIn');
     const desktopUserDropdown = document.getElementById('desktopUserDropdown');
@@ -236,14 +332,23 @@ async function initializeApp() {
             sessionStorage.removeItem('importAfterSignIn');
             handlePostSignInImport(importIntent);
         }
+
+        // Handle opening profiles view after sign-in from the "Sign in to create profile" link
+        const openProfilesIntent = sessionStorage.getItem('openProfilesAfterSignIn');
+        if (openProfilesIntent === 'true' && user && event === 'SIGNED_IN') {
+            sessionStorage.removeItem('openProfilesAfterSignIn');
+            // Small delay to ensure profiles have been loaded
+            setTimeout(() => {
+                openProfilesView();
+            }, 100);
+        }
     });
 
-    // Load defaults (will use Supabase if authenticated, localStorage otherwise)
-    await loadDefaultsFromSource();
+    // Initialize profiles (will load user profiles and apply selected profile)
+    await initializeProfiles();
 
     addInitialLeg();
-    addInitialCrew();
-    addInitialCrew();
+    // Crew is now added by applyProfile(), so don't add initial crew here
     attachEventListeners();
     updateEstimate();
 
@@ -269,83 +374,870 @@ async function initializeApp() {
 }
 
 // ===========================
-// Defaults Management
+// Profile Management
 // ===========================
-async function loadDefaultsFromSource() {
-    let defaults = getDefaults();
 
-    // Try to load from Supabase if authenticated
+/**
+ * Get all available profiles (standard + user custom profiles)
+ * @returns {Array} Array of profile objects
+ */
+function getAllProfiles() {
+    // User profiles come first (alphabetically), then standard profiles
+    return [...state.userProfiles, ...STANDARD_PROFILES];
+}
+
+/**
+ * Get a profile by ID
+ * @param {string} profileId - Profile ID
+ * @returns {object|null} Profile object or null if not found
+ */
+function getProfileById(profileId) {
+    const allProfiles = getAllProfiles();
+    return allProfiles.find(p => p.id === profileId) || null;
+}
+
+/**
+ * Load user's custom profiles from database
+ */
+async function loadUserProfilesFromDB() {
+    if (!isAuthenticated()) {
+        state.userProfiles = [];
+        return;
+    }
+
+    const { data, error } = await getUserProfiles();
+    if (!error && data) {
+        // Convert database format to app format
+        state.userProfiles = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            fuelPrice: parseFloat(p.fuel_price),
+            fuelDensity: parseFloat(p.fuel_density),
+            pilotsRequired: parseInt(p.pilots_required),
+            pilotRate: parseFloat(p.pilot_rate),
+            attendantsRequired: parseInt(p.attendants_required),
+            attendantRate: parseFloat(p.attendant_rate),
+            hotelRate: parseFloat(p.hotel_rate),
+            mealsRate: parseFloat(p.meals_rate),
+            maintenanceRate: parseFloat(p.maintenance_rate),
+            apuBurn: parseInt(p.apu_burn),
+            profileImageUrl: p.profile_image_url || null,
+            isDefault: p.is_default,
+            isStandard: false
+        }));
+    }
+}
+
+/**
+ * Get the selected profile ID (from state, localStorage, or default profile from DB)
+ * @returns {Promise<string>} Profile ID
+ */
+async function getSelectedProfileId() {
+    // If already set in state, use that
+    if (state.selectedProfileId) {
+        return state.selectedProfileId;
+    }
+
+    // For authenticated users, check if they have a default profile in DB
     if (isAuthenticated()) {
-        const { data, error } = await loadUserDefaults();
+        const { data, error } = await getDefaultProfile();
         if (!error && data) {
-            defaults = {
-                fuelPrice: data.fuel_price,
-                fuelDensity: data.fuel_density,
-                pilotRate: data.pilot_rate,
-                attendantRate: data.attendant_rate,
-                hotelRate: data.hotel_rate,
-                mealsRate: data.meals_rate,
-                maintenanceRate: data.maintenance_rate,
-                apuBurn: data.apu_burn
-            };
-        }
-    } else {
-        // Load from localStorage for anonymous users
-        const stored = localStorage.getItem('tripCalcDefaults');
-        if (stored) {
-            defaults = JSON.parse(stored);
+            return data.id;
         }
     }
 
-    applyDefaults(defaults);
+    // Check localStorage (for guests or as fallback)
+    const stored = localStorage.getItem('selectedProfileId');
+    if (stored) {
+        return stored;
+    }
+
+    // Fall back to default
+    return DEFAULT_PROFILE_ID;
 }
 
-function applyDefaults(defaults) {
-    document.getElementById('fuelPrice').value = defaults.fuelPrice;
-    document.getElementById('fuelDensity').value = defaults.fuelDensity;
-    document.getElementById('hotelRate').value = defaults.hotelRate;
-    document.getElementById('mealsRate').value = defaults.mealsRate;
-    document.getElementById('maintenancePrograms').value = defaults.maintenanceRate;
-
-    // Set defaults in modal
-    document.getElementById('defaultFuelPrice').value = defaults.fuelPrice;
-    document.getElementById('defaultFuelDensity').value = defaults.fuelDensity;
-    document.getElementById('defaultPilotRate').value = defaults.pilotRate;
-    document.getElementById('defaultAttendantRate').value = defaults.attendantRate;
-    document.getElementById('defaultHotelRate').value = defaults.hotelRate;
-    document.getElementById('defaultMealsRate').value = defaults.mealsRate;
-    document.getElementById('defaultMaintenanceRate').value = defaults.maintenanceRate;
-    document.getElementById('defaultAPUBurn').value = defaults.apuBurn;
+/**
+ * Save selected profile ID
+ * @param {string} profileId - Profile ID to save
+ */
+function saveSelectedProfileId(profileId) {
+    state.selectedProfileId = profileId;
+    localStorage.setItem('selectedProfileId', profileId);
 }
 
-function getDefaults() {
-    return {
-        fuelPrice: 5.93,
-        fuelDensity: 6.7,
-        pilotRate: 1500,
-        attendantRate: 800,
-        hotelRate: 200,
-        mealsRate: 100,
-        maintenanceRate: 1048.42,
-        apuBurn: 100
-    };
+/**
+ * Apply a profile to the calculator
+ * @param {object} profile - Profile object
+ */
+function applyProfile(profile) {
+    if (!profile) return;
+
+    // Apply form field values
+    document.getElementById('fuelPrice').value = profile.fuelPrice.toFixed(2);
+    document.getElementById('fuelDensity').value = profile.fuelDensity.toFixed(2);
+    document.getElementById('hotelRate').value = profile.hotelRate.toFixed(2);
+    document.getElementById('mealsRate').value = profile.mealsRate.toFixed(2);
+    document.getElementById('maintenancePrograms').value = profile.maintenanceRate.toFixed(2);
+
+    // Clear existing crew
+    state.crew = [];
+    state.nextCrewId = 1;
+
+    // Add pilots
+    for (let i = 0; i < profile.pilotsRequired; i++) {
+        addCrewMember('Pilot', profile.pilotRate);
+    }
+
+    // Add flight attendants
+    for (let i = 0; i < profile.attendantsRequired; i++) {
+        addCrewMember('Flight Attendant', profile.attendantRate);
+    }
+
+    renderCrew();
 }
 
-async function saveDefaultsAction() {
-    const defaults = {
-        fuelPrice: parseFloat(document.getElementById('defaultFuelPrice').value) || 5.93,
-        fuelDensity: parseFloat(document.getElementById('defaultFuelDensity').value) || 6.7,
-        pilotRate: parseFloat(document.getElementById('defaultPilotRate').value) || 1500,
-        attendantRate: parseFloat(document.getElementById('defaultAttendantRate').value) || 800,
-        hotelRate: parseFloat(document.getElementById('defaultHotelRate').value) || 200,
-        mealsRate: parseFloat(document.getElementById('defaultMealsRate').value) || 100,
-        maintenanceRate: parseFloat(document.getElementById('defaultMaintenanceRate').value) || 1048.42,
-        apuBurn: parseFloat(document.getElementById('defaultAPUBurn').value) || 100
-    };
+/**
+ * Initialize profiles on app load
+ */
+async function initializeProfiles() {
+    // Load user's custom profiles if authenticated
+    await loadUserProfilesFromDB();
 
-    // Save to Supabase if authenticated, otherwise localStorage
+    // Get the selected profile ID
+    const profileId = await getSelectedProfileId();
+    state.selectedProfileId = profileId;
+
+    // Apply the profile
+    const profile = getProfileById(profileId);
+    if (profile) {
+        applyProfile(profile);
+    }
+
+    // Render the profile selector
+    renderProfileSelector();
+}
+
+/**
+ * Handle profile selection change
+ * @param {string} profileId - Selected profile ID
+ */
+function onProfileChange(profileId) {
+    const profile = getProfileById(profileId);
+    if (!profile) return;
+
+    saveSelectedProfileId(profileId);
+    applyProfile(profile);
+    updateEstimate();
+}
+
+/**
+ * Render the profile selector dropdown
+ */
+function renderProfileSelector() {
+    const selector = document.getElementById('profileSelector');
+    const actionButton = document.getElementById('profileActionButton');
+
+    if (!selector || !actionButton) return;
+
+    const allProfiles = getAllProfiles();
+
+    // Clear existing options
+    selector.innerHTML = '';
+
+    // Add user profiles (with edit icon)
+    state.userProfiles.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        option.dataset.isCustom = 'true';
+        option.dataset.profile = JSON.stringify({
+            pilotsRequired: profile.pilotsRequired,
+            pilotRate: profile.pilotRate,
+            attendantsRequired: profile.attendantsRequired,
+            fuelPrice: profile.fuelPrice,
+            maintenanceRate: profile.maintenanceRate
+        });
+        if (profile.id === state.selectedProfileId) {
+            option.selected = true;
+        }
+        selector.appendChild(option);
+    });
+
+    // Add standard profiles
+    STANDARD_PROFILES.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        option.dataset.profile = JSON.stringify({
+            pilotsRequired: profile.pilotsRequired,
+            pilotRate: profile.pilotRate,
+            attendantsRequired: profile.attendantsRequired,
+            fuelPrice: profile.fuelPrice,
+            maintenanceRate: profile.maintenanceRate
+        });
+        if (profile.id === state.selectedProfileId) {
+            option.selected = true;
+        }
+        selector.appendChild(option);
+    });
+
+    // Render action button or message
     if (isAuthenticated()) {
-        const { error } = await saveUserDefaults(defaults);
+        actionButton.innerHTML = '<button class="btn-secondary" onclick="openProfilesView()">New Profile</button>';
+    } else {
+        actionButton.innerHTML = '<p class="auth-message"><a href="#" onclick="sessionStorage.setItem(\'openProfilesAfterSignIn\', \'true\'); openModal(\'signInModal\'); return false;">Sign in</a> to create a profile</p>';
+    }
+
+    // Update profile section visibility
+    updateProfileSectionVisibility();
+}
+
+/**
+ * Update profile section visibility based on save state
+ */
+function updateProfileSectionVisibility() {
+    const profileSection = document.getElementById('profileSection');
+    if (!profileSection) return;
+
+    // Hide profile section if estimate is saved
+    if (state.isSaved) {
+        profileSection.style.display = 'none';
+    } else {
+        profileSection.style.display = 'block';
+    }
+}
+
+/**
+ * Export a profile to JSON
+ * @param {object} profile - Profile object
+ * @returns {string} JSON string
+ */
+function exportProfile(profile) {
+    const exportData = {
+        name: profile.name,
+        fuelPrice: profile.fuelPrice,
+        fuelDensity: profile.fuelDensity,
+        pilotsRequired: profile.pilotsRequired,
+        pilotRate: profile.pilotRate,
+        attendantsRequired: profile.attendantsRequired,
+        attendantRate: profile.attendantRate,
+        hotelRate: profile.hotelRate,
+        mealsRate: profile.mealsRate,
+        maintenanceRate: profile.maintenanceRate,
+        apuBurn: profile.apuBurn
+    };
+    return JSON.stringify(exportData, null, 2);
+}
+
+/**
+ * Import a profile from JSON
+ * @param {string} jsonString - JSON string
+ * @returns {object|null} Profile data or null if invalid
+ */
+function importProfile(jsonString) {
+    try {
+        const data = JSON.parse(jsonString);
+
+        // Validate required fields
+        if (!data.name || data.fuelPrice === undefined || data.fuelDensity === undefined ||
+            data.pilotsRequired === undefined || data.attendantsRequired === undefined) {
+            return null;
+        }
+
+        return {
+            name: data.name,
+            fuelPrice: parseFloat(data.fuelPrice) || 0,
+            fuelDensity: parseFloat(data.fuelDensity) || 6.7,
+            pilotsRequired: parseInt(data.pilotsRequired) || 1,
+            pilotRate: parseFloat(data.pilotRate) || 0,
+            attendantsRequired: parseInt(data.attendantsRequired) || 0,
+            attendantRate: parseFloat(data.attendantRate) || 0,
+            hotelRate: parseFloat(data.hotelRate) || 0,
+            mealsRate: parseFloat(data.mealsRate) || 0,
+            maintenanceRate: parseFloat(data.maintenanceRate) || 0,
+            apuBurn: parseInt(data.apuBurn) || 0
+        };
+    } catch (error) {
+        return null;
+    }
+}
+
+// ===========================
+// Profiles View Management
+// ===========================
+
+/**
+ * Open the profiles view
+ */
+function openProfilesView() {
+    // Hide main view and show profiles view
+    document.getElementById('normalView').style.display = 'none';
+    document.getElementById('profilesView').style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent scrolling of main page
+
+    // Render the profiles list
+    renderProfilesList();
+}
+
+/**
+ * Close the profiles view
+ */
+function closeProfilesView() {
+    document.getElementById('profilesView').style.display = 'none';
+    document.getElementById('normalView').style.display = 'block';
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+/**
+ * Render the list of profiles
+ */
+function renderProfilesList() {
+    const container = document.getElementById('profilesList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (state.userProfiles.length === 0) {
+        container.innerHTML = '<p class="empty-state">No custom profiles yet. Click "New Profile" to create one.</p>';
+        return;
+    }
+
+    state.userProfiles.forEach(profile => {
+        const profileCard = document.createElement('div');
+        profileCard.className = 'profile-card';
+        if (profile.isDefault) {
+            profileCard.classList.add('profile-default');
+        }
+
+        profileCard.innerHTML = `
+            <div class="profile-card-header">
+                <h3 class="profile-card-name">${profile.name}</h3>
+            </div>
+            <div class="profile-card-content">
+                <div class="profile-card-icon">
+                    <img src="${profile.profileImageUrl || '/img/default-profile-placeholder.jpg'}" alt="Profile aircraft" />
+                </div>
+                <div class="profile-card-details">
+                    <div><strong>Pilots:</strong> ${profile.pilotsRequired} @ $${profile.pilotRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>
+                    <div><strong>Attendants:</strong> ${profile.attendantsRequired === 0 ? '0' : `${profile.attendantsRequired} @ $${profile.attendantRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`}</div>
+                    <div><strong>Fuel:</strong> $${profile.fuelPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/gal</div>
+                    <div><strong>Maintenance:</strong> $${profile.maintenanceRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/hr</div>
+                    ${profile.isDefault ? '<span class="profile-badge">Default</span>' : ''}
+                </div>
+            </div>
+            <div class="profile-card-actions">
+                <div class="profile-card-actions-left">
+                    <button class="btn-icon" onclick="editProfile('${profile.id}')" title="Edit Profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="currentColor">
+                            <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" onclick="duplicateProfile('${profile.id}')" title="Copy Profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="16" height="16" fill="currentColor">
+                            <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" onclick="exportProfileAction('${profile.id}')" title="Download Profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="16" height="16" fill="currentColor">
+                            <path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="profile-card-actions-right">
+                    <button class="btn-icon btn-danger" onclick="deleteProfileAction('${profile.id}')" title="Delete Profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="16" height="16" fill="currentColor">
+                            <path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(profileCard);
+    });
+}
+
+/**
+ * Open profile editor for creating new profile
+ */
+function openNewProfileEditor() {
+    currentEditingProfileId = null;
+    currentProfileImageUrl = null;
+    shouldRemoveProfileImage = false;
+    document.getElementById('profileEditorTitle').textContent = 'New Profile';
+
+    // Reset form to blank values
+    document.getElementById('profileName').value = '';
+    document.getElementById('profileFuelPrice').value = '';
+    document.getElementById('profileFuelDensity').value = '';
+    document.getElementById('profilePilotsRequired').value = '';
+    document.getElementById('profilePilotRate').value = '';
+    document.getElementById('profileAttendantsRequired').value = '';
+    document.getElementById('profileAttendantRate').value = '';
+    document.getElementById('profileHotelRate').value = '';
+    document.getElementById('profileMealsRate').value = '';
+    document.getElementById('profileMaintenanceRate').value = '';
+    document.getElementById('profileApuBurn').value = '';
+    document.getElementById('profileIsDefault').checked = false;
+
+    // Reset image input and preview
+    document.getElementById('profileImageInput').value = '';
+    document.getElementById('profileImagePreview').style.display = 'none';
+
+    openModal('profileEditorModal');
+}
+
+/**
+ * Edit an existing profile
+ * @param {string} profileId - Profile ID
+ */
+function editProfile(profileId) {
+    const profile = state.userProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+
+    currentEditingProfileId = profileId;
+    currentProfileImageUrl = profile.profileImageUrl || null;
+    shouldRemoveProfileImage = false;
+    document.getElementById('profileEditorTitle').textContent = 'Edit Profile';
+
+    // Populate form
+    document.getElementById('profileName').value = profile.name;
+    document.getElementById('profileFuelPrice').value = profile.fuelPrice.toFixed(2);
+    document.getElementById('profileFuelDensity').value = profile.fuelDensity.toFixed(2);
+    document.getElementById('profilePilotsRequired').value = profile.pilotsRequired;
+    document.getElementById('profilePilotRate').value = profile.pilotRate.toFixed(2);
+    document.getElementById('profileAttendantsRequired').value = profile.attendantsRequired;
+    document.getElementById('profileAttendantRate').value = profile.attendantRate.toFixed(2);
+    document.getElementById('profileHotelRate').value = profile.hotelRate.toFixed(2);
+    document.getElementById('profileMealsRate').value = profile.mealsRate.toFixed(2);
+    document.getElementById('profileMaintenanceRate').value = profile.maintenanceRate.toFixed(2);
+    document.getElementById('profileApuBurn').value = profile.apuBurn;
+    document.getElementById('profileIsDefault').checked = profile.isDefault;
+
+    // Handle image preview
+    document.getElementById('profileImageInput').value = '';
+    if (profile.profileImageUrl) {
+        document.getElementById('profileImagePreviewImg').src = profile.profileImageUrl;
+        document.getElementById('profileImagePreview').style.display = 'block';
+    } else {
+        document.getElementById('profileImagePreview').style.display = 'none';
+    }
+
+    openModal('profileEditorModal');
+}
+
+/**
+ * Save profile (create or update)
+ */
+async function saveProfileAction() {
+    const form = document.getElementById('profileEditorForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    let imageUrl = currentProfileImageUrl; // Start with existing image URL
+
+    // Handle image upload if file selected
+    const fileInput = document.getElementById('profileImageInput');
+    if (fileInput.files.length > 0) {
+        let file = fileInput.files[0];
+
+        // Validate file type
+        const validationError = validateProfileImage(file);
+        if (validationError) {
+            showToast(validationError, 'error');
+            return;
+        }
+
+        // Crop to 4:3 aspect ratio first
+        try {
+            file = await cropImageTo4x3(file);
+        } catch (error) {
+            showToast('Failed to crop image: ' + error.message, 'error');
+            return;
+        }
+
+        // Compress image before upload
+        const compressionOptions = {
+            maxSizeMB: 0.2,              // Reduced from 1MB to 200KB
+            maxWidthOrHeight: 800,
+            useWebWorker: true,
+            initialQuality: 0.7,         // Set initial compression quality (0-1)
+            alwaysKeepResolution: false, // Allow resolution reduction to meet size target
+            fileType: 'image/jpeg'       // Convert to JPEG for better compression
+        };
+
+        try {
+            file = await imageCompression(file, compressionOptions);
+        } catch (error) {
+            showToast('Failed to process image: ' + error.message, 'error');
+            return;
+        }
+
+        // Upload to Supabase Storage
+        const userId = getUserId();
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('profile-images')
+            .upload(`${userId}/${fileName}`, file);
+
+        if (uploadError) {
+            showToast('Failed to upload image: ' + uploadError.message, 'error');
+            return;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+            .from('profile-images')
+            .getPublicUrl(`${userId}/${fileName}`);
+
+        imageUrl = urlData.publicUrl;
+
+        // Delete old image if replacing
+        if (currentProfileImageUrl && currentProfileImageUrl.includes('profile-images')) {
+            const oldPath = currentProfileImageUrl.split('profile-images/')[1];
+            await supabase.storage.from('profile-images').remove([oldPath]);
+        }
+    } else if (shouldRemoveProfileImage) {
+        // User removed the image
+        if (currentProfileImageUrl && currentProfileImageUrl.includes('profile-images')) {
+            const oldPath = currentProfileImageUrl.split('profile-images/')[1];
+            await supabase.storage.from('profile-images').remove([oldPath]);
+        }
+        imageUrl = null;
+    }
+
+    const profileData = {
+        name: document.getElementById('profileName').value.trim(),
+        fuelPrice: document.getElementById('profileFuelPrice').value,
+        fuelDensity: document.getElementById('profileFuelDensity').value,
+        pilotsRequired: document.getElementById('profilePilotsRequired').value,
+        pilotRate: document.getElementById('profilePilotRate').value,
+        attendantsRequired: document.getElementById('profileAttendantsRequired').value,
+        attendantRate: document.getElementById('profileAttendantRate').value,
+        hotelRate: document.getElementById('profileHotelRate').value,
+        mealsRate: document.getElementById('profileMealsRate').value,
+        maintenanceRate: document.getElementById('profileMaintenanceRate').value,
+        apuBurn: document.getElementById('profileApuBurn').value,
+        profileImageUrl: imageUrl,
+        isDefault: document.getElementById('profileIsDefault').checked
+    };
+
+    if (currentEditingProfileId) {
+        // Update existing profile
+        const { data, error } = await updateProfile(currentEditingProfileId, profileData);
+        if (error) {
+            showToast('Failed to update profile: ' + error.message, 'error');
+            return;
+        }
+        showToast('Profile updated successfully', 'success');
+    } else {
+        // Create new profile
+        const { data, error } = await createProfile(profileData);
+        if (error) {
+            showToast('Failed to create profile: ' + error.message, 'error');
+            return;
+        }
+        showToast('Profile created successfully', 'success');
+    }
+
+    // Reload profiles and update UI
+    await loadUserProfilesFromDB();
+    renderProfilesList();
+    renderProfileSelector();
+
+    closeModal('profileEditorModal');
+}
+
+/**
+ * Validate profile image file
+ * @param {File} file - Image file to validate
+ * @returns {string|null} Error message or null if valid
+ */
+function validateProfileImage(file) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (!validTypes.includes(file.type)) {
+        return 'Invalid file type. Please upload a JPEG, PNG, or WebP image.';
+    }
+    // File size check removed - compression handles this automatically
+    return null;
+}
+
+/**
+ * Crop image to 4:3 aspect ratio
+ * @param {File} file - Image file to crop
+ * @returns {Promise<File>} Cropped image file
+ */
+async function cropImageTo4x3(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate 4:3 dimensions
+                const targetRatio = 4 / 3;
+                const currentRatio = img.width / img.height;
+
+                let cropWidth = img.width;
+                let cropHeight = img.height;
+                let offsetX = 0;
+                let offsetY = 0;
+
+                if (currentRatio > targetRatio) {
+                    // Image is wider than 4:3, crop width
+                    cropWidth = img.height * targetRatio;
+                    offsetX = (img.width - cropWidth) / 2;
+                } else if (currentRatio < targetRatio) {
+                    // Image is taller than 4:3, crop height
+                    cropHeight = img.width / targetRatio;
+                    offsetY = (img.height - cropHeight) / 2;
+                }
+
+                canvas.width = cropWidth;
+                canvas.height = cropHeight;
+
+                // Draw cropped image
+                ctx.drawImage(
+                    img,
+                    offsetX, offsetY, cropWidth, cropHeight,
+                    0, 0, cropWidth, cropHeight
+                );
+
+                // Convert canvas to blob
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const croppedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(croppedFile);
+                    } else {
+                        reject(new Error('Failed to crop image'));
+                    }
+                }, 'image/jpeg', 0.95);
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Handle profile image file selection
+ */
+function handleProfileImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file
+    const validationError = validateProfileImage(file);
+    if (validationError) {
+        showToast(validationError, 'error');
+        event.target.value = ''; // Reset file input
+        return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('profileImagePreviewImg').src = e.target.result;
+        document.getElementById('profileImagePreview').style.display = 'block';
+        shouldRemoveProfileImage = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Handle removing profile image
+ */
+function handleRemoveProfileImage() {
+    document.getElementById('profileImageInput').value = '';
+    document.getElementById('profileImagePreview').style.display = 'none';
+    shouldRemoveProfileImage = true;
+}
+
+/**
+ * Duplicate a profile
+ * @param {string} profileId - Profile ID
+ */
+async function duplicateProfile(profileId) {
+    const profile = state.userProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+
+    const profileData = {
+        name: `${profile.name} (Copy)`,
+        fuelPrice: profile.fuelPrice,
+        fuelDensity: profile.fuelDensity,
+        pilotsRequired: profile.pilotsRequired,
+        pilotRate: profile.pilotRate,
+        attendantsRequired: profile.attendantsRequired,
+        attendantRate: profile.attendantRate,
+        hotelRate: profile.hotelRate,
+        mealsRate: profile.mealsRate,
+        maintenanceRate: profile.maintenanceRate,
+        apuBurn: profile.apuBurn,
+        isDefault: false // Duplicates are never default
+    };
+
+    const { data, error } = await createProfile(profileData);
+    if (error) {
+        showToast('Failed to duplicate profile: ' + error.message, 'error');
+        return;
+    }
+
+    showToast('Profile duplicated successfully', 'success');
+
+    // Reload profiles and update UI
+    await loadUserProfilesFromDB();
+    renderProfilesList();
+    renderProfileSelector();
+}
+
+/**
+ * Delete a profile
+ * @param {string} profileId - Profile ID
+ */
+async function deleteProfileAction(profileId) {
+    const profile = state.userProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+
+    // Store the profile ID for the confirmation handler
+    state.profileIdToDelete = profileId;
+
+    // Update the modal with the profile name
+    document.getElementById('deleteProfileName').textContent = profile.name;
+
+    // Open the confirmation modal
+    openModal('deleteProfileConfirmModal');
+}
+
+/**
+ * Confirm and execute profile deletion
+ */
+async function confirmDeleteProfile() {
+    const profileId = state.profileIdToDelete;
+    if (!profileId) return;
+
+    const { error, wasDefault } = await deleteProfile(profileId);
+    if (error) {
+        showToast('Failed to delete profile: ' + error.message, 'error');
+        closeModal('deleteProfileConfirmModal');
+        return;
+    }
+
+    // If this was the default profile, switch to Jet - Medium
+    if (wasDefault) {
+        saveSelectedProfileId(DEFAULT_PROFILE_ID);
+        state.selectedProfileId = DEFAULT_PROFILE_ID;
+        showToast('Profile deleted. Switched to Jet - Medium as default.', 'success');
+    } else {
+        showToast('Profile deleted successfully', 'success');
+    }
+
+    // Clean up
+    state.profileIdToDelete = null;
+    closeModal('deleteProfileConfirmModal');
+
+    // Reload profiles and update UI
+    await loadUserProfilesFromDB();
+    renderProfilesList();
+    renderProfileSelector();
+}
+
+/**
+ * Export a profile to JSON file
+ * @param {string} profileId - Profile ID
+ */
+function exportProfileAction(profileId) {
+    const profile = state.userProfiles.find(p => p.id === profileId);
+    if (!profile) return;
+
+    const jsonString = exportProfile(profile);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${profile.name.replace(/[^a-z0-9]/gi, '_')}_profile.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Profile exported successfully', 'success');
+}
+
+/**
+ * Import a profile from JSON file
+ */
+async function importProfileAction() {
+    const fileInput = document.getElementById('importProfileFileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        document.getElementById('importProfileError').textContent = 'Please select a file.';
+        document.getElementById('importProfileError').style.display = 'block';
+        return;
+    }
+
+    try {
+        const jsonString = await file.text();
+        const profileData = importProfile(jsonString);
+
+        if (!profileData) {
+            document.getElementById('importProfileError').textContent = 'Invalid profile file format.';
+            document.getElementById('importProfileError').style.display = 'block';
+            return;
+        }
+
+        // Create the profile
+        const { data, error } = await createProfile(profileData);
+        if (error) {
+            document.getElementById('importProfileError').textContent = 'Failed to import: ' + error.message;
+            document.getElementById('importProfileError').style.display = 'block';
+            return;
+        }
+
+        showToast('Profile imported successfully', 'success');
+        closeModal('importProfileModal');
+
+        // Reset file input
+        fileInput.value = '';
+        document.getElementById('importProfileError').style.display = 'none';
+
+        // Reload profiles and update UI
+        await loadUserProfilesFromDB();
+        renderProfilesList();
+        renderProfileSelector();
+    } catch (error) {
+        document.getElementById('importProfileError').textContent = 'Error reading file.';
+        document.getElementById('importProfileError').style.display = 'block';
+    }
+}
+
+// Expose functions to window for onclick handlers
+window.editProfile = editProfile;
+window.duplicateProfile = duplicateProfile;
+window.deleteProfileAction = deleteProfileAction;
+window.exportProfileAction = exportProfileAction;
+window.openProfilesView = openProfilesView;
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+// Legacy function for backwards compatibility - can be removed later
+async function saveDefaultsAction() {
+    // This function is no longer used with profiles
+    // Keeping stub for now in case referenced elsewhere
+    if (isAuthenticated()) {
+        const { error } = {error: null}; // Stub
         if (error) {
             showToast('Failed to save defaults: ' + error.message, 'error');
             return;
@@ -419,6 +1311,21 @@ async function handleSignOut() {
 
     // Explicitly update UI to signed-out state
     updateUIForAuthState(null);
+
+    // Clear user profiles and re-render profile UI
+    state.userProfiles = [];
+    renderProfileSelector();
+
+    // Close profiles view if open
+    const profilesView = document.getElementById('profilesView');
+    if (profilesView && profilesView.style.display !== 'none') {
+        closeProfilesView();
+    }
+
+    // Clear estimate state
+    state.currentEstimateId = null;
+    state.currentEstimateName = null;
+    state.isSaved = false;
 
     // Reload defaults from localStorage
     await loadDefaultsFromSource();
@@ -524,7 +1431,10 @@ function attachEventListeners() {
     document.getElementById('menuButton').addEventListener('click', toggleMenu);
     document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));
     document.getElementById('menuEstimates').addEventListener('click', () => openModal('loadEstimateModal'));
-    document.getElementById('menuDefaults').addEventListener('click', () => openModal('defaultsModal'));
+    const menuProfiles = document.getElementById('menuProfiles');
+    if (menuProfiles) {
+        menuProfiles.addEventListener('click', openProfilesView);
+    }
     document.getElementById('menuSignOut').addEventListener('click', handleSignOut);
 
     // Auth tip sign-in link
@@ -537,15 +1447,12 @@ function attachEventListeners() {
     }
 
     // Desktop nav
-    const desktopDefaults = document.getElementById('desktopDefaults');
     const desktopEstimates = document.getElementById('desktopEstimates');
     const desktopSignIn = document.getElementById('desktopSignIn');
     const desktopUserButton = document.getElementById('desktopUserButton');
+    const desktopProfiles = document.getElementById('desktopProfiles');
     const desktopSignOut = document.getElementById('desktopSignOut');
 
-    if (desktopDefaults) {
-        desktopDefaults.addEventListener('click', () => openModal('defaultsModal'));
-    }
     if (desktopEstimates) {
         desktopEstimates.addEventListener('click', () => openModal('loadEstimateModal'));
     }
@@ -555,10 +1462,24 @@ function attachEventListeners() {
     if (desktopUserButton) {
         desktopUserButton.addEventListener('click', toggleDesktopUserDropdown);
     }
+    if (desktopProfiles) {
+        desktopProfiles.addEventListener('click', () => {
+            closeDesktopUserDropdown();
+            openProfilesView();
+        });
+    }
     if (desktopSignOut) {
         desktopSignOut.addEventListener('click', () => {
             closeDesktopUserDropdown();
             handleSignOut();
+        });
+    }
+
+    // Profile Selector
+    const profileSelector = document.getElementById('profileSelector');
+    if (profileSelector) {
+        profileSelector.addEventListener('change', (e) => {
+            onProfileChange(e.target.value);
         });
     }
 
@@ -669,9 +1590,64 @@ function attachEventListeners() {
     document.getElementById('resetButton').addEventListener('click', resetForm);
 
     // Defaults modal
-    document.getElementById('closeDefaultsModal').addEventListener('click', () => closeModal('defaultsModal'));
-    document.getElementById('cancelDefaultsButton').addEventListener('click', () => closeModal('defaultsModal'));
-    document.getElementById('saveDefaultsButton').addEventListener('click', saveDefaultsAction);
+    // Profiles View
+    const backFromProfiles = document.getElementById('backFromProfiles');
+    if (backFromProfiles) {
+        backFromProfiles.addEventListener('click', closeProfilesView);
+    }
+    // Header '+' button for creating new profile
+    const addProfileHeaderButton = document.getElementById('addProfileHeaderButton');
+    if (addProfileHeaderButton) {
+        addProfileHeaderButton.addEventListener('click', openNewProfileEditor);
+    }
+    // Bottom 'New Profile' button
+    const addProfileButton = document.getElementById('addProfileButton');
+    if (addProfileButton) {
+        addProfileButton.addEventListener('click', openNewProfileEditor);
+    }
+    // Bottom 'Import Profile' button
+    const importProfileButton = document.getElementById('importProfileButton');
+    if (importProfileButton) {
+        importProfileButton.addEventListener('click', () => openModal('importProfileModal'));
+    }
+
+    // Profile Editor Modal
+    const closeProfileEditorModal = document.getElementById('closeProfileEditorModal');
+    if (closeProfileEditorModal) {
+        closeProfileEditorModal.addEventListener('click', () => closeModal('profileEditorModal'));
+    }
+    const cancelProfileEditorButton = document.getElementById('cancelProfileEditorButton');
+    if (cancelProfileEditorButton) {
+        cancelProfileEditorButton.addEventListener('click', () => closeModal('profileEditorModal'));
+    }
+    const saveProfileButton = document.getElementById('saveProfileButton');
+    if (saveProfileButton) {
+        saveProfileButton.addEventListener('click', saveProfileAction);
+    }
+
+    // Profile Image Upload
+    const profileImageInput = document.getElementById('profileImageInput');
+    if (profileImageInput) {
+        profileImageInput.addEventListener('change', handleProfileImageSelect);
+    }
+    const removeProfileImageButton = document.getElementById('removeProfileImageButton');
+    if (removeProfileImageButton) {
+        removeProfileImageButton.addEventListener('click', handleRemoveProfileImage);
+    }
+
+    // Import Profile Modal
+    const closeImportProfileModal = document.getElementById('closeImportProfileModal');
+    if (closeImportProfileModal) {
+        closeImportProfileModal.addEventListener('click', () => closeModal('importProfileModal'));
+    }
+    const cancelImportProfileButton = document.getElementById('cancelImportProfileButton');
+    if (cancelImportProfileButton) {
+        cancelImportProfileButton.addEventListener('click', () => closeModal('importProfileModal'));
+    }
+    const confirmImportProfileButton = document.getElementById('confirmImportProfileButton');
+    if (confirmImportProfileButton) {
+        confirmImportProfileButton.addEventListener('click', importProfileAction);
+    }
 
     // Load estimate modal
     document.getElementById('closeLoadEstimateModal').addEventListener('click', () => closeModal('loadEstimateModal'));
@@ -735,6 +1711,11 @@ function attachEventListeners() {
     document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => closeModal('deleteConfirmModal'));
     document.getElementById('cancelDeleteButton').addEventListener('click', () => closeModal('deleteConfirmModal'));
     document.getElementById('confirmDeleteButton').addEventListener('click', confirmDeleteEstimate);
+
+    // Delete profile confirmation modal
+    document.getElementById('closeDeleteProfileConfirmModal').addEventListener('click', () => closeModal('deleteProfileConfirmModal'));
+    document.getElementById('cancelDeleteProfileButton').addEventListener('click', () => closeModal('deleteProfileConfirmModal'));
+    document.getElementById('confirmDeleteProfileButton').addEventListener('click', confirmDeleteProfile);
 
     // PDF preview modal
     document.getElementById('closePdfPreviewModal').addEventListener('click', closePdfPreview);
@@ -1003,26 +1984,57 @@ function reindexLegs() {
 // ===========================
 // Crew
 // ===========================
+
+/**
+ * Add a crew member (used by profile application)
+ * @param {string} role - 'Pilot' or 'Flight Attendant'
+ * @param {number} rate - Daily rate
+ */
+function addCrewMember(role, rate) {
+    const id = state.nextCrewId++;
+    const crew = {
+        id,
+        role,
+        rate: parseFloat(rate) || 0
+    };
+    state.crew.push(crew);
+}
+
 function addInitialCrew() {
     addCrew();
 }
 
 function addCrew() {
-    const defaults = getDefaults();
+    const profile = getProfileById(state.selectedProfileId);
     const id = state.nextCrewId++;
     const crewIndex = state.crew.length;
 
     const crew = {
         id,
         role: 'Pilot',
-        rate: crewIndex === 0 || crewIndex === 1 ? defaults.pilotRate : defaults.pilotRate
+        rate: profile ? profile.pilotRate : 1500
     };
     state.crew.push(crew);
-    renderCrew(crew);
+    renderCrewMember(crew);
     updateEstimate();
 }
 
-function renderCrew(crew) {
+/**
+ * Render all crew members
+ */
+function renderCrew() {
+    const container = document.getElementById('crewContainer');
+    container.innerHTML = ''; // Clear existing crew
+    state.crew.forEach(crew => {
+        renderCrewMember(crew);
+    });
+}
+
+/**
+ * Render a single crew member
+ * @param {object} crew - Crew object
+ */
+function renderCrewMember(crew) {
     const container = document.getElementById('crewContainer');
     const crewIndex = state.crew.findIndex(c => c.id === crew.id);
 
@@ -1030,7 +2042,7 @@ function renderCrew(crew) {
     crewRow.className = 'crew-row';
     crewRow.dataset.crewId = crew.id;
 
-    const defaults = getDefaults();
+    const profile = getProfileById(state.selectedProfileId);
 
     crewRow.innerHTML = `
         <div class="crew-header">
@@ -1056,10 +2068,12 @@ function renderCrew(crew) {
 }
 
 function updateCrewRate(crewId, role) {
-    const defaults = getDefaults();
+    const profile = getProfileById(state.selectedProfileId);
     const crew = state.crew.find(c => c.id === crewId);
     if (crew) {
-        const newRate = role === 'Pilot' ? defaults.pilotRate : defaults.attendantRate;
+        const newRate = role === 'Pilot'
+            ? (profile ? profile.pilotRate : 1500)
+            : (profile ? profile.attendantRate : 800);
         crew.rate = newRate;
 
         // Update the input field
@@ -1125,8 +2139,10 @@ function calculateEstimate() {
     const fuelDensity = parseFloat(document.getElementById('fuelDensity').value) || 6.7;
     const fuelPrice = parseFloat(document.getElementById('fuelPrice').value) || 5.93;
     const includeAPU = document.getElementById('includeAPU').checked;
-    const defaults = getDefaults();
-    const apuBurn = defaults.apuBurn;
+
+    // Get APU burn from current profile
+    const currentProfile = getProfileById(state.selectedProfileId);
+    const apuBurn = currentProfile ? currentProfile.apuBurn : 100;
 
     let totalMinutes = 0;
     let totalFuelLbs = 0;
@@ -2163,6 +3179,10 @@ async function confirmSaveEstimate(e) {
     // Clear current estimate tracking (we just created a new one)
     state.currentEstimateId = data.id;
     state.currentEstimateName = data.name;
+    state.isSaved = true;
+
+    // Hide profile section after save
+    updateProfileSectionVisibility();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -2208,6 +3228,10 @@ async function confirmUpdateEstimate(e) {
 
     // Update the name in state
     state.currentEstimateName = name;
+    state.isSaved = true;
+
+    // Hide profile section after update
+    updateProfileSectionVisibility();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -2287,6 +3311,10 @@ function loadEstimateAction(estimate, options = {}) {
     // Track the loaded estimate for updates
     state.currentEstimateId = estimate.id;
     state.currentEstimateName = estimate.name;
+    state.isSaved = true; // Loading an estimate means it's saved
+
+    // Hide profile section since this is a saved estimate
+    updateProfileSectionVisibility();
 
     // Get estimate data (handle both Supabase and localStorage formats)
     const estimateData = estimate.estimate_data || estimate.data;
@@ -2961,6 +3989,7 @@ function confirmReset() {
     state.nextCrewId = 1;
     state.currentEstimateId = null;
     state.currentEstimateName = null;
+    state.isSaved = false; // Reset to unsaved state
 
     // Clear containers
     document.getElementById('flightLegsContainer').innerHTML = '';
@@ -2977,10 +4006,23 @@ function confirmReset() {
         }
     });
 
-    // Re-initialize
+    // Re-apply profile to get crew and settings
+    const profile = getProfileById(state.selectedProfileId);
+    if (profile) {
+        applyProfile(profile);
+    } else {
+        // Fallback to adding crew manually
+        addInitialLeg();
+        addInitialCrew();
+        addInitialCrew();
+    }
+
+    // Add initial leg
     addInitialLeg();
-    addInitialCrew();
-    addInitialCrew();
+
+    // Show profile section again
+    updateProfileSectionVisibility();
+
     updateEstimate();
 
     // Close modal and show success message

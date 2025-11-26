@@ -48,7 +48,6 @@
 
             <!-- Desktop Navigation -->
             <nav class="desktop-nav" id="desktopNav">
-                <button type="button" class="nav-link" id="desktopDefaults">Defaults</button>
                 <button type="button" class="nav-link" id="desktopEstimates" style="display: none;">My Estimates</button>
                 <button type="button" class="nav-link" id="desktopSignIn">Sign In</button>
 
@@ -59,6 +58,7 @@
                         <span class="dropdown-arrow">▾</span>
                     </button>
                     <div class="user-dropdown-menu" id="desktopUserMenu">
+                        <button type="button" class="user-dropdown-item" id="desktopProfiles">Profiles</button>
                         <button type="button" class="user-dropdown-item" id="desktopSignOut">Sign Out</button>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                     <div class="menu-item menu-user" id="menuUser" style="display: none;">user@example.com</div>
                     <button class="menu-item" id="menuSignIn">Sign In</button>
                     <button class="menu-item" id="menuEstimates" style="display: none;">Estimates</button>
-                    <button class="menu-item" id="menuDefaults">Defaults</button>
+                    <button class="menu-item" id="menuProfiles" style="display: none;">Profiles</button>
                     <button class="menu-item" id="menuSignOut" style="display: none;">Sign Out</button>
                 </div>
             </div>
@@ -148,6 +148,22 @@
 
         <!-- Normal View: Editable Form (shown by default) -->
         <div id="normalView">
+
+        <!-- Profile Section (shown only for unsaved estimates) -->
+        <section class="section" id="profileSection">
+            <h2>Profile</h2>
+            <div class="profile-selector-container">
+                <div class="profile-dropdown-wrapper">
+                    <select id="profileSelector" class="profile-dropdown">
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+                <div id="profileActionButton" class="profile-action">
+                    <!-- Button or message populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
         <!-- Section 1: Flight Legs -->
         <section class="section">
             <h2>Flight Legs</h2>
@@ -349,50 +365,157 @@
         </div><!-- End normalView -->
     </main>
 
-    <!-- Defaults Modal -->
-    <div class="modal" id="defaultsModal">
-        <div class="modal-content">
+    <!-- Profiles View (Full Page) -->
+    <div class="profiles-view" id="profilesView" style="display: none;">
+        <div class="profiles-container">
+            <div class="profiles-header">
+                <button class="btn-back" id="backFromProfiles">&larr; Back</button>
+                <h1>Profiles</h1>
+                <button class="btn-icon btn-add-profile-header" id="addProfileHeaderButton" title="New Profile">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20" fill="currentColor">
+                        <path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="profiles-list" id="profilesList">
+                <!-- Profiles will be rendered here by JavaScript -->
+            </div>
+
+            <div class="profile-actions-container">
+                <button class="btn-add-profile" id="addProfileButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="20" height="20" fill="currentColor">
+                        <path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/>
+                    </svg>
+                    New Profile
+                </button>
+                <button class="btn-import-profile" id="importProfileButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20" fill="currentColor">
+                        <path d="M288 109.3V352c0 17.7-14.3 32-32 32s-32-14.3-32-32V109.3l-73.4 73.4c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l128-128c12.5-12.5 32.8-12.5 45.3 0l128 128c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L288 109.3zM64 352H192c0 35.3 28.7 64 64 64s64-28.7 64-64H448c35.3 0 64 28.7 64 64v32c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V416c0-35.3 28.7-64 64-64zM432 456a24 24 0 1 0 0-48 24 24 0 1 0 0 48z"/>
+                    </svg>
+                    Import Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Editor Modal -->
+    <div class="modal" id="profileEditorModal">
+        <div class="modal-content modal-large">
             <div class="modal-header">
-                <h2>Defaults</h2>
-                <button class="modal-close" id="closeDefaultsModal">&times;</button>
+                <h2 id="profileEditorTitle">New Profile</h2>
+                <button class="modal-close" id="closeProfileEditorModal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-field">
-                    <label for="defaultFuelPrice">Fuel Price ($/gallon)</label>
-                    <input type="number" id="defaultFuelPrice" step="0.01" min="0" value="5.93" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultFuelDensity">Fuel Density (lbs/gallon)</label>
-                    <input type="number" id="defaultFuelDensity" step="0.1" min="0" value="6.7" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultPilotRate">Pilot Daily Rate ($)</label>
-                    <input type="number" id="defaultPilotRate" step="0.01" min="0" value="1500" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultAttendantRate">Flight Attendant Daily Rate ($)</label>
-                    <input type="number" id="defaultAttendantRate" step="0.01" min="0" value="800" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultHotelRate">Hotel ($/night/person)</label>
-                    <input type="number" id="defaultHotelRate" step="0.01" min="0" value="200" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultMealsRate">Meals ($/day/person)</label>
-                    <input type="number" id="defaultMealsRate" step="0.01" min="0" value="100" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultMaintenanceRate">Maintenance Programs ($/hour)</label>
-                    <input type="number" id="defaultMaintenanceRate" step="0.01" min="0" value="1048.42" inputmode="decimal">
-                </div>
-                <div class="form-field">
-                    <label for="defaultAPUBurn">APU Burn (lbs/leg)</label>
-                    <input type="number" id="defaultAPUBurn" min="0" value="100" inputmode="numeric">
-                </div>
+                <form id="profileEditorForm">
+                    <div class="form-field">
+                        <label for="profileName">Name <span class="required">*</span></label>
+                        <input type="text" id="profileName" required placeholder="e.g., My Custom Profile">
+                    </div>
+
+                    <div class="form-section-title">Fuel Settings</div>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profileFuelPrice">Fuel Price ($/gallon) <span class="required">*</span></label>
+                            <input type="number" id="profileFuelPrice" step="0.01" min="0" required inputmode="decimal">
+                        </div>
+                        <div class="form-field">
+                            <label for="profileFuelDensity">Fuel Density (lbs/gallon) <span class="required">*</span></label>
+                            <input type="number" id="profileFuelDensity" step="0.01" min="0" required placeholder="e.g., 6.7" inputmode="decimal">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Crew</div>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profilePilotsRequired">Pilots Required <span class="required">*</span></label>
+                            <input type="number" id="profilePilotsRequired" min="1" required inputmode="numeric">
+                        </div>
+                        <div class="form-field">
+                            <label for="profilePilotRate">Pilot Daily Rate ($) <span class="required">*</span></label>
+                            <input type="number" id="profilePilotRate" step="0.01" min="0" required inputmode="decimal">
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profileAttendantsRequired">Flight Attendants Required <span class="required">*</span></label>
+                            <input type="number" id="profileAttendantsRequired" min="0" required inputmode="numeric">
+                        </div>
+                        <div class="form-field">
+                            <label for="profileAttendantRate">Flight Attendant Daily Rate ($)</label>
+                            <input type="number" id="profileAttendantRate" step="0.01" min="0" inputmode="decimal">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Crew Expenses</div>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profileHotelRate">Hotel ($/night/person)</label>
+                            <input type="number" id="profileHotelRate" step="0.01" min="0" inputmode="decimal">
+                        </div>
+                        <div class="form-field">
+                            <label for="profileMealsRate">Meals ($/day/person)</label>
+                            <input type="number" id="profileMealsRate" step="0.01" min="0" inputmode="decimal">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Aircraft Operations</div>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profileMaintenanceRate">Maintenance Programs ($/hour)</label>
+                            <input type="number" id="profileMaintenanceRate" step="0.01" min="0" inputmode="decimal">
+                        </div>
+                        <div class="form-field">
+                            <label for="profileApuBurn">APU Burn (lbs/leg)</label>
+                            <input type="number" id="profileApuBurn" min="0" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Profile Image</div>
+                    <div class="form-field">
+                        <input type="file" id="profileImageInput" class="profile-image-input-hidden" accept="image/jpeg,image/png,image/webp">
+                        <label for="profileImageInput" class="profile-image-button">
+                            <svg class="camera-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M193.1 32c-18.7 0-36.2 9.4-46.6 24.9L120.5 96 64 96C28.7 96 0 124.7 0 160L0 416c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-256c0-35.3-28.7-64-64-64l-56.5 0-26-39.1C355.1 41.4 337.6 32 318.9 32L193.1 32zm-6.7 51.6c1.5-2.2 4-3.6 6.7-3.6l125.7 0c2.7 0 5.2 1.3 6.7 3.6l33.2 49.8c4.5 6.7 11.9 10.7 20 10.7l69.3 0c8.8 0 16 7.2 16 16l0 256c0 8.8-7.2 16-16 16L64 432c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2 16 16-16l69.3 0c8 0 15.5-4 20-10.7l33.2-49.8zM256 384a112 112 0 1 0 0-224 112 112 0 1 0 0 224zM192 272a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z"/></svg>
+                            Choose File
+                        </label>
+                        <div id="profileImagePreview" class="profile-image-preview" style="display: none;">
+                            <img id="profileImagePreviewImg" alt="Profile preview">
+                            <button type="button" class="btn-remove-image" id="removeProfileImageButton">Remove</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" style="margin-top: var(--spacing-lg);">
+                        <div class="default-profile-option">
+                            <label>
+                                <input type="checkbox" id="profileIsDefault">
+                                Make this my default profile
+                            </label>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" id="cancelDefaultsButton">Cancel</button>
-                <button class="btn-primary" id="saveDefaultsButton">Save Defaults</button>
+                <button class="btn-secondary" id="cancelProfileEditorButton">Cancel</button>
+                <button class="btn-primary" id="saveProfileButton">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Profile Modal -->
+    <div class="modal" id="importProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Import Profile</h2>
+                <button class="modal-close" id="closeImportProfileModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Select a profile JSON file to import:</p>
+                <input type="file" id="importProfileFileInput" accept=".json,application/json">
+                <div id="importProfileError" class="error-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelImportProfileButton">Cancel</button>
+                <button class="btn-primary" id="confirmImportProfileButton">Import</button>
             </div>
         </div>
     </div>
@@ -586,6 +709,24 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelDeleteButton">Cancel</button>
                 <button type="button" class="btn-danger" id="confirmDeleteButton">Delete Estimate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Profile Confirmation Modal -->
+    <div class="modal" id="deleteProfileConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Profile</h2>
+                <button class="modal-close" id="closeDeleteProfileConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the profile "<strong id="deleteProfileName"></strong>"?</p>
+                <p><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelDeleteProfileButton">Cancel</button>
+                <button type="button" class="btn-danger" id="confirmDeleteProfileButton">Delete Profile</button>
             </div>
         </div>
     </div>
