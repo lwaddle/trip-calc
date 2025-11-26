@@ -1684,9 +1684,9 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for all inputs (except estimateName to fix iOS keyboard issues)
+    // Auto-select input contents on click for all inputs (except estimateName and profileName to fix iOS keyboard issues)
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
-        if (input.id !== 'estimateName') {
+        if (input.id !== 'estimateName' && input.id !== 'profileName') {
             input.addEventListener('click', function() {
                 this.select();
             });
