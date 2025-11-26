@@ -2715,6 +2715,15 @@ async function copyShareableLink() {
 // ===========================
 // PDF Export
 // ===========================
+// Utility function to detect mobile devices
+function isMobileDevice() {
+    // Check user agent for mobile devices
+    const mobileUserAgent = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // Fallback to screen width (768px breakpoint treats tablets as desktop)
+    const narrowScreen = window.innerWidth <= 768;
+    return mobileUserAgent || narrowScreen;
+}
+
 function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -3213,8 +3222,13 @@ function generatePDFContent(doc, pageWidth, margin, startY) {
     const now = new Date();
     const filename = `trip-estimate-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
 
-    // Show preview instead of immediately downloading
-    showPDFPreview(doc, filename);
+    // Mobile: Direct download for better native experience
+    // Desktop: Show preview modal
+    if (isMobileDevice()) {
+        doc.save(filename);
+    } else {
+        showPDFPreview(doc, filename);
+    }
 }
 
 // ===========================
