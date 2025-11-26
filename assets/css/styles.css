@@ -2640,7 +2640,7 @@ body.share-view-mode .header {
 @media (max-width: 768px) {
     .profiles-container {
         padding: var(--spacing-lg);
-        padding-bottom: calc(var(--spacing-2xl) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
     }
 
     .profiles-header {
