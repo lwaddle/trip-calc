@@ -719,7 +719,7 @@ function renderProfilesList() {
                 </div>
                 <div class="profile-card-details">
                     <div><strong>Pilots:</strong> ${profile.pilotsRequired} @ $${profile.pilotRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>
-                    <div><strong>Attendants:</strong> ${profile.attendantsRequired} @ $${profile.attendantRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day</div>
+                    <div><strong>Attendants:</strong> ${profile.attendantsRequired === 0 ? '0' : `${profile.attendantsRequired} @ $${profile.attendantRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`}</div>
                     <div><strong>Fuel:</strong> $${profile.fuelPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/gal</div>
                     <div><strong>Maintenance:</strong> $${profile.maintenanceRate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/hr</div>
                     ${profile.isDefault ? '<span class="profile-badge">Default</span>' : ''}
