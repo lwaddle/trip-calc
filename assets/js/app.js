@@ -1684,11 +1684,13 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for all inputs
+    // Auto-select input contents on click for all inputs (except estimateName and profileName to fix iOS keyboard issues)
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
-        input.addEventListener('click', function() {
-            this.select();
-        });
+        if (input.id !== 'estimateName' && input.id !== 'profileName') {
+            input.addEventListener('click', function() {
+                this.select();
+            });
+        }
     });
 
     // Auto-select input contents on click for dynamic fields (event delegation)
@@ -1863,7 +1865,6 @@ function attachEventListeners() {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
                     // Restore scroll position
-                    document.body.style.top = '';
                     window.scrollTo(0, scrollPosition);
                 }
             }
@@ -1880,11 +1881,18 @@ function attachEventListeners() {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
                     // Restore scroll position
-                    document.body.style.top = '';
                     window.scrollTo(0, scrollPosition);
                 }
             }
         }, { passive: false });
+
+        // Prevent clicks inside modal-content from bubbling to backdrop (fixes iOS issues)
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     });
 
     // Close menus when clicking outside
@@ -1939,6 +1947,13 @@ function toggleMenu() {
     button.classList.toggle('active');
 }
 
+function closeMobileMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    const button = document.getElementById('menuButton');
+    menu.classList.remove('active');
+    button.classList.remove('active');
+}
+
 function toggleDesktopUserDropdown() {
     const dropdown = document.getElementById('desktopUserDropdown');
     const menu = document.getElementById('desktopUserMenu');
@@ -1957,6 +1972,9 @@ function closeDesktopUserDropdown() {
 let scrollPosition = 0;
 
 function openModal(modalId) {
+    // Close mobile menu if open (fixes issue where menu stays open after clicking menu items)
+    closeMobileMenu();
+
     if (modalId === 'loadEstimateModal') {
         populateLoadEstimateModal();
     }
@@ -1974,9 +1992,6 @@ function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
     document.body.classList.add('modal-open');
 
-    // Lock scroll position for better mobile support
-    document.body.style.top = `-${scrollPosition}px`;
-
     // Set focus for sign-in modal
     if (modalId === 'signInModal') {
         setTimeout(() => {
@@ -1993,7 +2008,6 @@ function closeModal(modalId) {
     document.body.classList.remove('modal-open');
 
     // Restore scroll position
-    document.body.style.top = '';
     window.scrollTo(0, scrollPosition);
 }
 
@@ -3264,6 +3278,14 @@ function saveEstimateAction() {
 
     // Open the modal
     openModal('saveEstimateModal');
+
+    // Set focus on the estimate name input with a delay for iOS compatibility
+    setTimeout(() => {
+        const estimateNameInput = document.getElementById('estimateName');
+        if (estimateNameInput) {
+            estimateNameInput.focus();
+        }
+    }, 100);
 }
 
 async function confirmSaveEstimate(e) {

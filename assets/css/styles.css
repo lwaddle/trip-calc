@@ -74,9 +74,9 @@ body {
 
 body.modal-open {
     overflow: hidden;
-    /* Removed position: fixed to fix iOS touch event issues */
-    /* iOS-specific properties for better modal handling */
-    touch-action: none;
+    position: fixed;
+    width: 100%;
+    /* Prevent body scroll while allowing proper input focus on iOS */
     -webkit-overflow-scrolling: touch;
 }
 
