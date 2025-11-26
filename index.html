@@ -83,6 +83,38 @@
     <main class="main-content">
         <h1 id="mainHeading">Trip Cost Calculator</h1>
 
+        <!-- Sign-In View (shown by default for unauthenticated users) -->
+        <div id="signInView" class="sign-in-view" style="display: none;">
+            <div class="sign-in-container">
+                <h2 class="sign-in-heading">Welcome to Trip Cost Calculator</h2>
+
+                <form id="signInViewForm" class="sign-in-form">
+                    <div class="form-field">
+                        <label for="signInViewEmail">Email</label>
+                        <input type="email" id="signInViewEmail" required autocomplete="email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-field">
+                        <label for="signInViewPassword">Password</label>
+                        <input type="password" id="signInViewPassword" required autocomplete="current-password" placeholder="Enter your password">
+                    </div>
+                    <div id="signInViewError" class="error-message" style="display: none;"></div>
+                    <button type="submit" class="btn-primary btn-large btn-sign-in">Sign In</button>
+                </form>
+
+                <div class="sign-in-forgot">
+                    <button type="button" class="btn-link" id="signInViewForgotPassword">Forgot Password?</button>
+                </div>
+
+                <div class="sign-in-divider">
+                    <span>or</span>
+                </div>
+
+                <button type="button" class="btn-secondary btn-large btn-guest" id="continueAsGuest">Continue as Guest</button>
+
+                <p class="sign-in-subtitle">Sign in to save estimates and create custom profiles</p>
+            </div>
+        </div>
+
         <!-- Share View: Read-Only Presentation (hidden by default) -->
         <div id="shareView" class="share-view" style="display: none;">
             <!-- Error State (shown when estimate not found) -->
