@@ -167,6 +167,39 @@ function formatNumber(number, decimals = 0) {
 }
 
 // ===========================
+// View Management
+// ===========================
+function showSignInView() {
+    const signInView = document.getElementById('signInView');
+    const normalView = document.getElementById('normalView');
+    const shareView = document.getElementById('shareView');
+    const mainHeading = document.getElementById('mainHeading');
+
+    if (signInView) signInView.style.display = 'block';
+    if (normalView) normalView.style.display = 'none';
+    if (shareView) shareView.style.display = 'none';
+    if (mainHeading) mainHeading.style.display = 'none';
+
+    document.body.classList.add('sign-in-view-mode');
+    document.body.classList.remove('share-view-mode');
+}
+
+function showCalculatorView() {
+    const signInView = document.getElementById('signInView');
+    const normalView = document.getElementById('normalView');
+    const shareView = document.getElementById('shareView');
+    const mainHeading = document.getElementById('mainHeading');
+
+    if (signInView) signInView.style.display = 'none';
+    if (normalView) normalView.style.display = 'block';
+    if (shareView) shareView.style.display = 'none';
+    if (mainHeading) mainHeading.style.display = 'block';
+
+    document.body.classList.remove('sign-in-view-mode');
+    document.body.classList.remove('share-view-mode');
+}
+
+// ===========================
 // Auth UI Management
 // ===========================
 function updateUIForAuthState(user) {
@@ -178,6 +211,23 @@ function updateUIForAuthState(user) {
     }
 
     const isAuth = user !== null;
+
+    // Handle view switching based on auth state
+    // Don't change views if we're in share view mode
+    const urlParams = new URLSearchParams(window.location.search);
+    const isShareView = urlParams.has('share');
+
+    if (!isShareView) {
+        if (isAuth) {
+            showCalculatorView();
+        } else {
+            // Only show sign-in view if not already showing calculator (e.g., guest mode)
+            const normalView = document.getElementById('normalView');
+            if (!normalView || normalView.style.display === 'none') {
+                showSignInView();
+            }
+        }
+    }
 
     // Mobile menu items
     const menuUser = document.getElementById('menuUser');
@@ -262,6 +312,19 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initializeApp() {
     // Initialize authentication
     await initAuth();
+
+    // Check for shared estimate first - if present, we'll show share view instead
+    const urlParams = new URLSearchParams(window.location.search);
+    const isShareView = urlParams.has('share');
+
+    // Determine initial view based on auth state (unless it's a share view)
+    if (!isShareView) {
+        if (isAuthenticated()) {
+            showCalculatorView();
+        } else {
+            showSignInView();
+        }
+    }
 
     // Check if password recovery was detected before Supabase cleared the hash
     if (sessionStorage.getItem('pendingPasswordRecovery') === 'true') {
@@ -1299,6 +1362,46 @@ async function handleSignIn(e) {
     window.location.reload();
 }
 
+// ===========================
+// Sign-In View Handlers
+// ===========================
+async function handleSignInViewSubmit(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('signInViewEmail').value;
+    const password = document.getElementById('signInViewPassword').value;
+    const errorDiv = document.getElementById('signInViewError');
+
+    // Clear previous error
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    // Attempt sign in
+    const { user, error } = await signIn(email, password);
+
+    if (error) {
+        errorDiv.textContent = error.message || 'Failed to sign in';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // Success - the onAuthStateChange callback will handle showing the calculator view
+    showToast('Signed in successfully', 'success');
+
+    // Reload to trigger password manager prompt
+    window.location.reload();
+}
+
+function handleContinueAsGuest() {
+    // Show calculator view without signing in
+    showCalculatorView();
+}
+
+function handleSignInViewForgotPassword() {
+    // Show the password reset modal
+    openModal('passwordResetModal');
+}
+
 async function handleSignOut() {
     const { error } = await signOut();
 
@@ -1308,6 +1411,9 @@ async function handleSignOut() {
     }
 
     showToast('Signed out successfully', 'success');
+
+    // Show sign-in view
+    showSignInView();
 
     // Explicitly update UI to signed-out state
     updateUIForAuthState(null);
@@ -1427,6 +1533,21 @@ async function handlePasswordUpdate(e) {
 // Event Listeners
 // ===========================
 function attachEventListeners() {
+    // Sign-In View
+    const signInViewForm = document.getElementById('signInViewForm');
+    const continueAsGuestBtn = document.getElementById('continueAsGuest');
+    const signInViewForgotPassword = document.getElementById('signInViewForgotPassword');
+
+    if (signInViewForm) {
+        signInViewForm.addEventListener('submit', handleSignInViewSubmit);
+    }
+    if (continueAsGuestBtn) {
+        continueAsGuestBtn.addEventListener('click', handleContinueAsGuest);
+    }
+    if (signInViewForgotPassword) {
+        signInViewForgotPassword.addEventListener('click', handleSignInViewForgotPassword);
+    }
+
     // Mobile menu
     document.getElementById('menuButton').addEventListener('click', toggleMenu);
     document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));

@@ -1419,6 +1419,110 @@ button {
     opacity: 0.8;
 }
 
+/* ===========================
+   Sign-In View
+   =========================== */
+.sign-in-view {
+    max-width: 450px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.sign-in-container {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--border-radius) * 2);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.sign-in-heading {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-xl) 0;
+    border: none;
+    padding: 0;
+}
+
+.sign-in-form {
+    text-align: left;
+    margin-bottom: var(--spacing-lg);
+}
+
+.sign-in-form .form-field {
+    margin-bottom: var(--spacing-lg);
+}
+
+.sign-in-form label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+}
+
+.sign-in-form input[type="email"],
+.sign-in-form input[type="password"] {
+    width: 100%;
+}
+
+.btn-sign-in {
+    width: 100%;
+    margin-top: var(--spacing-md);
+}
+
+.sign-in-forgot {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.sign-in-divider {
+    position: relative;
+    text-align: center;
+    margin: var(--spacing-xl) 0;
+}
+
+.sign-in-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background-color: var(--color-border);
+}
+
+.sign-in-divider span {
+    position: relative;
+    display: inline-block;
+    padding: 0 var(--spacing-md);
+    background-color: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn-guest {
+    width: 100%;
+}
+
+.sign-in-subtitle {
+    margin-top: var(--spacing-xl);
+    margin-bottom: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Hide header navigation in sign-in view mode */
+body.sign-in-view-mode .desktop-nav,
+body.sign-in-view-mode .header-menu {
+    display: none;
+}
+
+/* ===========================
+   Share View
+   =========================== */
 /* Share View Container */
 .share-view {
     max-width: 800px;
