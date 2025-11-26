@@ -1684,11 +1684,13 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for all inputs
+    // Auto-select input contents on click for all inputs (except estimateName to fix iOS keyboard issues)
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
-        input.addEventListener('click', function() {
-            this.select();
-        });
+        if (input.id !== 'estimateName') {
+            input.addEventListener('click', function() {
+                this.select();
+            });
+        }
     });
 
     // Auto-select input contents on click for dynamic fields (event delegation)
@@ -3264,6 +3266,14 @@ function saveEstimateAction() {
 
     // Open the modal
     openModal('saveEstimateModal');
+
+    // Set focus on the estimate name input with a delay for iOS compatibility
+    setTimeout(() => {
+        const estimateNameInput = document.getElementById('estimateName');
+        if (estimateNameInput) {
+            estimateNameInput.focus();
+        }
+    }, 100);
 }
 
 async function confirmSaveEstimate(e) {
