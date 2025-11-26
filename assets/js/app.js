@@ -1865,7 +1865,6 @@ function attachEventListeners() {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
                     // Restore scroll position
-                    document.body.style.top = '';
                     window.scrollTo(0, scrollPosition);
                 }
             }
@@ -1882,11 +1881,18 @@ function attachEventListeners() {
                     modal.classList.remove('active');
                     document.body.classList.remove('modal-open');
                     // Restore scroll position
-                    document.body.style.top = '';
                     window.scrollTo(0, scrollPosition);
                 }
             }
         }, { passive: false });
+
+        // Prevent clicks inside modal-content from bubbling to backdrop (fixes iOS issues)
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     });
 
     // Close menus when clicking outside
@@ -1976,9 +1982,6 @@ function openModal(modalId) {
     document.getElementById(modalId).classList.add('active');
     document.body.classList.add('modal-open');
 
-    // Lock scroll position for better mobile support
-    document.body.style.top = `-${scrollPosition}px`;
-
     // Set focus for sign-in modal
     if (modalId === 'signInModal') {
         setTimeout(() => {
@@ -1995,7 +1998,6 @@ function closeModal(modalId) {
     document.body.classList.remove('modal-open');
 
     // Restore scroll position
-    document.body.style.top = '';
     window.scrollTo(0, scrollPosition);
 }
 
