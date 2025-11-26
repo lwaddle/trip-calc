@@ -1947,6 +1947,13 @@ function toggleMenu() {
     button.classList.toggle('active');
 }
 
+function closeMobileMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    const button = document.getElementById('menuButton');
+    menu.classList.remove('active');
+    button.classList.remove('active');
+}
+
 function toggleDesktopUserDropdown() {
     const dropdown = document.getElementById('desktopUserDropdown');
     const menu = document.getElementById('desktopUserMenu');
@@ -1965,6 +1972,9 @@ function closeDesktopUserDropdown() {
 let scrollPosition = 0;
 
 function openModal(modalId) {
+    // Close mobile menu if open (fixes issue where menu stays open after clicking menu items)
+    closeMobileMenu();
+
     if (modalId === 'loadEstimateModal') {
         populateLoadEstimateModal();
     }
