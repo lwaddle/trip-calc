@@ -1595,10 +1595,17 @@ function attachEventListeners() {
     if (backFromProfiles) {
         backFromProfiles.addEventListener('click', closeProfilesView);
     }
+    // Header '+' button for creating new profile
+    const addProfileHeaderButton = document.getElementById('addProfileHeaderButton');
+    if (addProfileHeaderButton) {
+        addProfileHeaderButton.addEventListener('click', openNewProfileEditor);
+    }
+    // Bottom 'New Profile' button
     const addProfileButton = document.getElementById('addProfileButton');
     if (addProfileButton) {
         addProfileButton.addEventListener('click', openNewProfileEditor);
     }
+    // Bottom 'Import Profile' button
     const importProfileButton = document.getElementById('importProfileButton');
     if (importProfileButton) {
         importProfileButton.addEventListener('click', () => openModal('importProfileModal'));

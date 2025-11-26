@@ -2268,6 +2268,18 @@ body.share-view-mode .header {
 /* ===========================
    Add Profile Button
    =========================== */
+/* Profile Actions Container */
+.profile-actions-container {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    align-items: center;
+    margin-top: var(--spacing-xl);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .btn-add-profile {
     display: flex;
     align-items: center;
@@ -2283,9 +2295,25 @@ body.share-view-mode .header {
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: all var(--transition-base);
-    width: 100%;
-    max-width: 300px;
-    margin: 0 auto;
+    flex: 1;
+}
+
+.btn-import-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    background-color: var(--color-secondary);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    flex: 1;
 }
 
 .btn-add-profile:hover {
@@ -2306,6 +2334,39 @@ body.share-view-mode .header {
 .btn-add-profile svg {
     width: 20px;
     height: 20px;
+}
+
+.btn-import-profile:hover {
+    background-color: var(--color-secondary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.btn-import-profile:active {
+    transform: translateY(0);
+}
+
+.btn-import-profile:focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+}
+
+.btn-import-profile svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Responsive: Stack buttons vertically on mobile */
+@media (max-width: 768px) {
+    .profile-actions-container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .btn-add-profile,
+    .btn-import-profile {
+        width: 100%;
+    }
 }
 
 /* ===========================
@@ -2517,8 +2578,10 @@ body.share-view-mode .header {
     }
 
     .btn-back {
-        padding: var(--spacing-sm);
-        font-size: 0.875rem;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 1rem;
+        min-width: 44px;
+        min-height: 44px;
     }
 
     .btn-icon {
