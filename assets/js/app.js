@@ -3842,29 +3842,55 @@ async function shareEstimateAction(estimate) {
         return;
     }
 
-    // Create share link
-    const { shareToken, error } = await createEstimateShare(estimate.id, estimate.name);
+    // Save the current calculator state
+    const previousState = {
+        legs: [...state.legs],
+        crew: [...state.crew],
+        nextLegId: state.nextLegId,
+        nextCrewId: state.nextCrewId,
+        currentEstimateId: state.currentEstimateId,
+        currentEstimateName: state.currentEstimateName,
+        isSaved: state.isSaved,
+        hasUnsavedChanges: state.hasUnsavedChanges
+    };
 
-    if (error) {
-        showToast('Failed to create share link: ' + error.message, 'error');
-        return;
-    }
+    // Temporarily load the estimate into calculator (for generating share content)
+    loadEstimateAction(estimate, { suppressToast: true });
 
-    // Display share link in modal
-    const shareLink = `${window.location.origin}?share=${shareToken}`;
-    document.getElementById('shareLink').value = shareLink;
+    // Open the enhanced share modal (don't close estimates view)
+    openEnhancedShareModal();
 
-    // Show success message
-    const successDiv = document.getElementById('shareSuccess');
-    successDiv.textContent = 'Share link created! Anyone with this link can view and copy this estimate.';
-    successDiv.style.display = 'block';
+    // Restore previous calculator state when modal closes
+    const enhancedModal = document.getElementById('enhancedShareModal');
+    const restoreState = () => {
+        // Restore previous calculator state
+        state.legs = previousState.legs;
+        state.crew = previousState.crew;
+        state.nextLegId = previousState.nextLegId;
+        state.nextCrewId = previousState.nextCrewId;
+        state.currentEstimateId = previousState.currentEstimateId;
+        state.currentEstimateName = previousState.currentEstimateName;
+        state.isSaved = previousState.isSaved;
+        state.hasUnsavedChanges = previousState.hasUnsavedChanges;
 
-    // Hide error message
-    document.getElementById('shareError').style.display = 'none';
+        // Re-render the calculator with previous state
+        document.getElementById('flightLegsContainer').innerHTML = '';
+        document.getElementById('crewContainer').innerHTML = '';
+        previousState.legs.forEach(leg => renderLeg(leg));
+        previousState.crew.forEach(crew => renderCrew(crew));
+        updateEstimate();
+        updateMainHeading();
 
-    // Open share modal
-    // closeModal('loadEstimateModal'); // Modal removed - using Estimates View
-    openModal('shareEstimateModal');
+        // Clean up listener
+        enhancedModal.removeEventListener('transitionend', restoreState);
+    };
+
+    // Listen for modal close
+    enhancedModal.addEventListener('transitionend', (e) => {
+        if (e.target === enhancedModal && !enhancedModal.classList.contains('active')) {
+            restoreState();
+        }
+    });
 }
 
 function copyShareLink() {
