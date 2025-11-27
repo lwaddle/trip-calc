@@ -768,6 +768,26 @@
         </div>
     </div>
 
+    <!-- Email Unsaved Changes Warning Modal -->
+    <div class="modal" id="emailUnsavedChangesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Unsaved Changes</h2>
+                <button class="modal-close" id="closeEmailUnsavedChangesModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong style="color: #d32f2f;">You have unsaved changes!</strong></p>
+                <p>The shareable link will point to the last saved version of this estimate, not your current changes.</p>
+                <p>What would you like to do?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelEmailUnsavedChanges">Cancel</button>
+                <button type="button" class="btn-primary" id="emailCurrentVersion">Email Current Version</button>
+                <button type="button" class="btn-primary" id="saveAndEmail">Save Changes & Email</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete Estimate Confirmation Modal -->
     <div class="modal" id="deleteConfirmModal">
         <div class="modal-content">

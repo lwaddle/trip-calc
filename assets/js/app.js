@@ -138,7 +138,8 @@ const state = {
     userProfiles: [], // User's custom profiles from database
     isSaved: false, // Whether the current estimate has been saved
     profileIdToDelete: null, // Profile ID pending deletion confirmation
-    hasUnsavedChanges: false // Whether the current estimate has been modified since loading
+    hasUnsavedChanges: false, // Whether the current estimate has been modified since loading
+    emailAfterSave: false // Whether to trigger email after save completes
 };
 
 // PDF Preview State
@@ -2001,6 +2002,12 @@ function attachEventListeners() {
     document.getElementById('cancelDiscardChangesButton').addEventListener('click', () => closeModal('discardChangesConfirmModal'));
     document.getElementById('confirmDiscardChangesButton').addEventListener('click', confirmDiscardChanges);
 
+    // Email Unsaved Changes modal
+    document.getElementById('closeEmailUnsavedChangesModal').addEventListener('click', () => closeModal('emailUnsavedChangesModal'));
+    document.getElementById('cancelEmailUnsavedChanges').addEventListener('click', () => closeModal('emailUnsavedChangesModal'));
+    document.getElementById('emailCurrentVersion').addEventListener('click', emailCurrentVersion);
+    document.getElementById('saveAndEmail').addEventListener('click', saveAndEmail);
+
     // Delete estimate confirmation modal
     document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => closeModal('deleteConfirmModal'));
     document.getElementById('cancelDeleteButton').addEventListener('click', () => closeModal('deleteConfirmModal'));
@@ -2763,15 +2770,79 @@ function openEnhancedShareModal() {
     openModal('enhancedShareModal');
 }
 
+// Helper: Generate shareable link for email
+async function generateShareLinkForEmail() {
+    if (!state.currentEstimateId) {
+        return null; // No saved estimate, can't create link
+    }
+
+    try {
+        const { shareToken, error } = await createEstimateShare(
+            state.currentEstimateId,
+            state.currentEstimateName
+        );
+
+        if (error) {
+            console.error('Failed to create share link:', error);
+            return null;
+        }
+
+        return `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+    } catch (err) {
+        console.error('Error generating share link:', err);
+        return null;
+    }
+}
+
 // Share via email (mailto:)
-function shareViaEmail() {
+async function shareViaEmail() {
     const estimateText = document.getElementById('tripEstimate').textContent;
+
+    // Check if user is authenticated and has a saved estimate
+    if (isAuthenticated() && state.currentEstimateId) {
+        // User has a saved estimate
+
+        // Check for unsaved changes
+        if (state.hasUnsavedChanges) {
+            // Close the share modal and show warning modal about unsaved changes
+            closeModal('enhancedShareModal');
+            openModal('emailUnsavedChangesModal');
+            return; // Modal handlers will continue the email flow
+        }
+
+        // No unsaved changes - proceed with link + text
+        await sendEmailWithLink(estimateText);
+    } else {
+        // Guest user or unsaved estimate - send text only
+        sendEmailTextOnly(estimateText);
+    }
+}
+
+// Send email with shareable link + text
+async function sendEmailWithLink(estimateText) {
+    const shareLink = await generateShareLinkForEmail();
+
+    if (!shareLink) {
+        // Failed to generate link, fall back to text only
+        showToast('Could not generate share link. Sending text only.', 'warning');
+        sendEmailTextOnly(estimateText);
+        return;
+    }
+
+    const subject = encodeURIComponent('Trip Cost Estimate');
+    const bodyWithLink = `View this estimate online:\n${shareLink}\n\n---\n\n${estimateText}`;
+    const body = encodeURIComponent(bodyWithLink);
+
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    showToast('Opening email client...', 'success');
+}
+
+// Send email with text only (no link)
+function sendEmailTextOnly(estimateText) {
     const subject = encodeURIComponent('Trip Cost Estimate');
     const body = encodeURIComponent(estimateText);
 
-    // Open default email client with pre-filled content
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
-
     showToast('Opening email client...', 'success');
 }
 
@@ -3533,6 +3604,13 @@ async function confirmSaveEstimate(e) {
     if (estimatesView && estimatesView.style.display !== 'none') {
         await renderEstimatesList();
     }
+
+    // If emailAfterSave flag is set, trigger email
+    if (state.emailAfterSave) {
+        state.emailAfterSave = false; // Reset flag
+        const estimateText = document.getElementById('tripEstimate').textContent;
+        await sendEmailWithLink(estimateText);
+    }
 }
 
 async function confirmUpdateEstimate(e) {
@@ -3594,6 +3672,13 @@ async function confirmUpdateEstimate(e) {
     const estimatesView = document.getElementById('estimatesView');
     if (estimatesView && estimatesView.style.display !== 'none') {
         await renderEstimatesList();
+    }
+
+    // If emailAfterSave flag is set, trigger email
+    if (state.emailAfterSave) {
+        state.emailAfterSave = false; // Reset flag
+        const estimateText = document.getElementById('tripEstimate').textContent;
+        await sendEmailWithLink(estimateText);
     }
 }
 
@@ -4702,5 +4787,31 @@ async function confirmDiscardChanges() {
         console.error('Error discarding changes:', error);
         showToast('Failed to discard changes', 'error');
         closeModal('discardChangesConfirmModal');
+    }
+}
+
+// Email current version (ignore unsaved changes)
+async function emailCurrentVersion() {
+    closeModal('emailUnsavedChangesModal');
+
+    const estimateText = document.getElementById('tripEstimate').textContent;
+    await sendEmailWithLink(estimateText);
+}
+
+// Save changes and then email
+async function saveAndEmail() {
+    closeModal('emailUnsavedChangesModal');
+
+    // Check if this is an existing estimate being updated
+    if (state.currentEstimateId) {
+        // Open the save modal - user can choose "Update" or "Save as New"
+        // After save completes, we'll trigger the email
+        state.emailAfterSave = true; // Flag to trigger email after save
+        saveEstimateAction();
+    } else {
+        // New estimate - shouldn't happen since we check currentEstimateId
+        // but handle gracefully
+        showToast('Please save the estimate first', 'info');
+        saveEstimateAction();
     }
 }
