@@ -2,7 +2,7 @@
 // Imports
 // ===========================
 import { initAuth, signIn, signOut, resetPassword, updatePassword, onAuthStateChange, isAuthenticated, getUserEmail, getUserId } from './auth.js';
-import { getUserProfiles, getDefaultProfile, createProfile, updateProfile, deleteProfile, setDefaultProfile, loadEstimates, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
+import { getUserProfiles, getDefaultProfile, createProfile, updateProfile, deleteProfile, setDefaultProfile, loadEstimates, loadEstimate, saveEstimate, updateEstimate as updateEstimateInDB, deleteEstimate, createEstimateShare, loadSharedEstimate, copySharedEstimate } from './database.js';
 import { supabase } from './supabase.js';
 import imageCompression from 'browser-image-compression';
 
@@ -137,7 +137,8 @@ const state = {
     selectedProfileId: null, // Currently selected profile ID
     userProfiles: [], // User's custom profiles from database
     isSaved: false, // Whether the current estimate has been saved
-    profileIdToDelete: null // Profile ID pending deletion confirmation
+    profileIdToDelete: null, // Profile ID pending deletion confirmation
+    hasUnsavedChanges: false // Whether the current estimate has been modified since loading
 };
 
 // PDF Preview State
@@ -164,6 +165,100 @@ function formatCurrency(amount) {
 
 function formatNumber(number, decimals = 0) {
     return number.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/**
+ * Marks the estimate as having unsaved changes
+ */
+function markAsChanged() {
+    // Only mark as changed if we have a loaded estimate
+    if (state.currentEstimateId && !state.hasUnsavedChanges) {
+        state.hasUnsavedChanges = true;
+        showDiscardButton();
+        updateSaveButtonIndicator();
+    }
+}
+
+/**
+ * Clears the unsaved changes flag
+ */
+function clearUnsavedChanges() {
+    state.hasUnsavedChanges = false;
+    hideDiscardButton();
+    updateSaveButtonIndicator();
+}
+
+/**
+ * Shows the discard changes button
+ */
+function showDiscardButton() {
+    const discardButton = document.getElementById('discardChangesButton');
+    if (discardButton) {
+        discardButton.style.display = 'inline-block';
+    }
+}
+
+/**
+ * Hides the discard changes button
+ */
+function hideDiscardButton() {
+    const discardButton = document.getElementById('discardChangesButton');
+    if (discardButton) {
+        discardButton.style.display = 'none';
+    }
+}
+
+/**
+ * Updates the save button visual indicator for unsaved changes
+ */
+function updateSaveButtonIndicator() {
+    const saveButton = document.getElementById('saveEstimateButton');
+    if (!saveButton) return;
+
+    if (state.hasUnsavedChanges) {
+        saveButton.classList.add('has-changes');
+    } else {
+        saveButton.classList.remove('has-changes');
+    }
+}
+
+/**
+ * Sets up event listeners to track form changes
+ */
+function setupChangeTracking() {
+    // Use event delegation on document body to catch all input/change events
+    // This works for both existing and dynamically added elements
+    document.body.addEventListener('input', function(e) {
+        // Check if the target is a calculator input field
+        if (e.target.matches('input, textarea, select')) {
+            // Exclude modal inputs and other non-calculator fields
+            const excludedIds = ['estimateName', 'signInEmail', 'signInPassword',
+                                'resetEmail', 'newPassword', 'confirmNewPassword',
+                                'profileName', 'profileImageInput'];
+
+            if (!excludedIds.includes(e.target.id) &&
+                !e.target.closest('.modal') &&
+                !e.target.closest('#profileEditorForm')) {
+                markAsChanged();
+            }
+        }
+    });
+
+    document.body.addEventListener('change', function(e) {
+        // Check if the target is a calculator input field
+        if (e.target.matches('input, textarea, select')) {
+            // Exclude modal inputs and other non-calculator fields
+            const excludedIds = ['estimateName', 'signInEmail', 'signInPassword',
+                                'resetEmail', 'newPassword', 'confirmNewPassword',
+                                'profileName', 'profileImageInput'];
+
+            if (!excludedIds.includes(e.target.id) &&
+                !e.target.closest('.modal') &&
+                !e.target.closest('#profileEditorForm')) {
+                markAsChanged();
+            }
+        }
+    });
 }
 
 /**
@@ -264,7 +359,6 @@ function updateUIForAuthState(user) {
 
     // Footer buttons
     const saveEstimateButton = document.getElementById('saveEstimateButton');
-    const loadEstimateButton = document.getElementById('loadEstimateButton');
     const authTip = document.getElementById('authTip');
 
     if (isAuth) {
@@ -276,9 +370,8 @@ function updateUIForAuthState(user) {
         if (menuProfiles) menuProfiles.style.display = 'block';
         menuSignOut.style.display = 'block';
 
-        // Show save/load buttons
+        // Show save button
         if (saveEstimateButton) saveEstimateButton.style.display = 'inline-block';
-        if (loadEstimateButton) loadEstimateButton.style.display = 'inline-block';
 
         // Hide auth tip for authenticated users
         if (authTip) authTip.style.display = 'none';
@@ -290,9 +383,8 @@ function updateUIForAuthState(user) {
         if (menuProfiles) menuProfiles.style.display = 'none';
         menuSignOut.style.display = 'none';
 
-        // Hide save/load buttons for anonymous users
+        // Hide save button for anonymous users
         if (saveEstimateButton) saveEstimateButton.style.display = 'none';
-        if (loadEstimateButton) loadEstimateButton.style.display = 'none';
 
         // Show auth tip for anonymous users
         if (authTip) authTip.style.display = 'flex';
@@ -1768,8 +1860,8 @@ function attachEventListeners() {
     // Footer buttons
     document.getElementById('shareButton').addEventListener('click', openEnhancedShareModal);
     document.getElementById('saveEstimateButton').addEventListener('click', saveEstimateAction);
-    document.getElementById('loadEstimateButton').addEventListener('click', openEstimatesView);
-    document.getElementById('resetButton').addEventListener('click', resetForm);
+    document.getElementById('discardChangesButton').addEventListener('click', discardChangesAction);
+    document.getElementById('newEstimateButton').addEventListener('click', newEstimateAction);
 
     // Rename icon button (opens Update Estimate modal)
     document.getElementById('renameEstimateIcon').addEventListener('click', saveEstimateAction);
@@ -1899,10 +1991,15 @@ function attachEventListeners() {
     document.getElementById('closeShareModalButton').addEventListener('click', () => closeModal('shareEstimateModal'));
     document.getElementById('copyShareLinkButton').addEventListener('click', copyShareLink);
 
-    // Reset confirmation modal
-    document.getElementById('closeResetConfirmModal').addEventListener('click', () => closeModal('resetConfirmModal'));
-    document.getElementById('cancelResetButton').addEventListener('click', () => closeModal('resetConfirmModal'));
-    document.getElementById('confirmResetButton').addEventListener('click', confirmReset);
+    // New Estimate confirmation modal
+    document.getElementById('closeNewEstimateConfirmModal').addEventListener('click', () => closeModal('newEstimateConfirmModal'));
+    document.getElementById('cancelNewEstimateButton').addEventListener('click', () => closeModal('newEstimateConfirmModal'));
+    document.getElementById('confirmNewEstimateButton').addEventListener('click', confirmNewEstimate);
+
+    // Discard Changes confirmation modal
+    document.getElementById('closeDiscardChangesConfirmModal').addEventListener('click', () => closeModal('discardChangesConfirmModal'));
+    document.getElementById('cancelDiscardChangesButton').addEventListener('click', () => closeModal('discardChangesConfirmModal'));
+    document.getElementById('confirmDiscardChangesButton').addEventListener('click', confirmDiscardChanges);
 
     // Delete estimate confirmation modal
     document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => closeModal('deleteConfirmModal'));
@@ -1987,6 +2084,9 @@ function attachEventListeners() {
             if (userMenu) userMenu.classList.remove('active');
         }
     });
+
+    // Set up change tracking for unsaved changes detection
+    setupChangeTracking();
 }
 
 // ===========================
@@ -3413,12 +3513,16 @@ async function confirmSaveEstimate(e) {
     state.currentEstimateId = data.id;
     state.currentEstimateName = data.name;
     state.isSaved = true;
+    state.hasUnsavedChanges = false; // Clear unsaved changes after successful save
 
     // Update main heading to show estimate name
     updateMainHeading();
 
     // Hide profile section after save
     updateProfileSectionVisibility();
+
+    // Hide discard button since estimate is now saved
+    hideDiscardButton();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -3471,12 +3575,16 @@ async function confirmUpdateEstimate(e) {
     // Update the name in state
     state.currentEstimateName = name;
     state.isSaved = true;
+    state.hasUnsavedChanges = false; // Clear unsaved changes after successful update
 
     // Update main heading to show updated estimate name
     updateMainHeading();
 
     // Hide profile section after update
     updateProfileSectionVisibility();
+
+    // Hide discard button since estimate is now updated
+    hideDiscardButton();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -3565,12 +3673,16 @@ function loadEstimateAction(estimate, options = {}) {
     state.currentEstimateId = estimate.id;
     state.currentEstimateName = estimate.name;
     state.isSaved = true; // Loading an estimate means it's saved
+    state.hasUnsavedChanges = false; // Reset unsaved changes flag when loading
 
     // Update main heading to show estimate name
     updateMainHeading();
 
     // Hide profile section since this is a saved estimate
     updateProfileSectionVisibility();
+
+    // Hide discard button since we just loaded a fresh estimate
+    hideDiscardButton();
 
     // Get estimate data (handle both Supabase and localStorage formats)
     const estimateData = estimate.estimate_data || estimate.data;
@@ -4475,12 +4587,26 @@ function setFormData(data) {
 // ===========================
 // Reset Form
 // ===========================
-function resetForm() {
-    // Open confirmation modal instead of system dialog
-    openModal('resetConfirmModal');
+function newEstimateAction() {
+    // Check if there are unsaved changes and warn the user
+    if (state.hasUnsavedChanges) {
+        // Update the modal warning text to emphasize unsaved changes
+        const warningText = document.getElementById('newEstimateWarningText');
+        if (warningText) {
+            warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> Are you sure you want to start a new estimate? This will clear all data including:';
+        }
+    } else {
+        // Reset warning text to default
+        const warningText = document.getElementById('newEstimateWarningText');
+        if (warningText) {
+            warningText.textContent = 'Are you sure you want to start a new estimate? This will clear all data including:';
+        }
+    }
+    // Open confirmation modal
+    openModal('newEstimateConfirmModal');
 }
 
-function confirmReset() {
+function confirmNewEstimate() {
     // Clear state
     state.legs = [];
     state.crew = [];
@@ -4488,7 +4614,8 @@ function confirmReset() {
     state.nextCrewId = 1;
     state.currentEstimateId = null;
     state.currentEstimateName = null;
-    state.isSaved = false; // Reset to unsaved state
+    state.isSaved = false;
+    state.hasUnsavedChanges = false;
 
     // Reset main heading to default
     updateMainHeading();
@@ -4525,9 +4652,55 @@ function confirmReset() {
     // Show profile section again
     updateProfileSectionVisibility();
 
+    // Hide discard button
+    hideDiscardButton();
+
     updateEstimate();
 
     // Close modal and show success message
-    closeModal('resetConfirmModal');
-    showToast('Form reset successfully', 'success');
+    closeModal('newEstimateConfirmModal');
+    showToast('New estimate started', 'success');
+}
+
+// ===========================
+// Discard Changes
+// ===========================
+function discardChangesAction() {
+    // Open confirmation modal
+    openModal('discardChangesConfirmModal');
+}
+
+async function confirmDiscardChanges() {
+    // Reload the original estimate from the database
+    if (!state.currentEstimateId) {
+        showToast('No estimate loaded to discard changes from', 'error');
+        closeModal('discardChangesConfirmModal');
+        return;
+    }
+
+    try {
+        // Fetch the estimate from database
+        const { data: estimate, error: loadError } = await loadEstimate(state.currentEstimateId);
+
+        if (loadError || !estimate) {
+            showToast('Could not reload estimate', 'error');
+            closeModal('discardChangesConfirmModal');
+            return;
+        }
+
+        // Close the modal first
+        closeModal('discardChangesConfirmModal');
+
+        // Reuse the existing loadEstimateAction function to reload the estimate
+        // This ensures consistent behavior with loading estimates
+        loadEstimateAction(estimate);
+
+        // Show success message
+        showToast('Changes discarded successfully', 'success');
+
+    } catch (error) {
+        console.error('Error discarding changes:', error);
+        showToast('Failed to discard changes', 'error');
+        closeModal('discardChangesConfirmModal');
+    }
 }
