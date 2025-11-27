@@ -1836,9 +1836,9 @@ function attachEventListeners() {
         });
     });
 
-    // Auto-select input contents on click for all inputs (except estimateName and profileName to fix iOS keyboard issues)
+    // Auto-select input contents on click for all inputs (except estimateName, profileName, and tripNotes to fix iOS keyboard issues)
     document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
-        if (input.id !== 'estimateName' && input.id !== 'profileName') {
+        if (input.id !== 'estimateName' && input.id !== 'profileName' && input.id !== 'tripNotes') {
             input.addEventListener('click', function() {
                 this.select();
             });
