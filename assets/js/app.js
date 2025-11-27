@@ -139,7 +139,8 @@ const state = {
     isSaved: false, // Whether the current estimate has been saved
     profileIdToDelete: null, // Profile ID pending deletion confirmation
     hasUnsavedChanges: false, // Whether the current estimate has been modified since loading
-    emailAfterSave: false // Whether to trigger email after save completes
+    emailAfterSave: false, // Whether to trigger email after save completes
+    pendingAction: null // Action to perform after user confirms discarding changes
 };
 
 // PDF Preview State
@@ -868,6 +869,28 @@ function closeProfilesView() {
     document.getElementById('profilesView').style.display = 'none';
     document.getElementById('normalView').style.display = 'block';
     document.body.style.overflow = ''; // Restore scrolling
+}
+
+/**
+ * Attempt to open the estimates view, checking for unsaved changes first
+ */
+function tryOpenEstimatesView() {
+    // Check if there are unsaved changes
+    if (state.hasUnsavedChanges) {
+        // Store what action to take after confirmation
+        state.pendingAction = 'openEstimatesView';
+
+        // Update the modal warning text to emphasize unsaved changes
+        const warningText = document.getElementById('newEstimateWarningText');
+        if (warningText) {
+            warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> If you continue, your changes will be lost. Are you sure you want to view your estimates? This will clear all unsaved data including:';
+        }
+        // Open confirmation modal
+        openModal('newEstimateConfirmModal');
+    } else {
+        // No unsaved changes, proceed directly
+        openEstimatesView();
+    }
 }
 
 /**
@@ -1696,7 +1719,7 @@ function attachEventListeners() {
     document.getElementById('menuSignIn').addEventListener('click', () => openModal('signInModal'));
     document.getElementById('menuEstimates').addEventListener('click', () => {
         closeMobileMenu();
-        openEstimatesView();
+        tryOpenEstimatesView();
     });
     const menuProfiles = document.getElementById('menuProfiles');
     if (menuProfiles) {
@@ -1726,7 +1749,7 @@ function attachEventListeners() {
     if (desktopEstimates) {
         desktopEstimates.addEventListener('click', () => {
             closeDesktopUserDropdown();
-            openEstimatesView();
+            tryOpenEstimatesView();
         });
     }
     if (desktopSignIn) {
@@ -1745,6 +1768,25 @@ function attachEventListeners() {
         desktopSignOut.addEventListener('click', () => {
             closeDesktopUserDropdown();
             handleSignOut();
+        });
+    }
+
+    // Logo link - check for unsaved changes before navigating
+    const logoLink = document.getElementById('logoLink');
+    if (logoLink) {
+        logoLink.addEventListener('click', (e) => {
+            // Check if there are unsaved changes
+            if (state.hasUnsavedChanges) {
+                e.preventDefault(); // Prevent default navigation
+                // Update the modal warning text to emphasize unsaved changes
+                const warningText = document.getElementById('newEstimateWarningText');
+                if (warningText) {
+                    warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> Are you sure you want to start a new estimate? This will clear all data including:';
+                }
+                // Open confirmation modal
+                openModal('newEstimateConfirmModal');
+            }
+            // If no unsaved changes, allow default navigation to proceed
         });
     }
 
@@ -3769,6 +3811,9 @@ function loadEstimateAction(estimate, options = {}) {
     // Hide discard button since we just loaded a fresh estimate
     hideDiscardButton();
 
+    // Update save button to remove the unsaved changes indicator
+    updateSaveButtonIndicator();
+
     // Get estimate data (handle both Supabase and localStorage formats)
     const estimateData = estimate.estimate_data || estimate.data;
 
@@ -4718,6 +4763,28 @@ function newEstimateAction() {
 }
 
 function confirmNewEstimate() {
+    // Check if this was triggered by a pending action (e.g., opening Estimates view)
+    const pendingAction = state.pendingAction;
+
+    // Clear the pending action first
+    state.pendingAction = null;
+
+    // Close modal first
+    closeModal('newEstimateConfirmModal');
+
+    // If there was a pending action, execute it instead of creating a new estimate
+    if (pendingAction === 'openEstimatesView') {
+        // User confirmed they want to discard changes and view estimates
+        // Clear the unsaved changes flag
+        state.hasUnsavedChanges = false;
+        hideDiscardButton();
+
+        // Open the estimates view
+        openEstimatesView();
+        return;
+    }
+
+    // Otherwise, proceed with creating a new estimate
     // Clear state
     state.legs = [];
     state.crew = [];
@@ -4768,8 +4835,7 @@ function confirmNewEstimate() {
 
     updateEstimate();
 
-    // Close modal and show success message
-    closeModal('newEstimateConfirmModal');
+    // Show success message
     showToast('New estimate started', 'success');
 }
 
