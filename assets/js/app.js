@@ -875,22 +875,10 @@ function closeProfilesView() {
  * Attempt to open the estimates view, checking for unsaved changes first
  */
 function tryOpenEstimatesView() {
-    // Check if there are unsaved changes
-    if (state.hasUnsavedChanges) {
-        // Store what action to take after confirmation
-        state.pendingAction = 'openEstimatesView';
-
-        // Update the modal warning text to emphasize unsaved changes
-        const warningText = document.getElementById('newEstimateWarningText');
-        if (warningText) {
-            warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> If you continue, your changes will be lost. Are you sure you want to view your estimates? This will clear all unsaved data including:';
-        }
-        // Open confirmation modal
-        openModal('newEstimateConfirmModal');
-    } else {
-        // No unsaved changes, proceed directly
-        openEstimatesView();
-    }
+    // Opening the estimates view doesn't modify or clear data,
+    // so we can navigate directly without warning.
+    // Warning will be shown if user tries to load a different estimate.
+    openEstimatesView();
 }
 
 /**
@@ -1778,6 +1766,18 @@ function attachEventListeners() {
             // Check if there are unsaved changes
             if (state.hasUnsavedChanges) {
                 e.preventDefault(); // Prevent default navigation
+
+                // Reset modal to default state for new estimate
+                const modalTitle = document.querySelector('#newEstimateConfirmModal .modal-header h2');
+                if (modalTitle) {
+                    modalTitle.textContent = 'Start New Estimate';
+                }
+
+                const confirmButton = document.getElementById('confirmNewEstimateButton');
+                if (confirmButton) {
+                    confirmButton.textContent = 'Start New Estimate';
+                }
+
                 // Update the modal warning text to emphasize unsaved changes
                 const warningText = document.getElementById('newEstimateWarningText');
                 if (warningText) {
@@ -4094,6 +4094,42 @@ async function renderEstimatesList() {
  * Load estimate from card
  */
 async function loadEstimateFromCard(estimateId) {
+    // Check if there are unsaved changes (whether same or different estimate)
+    if (state.hasUnsavedChanges) {
+        // Store the estimate ID to load after confirmation
+        state.pendingEstimateId = estimateId;
+        state.pendingAction = 'loadDifferentEstimate';
+
+        // Check if it's the same estimate being reloaded or a different one
+        const isSameEstimate = state.currentEstimateId === estimateId;
+
+        // Update the modal warning text based on whether it's the same estimate or different
+        const warningText = document.getElementById('newEstimateWarningText');
+        if (warningText) {
+            if (isSameEstimate) {
+                warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> If you reload this estimate, your unsaved changes will be lost. This includes:';
+            } else {
+                warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes on your current estimate!</strong> If you open a different estimate, your unsaved changes will be lost. This includes:';
+            }
+        }
+
+        // Update modal title
+        const modalTitle = document.querySelector('#newEstimateConfirmModal .modal-header h2');
+        if (modalTitle) {
+            modalTitle.textContent = isSameEstimate ? 'Reload Estimate' : 'Open Different Estimate';
+        }
+
+        // Update button text
+        const confirmButton = document.getElementById('confirmNewEstimateButton');
+        if (confirmButton) {
+            confirmButton.textContent = isSameEstimate ? 'Reload Estimate' : 'Open Estimate';
+        }
+
+        // Open confirmation modal
+        openModal('newEstimateConfirmModal');
+        return;
+    }
+
     const saved = await getSavedEstimatesFromSource();
     const estimate = saved.find(e => (e.id || saved.indexOf(e).toString()) === estimateId);
 
@@ -4744,6 +4780,17 @@ function setFormData(data) {
 // Reset Form
 // ===========================
 function newEstimateAction() {
+    // Reset modal to default state for new estimate
+    const modalTitle = document.querySelector('#newEstimateConfirmModal .modal-header h2');
+    if (modalTitle) {
+        modalTitle.textContent = 'Start New Estimate';
+    }
+
+    const confirmButton = document.getElementById('confirmNewEstimateButton');
+    if (confirmButton) {
+        confirmButton.textContent = 'Start New Estimate';
+    }
+
     // Check if there are unsaved changes and warn the user
     if (state.hasUnsavedChanges) {
         // Update the modal warning text to emphasize unsaved changes
@@ -4762,25 +4809,35 @@ function newEstimateAction() {
     openModal('newEstimateConfirmModal');
 }
 
-function confirmNewEstimate() {
-    // Check if this was triggered by a pending action (e.g., opening Estimates view)
+async function confirmNewEstimate() {
+    // Check if this was triggered by a pending action (e.g., loading different estimate)
     const pendingAction = state.pendingAction;
+    const pendingEstimateId = state.pendingEstimateId;
 
     // Clear the pending action first
     state.pendingAction = null;
+    state.pendingEstimateId = null;
 
     // Close modal first
     closeModal('newEstimateConfirmModal');
 
     // If there was a pending action, execute it instead of creating a new estimate
-    if (pendingAction === 'openEstimatesView') {
-        // User confirmed they want to discard changes and view estimates
+    if (pendingAction === 'loadDifferentEstimate' && pendingEstimateId) {
+        // User confirmed they want to discard changes and load a different estimate
         // Clear the unsaved changes flag
         state.hasUnsavedChanges = false;
         hideDiscardButton();
 
-        // Open the estimates view
-        openEstimatesView();
+        // Load the pending estimate
+        const saved = await getSavedEstimatesFromSource();
+        const estimate = saved.find(e => (e.id || saved.indexOf(e).toString()) === pendingEstimateId);
+
+        if (estimate) {
+            loadEstimateAction(estimate);
+            closeEstimatesView();
+        } else {
+            showToast('Estimate not found', 'error');
+        }
         return;
     }
 
