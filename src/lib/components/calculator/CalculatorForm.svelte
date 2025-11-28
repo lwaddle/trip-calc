@@ -2,10 +2,14 @@
   import FlightLegsList from './FlightLegsList.svelte';
   import CrewList from './CrewList.svelte';
   import EstimateSummary from './EstimateSummary.svelte';
+  import ProfileSelector from './ProfileSelector.svelte';
   import { fuelPrice, fuelDensity, includeAPU } from '$lib/stores/calculator';
 </script>
 
 <div class="calculator-form">
+  <!-- Profile Selector -->
+  <ProfileSelector />
+
   <div class="settings-section">
     <h2>Settings</h2>
     <div class="settings-grid">

@@ -1,7 +1,8 @@
 <script>
   import { onMount } from 'svelte';
-  import { initialize as initAuth, isPasswordRecovery } from '$lib/stores/auth.js';
+  import { initialize as initAuth, isPasswordRecovery, user } from '$lib/stores/auth.js';
   import { activeModal, openModal } from '$lib/stores/ui.js';
+  import { loadUserProfiles } from '$lib/stores/profiles.js';
   import Header from '$lib/components/layout/Header.svelte';
   import Footer from '$lib/components/layout/Footer.svelte';
   import MobileMenu from '$lib/components/layout/MobileMenu.svelte';
@@ -10,6 +11,8 @@
   import SignInModal from '$lib/components/auth/SignInModal.svelte';
   import PasswordResetModal from '$lib/components/auth/PasswordResetModal.svelte';
   import UpdatePasswordModal from '$lib/components/auth/UpdatePasswordModal.svelte';
+  import ProfilesView from '$lib/components/profiles/ProfilesView.svelte';
+  import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
 
   let isReady = false;
@@ -20,11 +23,12 @@
     console.log('Trip Cost Calculator (Svelte) - Initialized');
 
     // Initialize auth system
-    const user = await initAuth();
+    const currentUser = await initAuth();
 
-    // If user is already signed in, skip sign-in view
-    if (user) {
+    // If user is already signed in, skip sign-in view and load profiles
+    if (currentUser) {
       showSignInView = false;
+      await loadUserProfiles();
     }
 
     // Check if this is a password recovery flow
@@ -36,12 +40,18 @@
     isReady = true;
   });
 
+  // Watch for user changes to load/unload profiles
+  $: if ($user) {
+    loadUserProfiles();
+  }
+
   function handleContinueAsGuest() {
     showSignInView = false;
   }
 
-  function handleSignInSuccess() {
+  async function handleSignInSuccess() {
     showSignInView = false;
+    await loadUserProfiles();
   }
 
   function toggleMobileMenu() {
@@ -87,6 +97,14 @@
 
       {#if $activeModal === 'update-password'}
         <UpdatePasswordModal />
+      {/if}
+
+      {#if $activeModal === 'profiles'}
+        <ProfilesView />
+      {/if}
+
+      {#if $activeModal === 'profileEditor'}
+        <ProfileEditor />
       {/if}
     {/if}
 

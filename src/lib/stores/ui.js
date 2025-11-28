@@ -5,13 +5,16 @@ import { writable } from 'svelte/store';
 // ===========================
 
 export const activeModal = writable(null);
+export const modalData = writable(null);
 
-export function openModal(modalId) {
+export function openModal(modalId, data = null) {
     activeModal.set(modalId);
+    modalData.set(data);
 }
 
 export function closeModal() {
     activeModal.set(null);
+    modalData.set(null);
 }
 
 // ===========================
