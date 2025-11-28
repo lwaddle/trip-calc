@@ -356,7 +356,7 @@
       </div>
 
       <!-- Default checkbox -->
-      <div class="form-group checkbox-group">
+      <div class="form-group checkbox-group default-profile-option">
         <label>
           <input
             type="checkbox"
@@ -570,7 +570,7 @@
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.875rem;
-    transition: all 0.15s;
+    transition: all 0.2s ease;
   }
 
   input[type="text"]:focus,
@@ -578,6 +578,7 @@
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
   }
 
   input.error {
@@ -605,6 +606,24 @@
   .checkbox-group input[type="checkbox"] {
     width: auto;
     cursor: pointer;
+  }
+
+  /* Special styling for default profile option */
+  .default-profile-option {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .default-profile-option label {
+    margin: 0;
+  }
+
+  .default-profile-option span {
+    font-weight: 600;
+    color: #1e40af;
   }
 
   .modal-footer {
