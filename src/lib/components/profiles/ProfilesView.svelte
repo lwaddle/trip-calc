@@ -1,7 +1,10 @@
 <script>
   import ProfilesList from './ProfilesList.svelte';
-  import { closeModal, openModal } from '$lib/stores/ui';
-  import { userProfiles } from '$lib/stores/profiles';
+  import ImportProfileModal from './ImportProfileModal.svelte';
+  import { closeModal, openModal, showToast } from '$lib/stores/ui';
+  import { userProfiles, saveProfile } from '$lib/stores/profiles';
+
+  let showImportModal = false;
 
   function handleBack() {
     closeModal();
@@ -9,6 +12,24 @@
 
   function handleNewProfile() {
     openModal('profileEditor');
+  }
+
+  function handleImportClick() {
+    showImportModal = true;
+  }
+
+  async function handleImport(profileData) {
+    // The modal already validated the profile data
+    const { data, error } = await saveProfile(profileData);
+
+    if (error) {
+      showToast(error.message || 'Failed to import profile', 'error');
+    }
+    // Success toast is shown by the modal itself
+  }
+
+  function closeImportModal() {
+    showImportModal = false;
   }
 </script>
 
@@ -28,17 +49,32 @@
 
     <h1>My Profiles</h1>
 
-    <button
-      type="button"
-      class="btn-new"
-      on:click={handleNewProfile}
-      aria-label="Create new profile"
-    >
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <span>New Profile</span>
-    </button>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn-import"
+        on:click={handleImportClick}
+        aria-label="Import profile"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 14V6M10 6L7 9M10 6L13 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 12V13C3 14.6569 4.34315 16 6 16H14C15.6569 16 17 14.6569 17 13V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Import</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn-new"
+        on:click={handleNewProfile}
+        aria-label="Create new profile"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>New</span>
+      </button>
+    </div>
   </div>
 
   <div class="profiles-content">
@@ -64,6 +100,13 @@
     {/if}
   </div>
 </div>
+
+<!-- Import Profile Modal -->
+<ImportProfileModal
+  isOpen={showImportModal}
+  onClose={closeImportModal}
+  onImport={handleImport}
+/>
 
 <style>
   .profiles-view {
@@ -99,8 +142,7 @@
     text-align: center;
   }
 
-  .btn-back,
-  .btn-new {
+  .btn-back {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -115,8 +157,36 @@
     transition: all 0.15s;
   }
 
-  .btn-back:hover,
-  .btn-new:hover {
+  .btn-back:hover {
+    background: #f3f4f6;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-import,
+  .btn-new {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+
+  .btn-import {
+    color: #374151;
+  }
+
+  .btn-import:hover {
     background: #f3f4f6;
   }
 
@@ -194,8 +264,13 @@
     }
 
     .btn-back span,
+    .btn-import span,
     .btn-new span {
       display: none;
+    }
+
+    .header-actions {
+      gap: 0.25rem;
     }
 
     .profiles-content {

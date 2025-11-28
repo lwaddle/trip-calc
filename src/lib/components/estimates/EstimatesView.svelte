@@ -3,10 +3,12 @@
   import { loadEstimates, loadEstimate, deleteEstimate, newEstimate } from '$lib/stores/estimates.js';
   import { closeModal, showToast } from '$lib/stores/ui.js';
   import EstimatesList from './EstimatesList.svelte';
+  import DeleteEstimateConfirmModal from './DeleteEstimateConfirmModal.svelte';
 
   let showDeleteConfirm = false;
   let estimateToDelete = null;
   let isLoading = true;
+  let isDeleting = false;
 
   onMount(async () => {
     await loadEstimates();
@@ -34,6 +36,8 @@
   async function confirmDelete() {
     if (!estimateToDelete) return;
 
+    isDeleting = true;
+
     try {
       const { error } = await deleteEstimate(estimateToDelete.id);
 
@@ -47,6 +51,7 @@
       showToast('Failed to delete estimate', 'error');
     }
 
+    isDeleting = false;
     showDeleteConfirm = false;
     estimateToDelete = null;
   }
@@ -98,28 +103,13 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-{#if showDeleteConfirm}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-overlay" on:click={cancelDelete} role="presentation">
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
-      <h2 class="modal-title" id="delete-confirm-title">Delete Estimate?</h2>
-      <p class="modal-message">
-        Are you sure you want to delete "{estimateToDelete?.name}"? This action cannot be undone.
-      </p>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" on:click={cancelDelete}>
-          Cancel
-        </button>
-        <button class="btn btn-danger" on:click={confirmDelete}>
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
+<DeleteEstimateConfirmModal
+  isOpen={showDeleteConfirm}
+  estimateName={estimateToDelete?.name || ''}
+  onConfirm={confirmDelete}
+  onCancel={cancelDelete}
+  isDeleting={isDeleting}
+/>
 
 <style>
   .estimates-view {
@@ -208,79 +198,6 @@
   .loading-message p {
     font-size: 1rem;
     color: #64748b;
-  }
-
-  /* Modal Styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    padding: 1rem;
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    max-width: 400px;
-    width: 100%;
-  }
-
-  .modal-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin: 0 0 1rem 0;
-  }
-
-  .modal-message {
-    font-size: 1rem;
-    color: #64748b;
-    margin: 0 0 2rem 0;
-    line-height: 1.5;
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-  }
-
-  .btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary {
-    background: white;
-    color: #64748b;
-    border: 1px solid #cbd5e1;
-  }
-
-  .btn-secondary:hover {
-    background: #f8fafc;
-    border-color: #94a3b8;
-  }
-
-  .btn-danger {
-    background: #dc2626;
-    color: white;
-  }
-
-  .btn-danger:hover {
-    background: #b91c1c;
   }
 
   @media (max-width: 640px) {

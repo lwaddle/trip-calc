@@ -2,11 +2,13 @@
   import { removeProfile, makeDefaultProfile, duplicateProfile, exportProfileToJSON } from '$lib/stores/profiles';
   import { openModal, showToast } from '$lib/stores/ui';
   import { formatCurrency } from '$lib/utils/formatters';
+  import DeleteProfileConfirmModal from './DeleteProfileConfirmModal.svelte';
 
   export let profile;
 
   let showMenu = false;
   let isDeleting = false;
+  let showDeleteConfirm = false;
 
   function toggleMenu() {
     showMenu = !showMenu;
@@ -66,13 +68,12 @@
     showToast('Profile exported successfully', 'success');
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     closeMenu();
+    showDeleteConfirm = true;
+  }
 
-    if (!confirm(`Are you sure you want to delete "${profile.name}"? This cannot be undone.`)) {
-      return;
-    }
-
+  async function confirmDelete() {
     isDeleting = true;
     const { error } = await removeProfile(profile.id);
     isDeleting = false;
@@ -82,6 +83,12 @@
     } else {
       showToast(`${profile.name} deleted successfully`, 'success');
     }
+
+    showDeleteConfirm = false;
+  }
+
+  function cancelDelete() {
+    showDeleteConfirm = false;
   }
 
   // Close menu when clicking outside
@@ -210,6 +217,15 @@
     </div>
   </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<DeleteProfileConfirmModal
+  isOpen={showDeleteConfirm}
+  profileName={profile.name}
+  onConfirm={confirmDelete}
+  onCancel={cancelDelete}
+  isDeleting={isDeleting}
+/>
 
 <style>
   .profile-card {
