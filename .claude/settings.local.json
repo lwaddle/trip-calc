@@ -5,7 +5,8 @@
       "Bash(node -c:*)",
       "Bash(cat:*)",
       "Bash(git log:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
