@@ -8,6 +8,11 @@
   // Local state
   let showUserDropdown = false;
 
+  function handleLogoClick() {
+    // Return to calculator view by reloading the page
+    window.location.href = window.location.origin + window.location.pathname;
+  }
+
   async function handleSignOut() {
     const { error } = await signOut();
 
@@ -48,9 +53,9 @@
 
 <header class="header">
   <div class="header-content">
-    <div class="logo">
+    <button class="logo" on:click={handleLogoClick} type="button" aria-label="Return to calculator">
       <h1>Trip Cost Calculator</h1>
-    </div>
+    </button>
 
     <nav class="desktop-nav">
       {#if $isAuthenticated}
@@ -112,6 +117,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .logo {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: white;
+    transition: opacity 0.2s;
+  }
+
+  .logo:hover {
+    opacity: 0.9;
   }
 
   .logo h1 {

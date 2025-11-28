@@ -142,6 +142,12 @@
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 2rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .estimate-summary:hover {
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
+    transform: translateY(-2px);
   }
 
   .estimate-summary h2 {

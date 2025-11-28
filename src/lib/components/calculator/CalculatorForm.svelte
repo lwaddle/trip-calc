@@ -70,6 +70,12 @@
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 2rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .settings-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 
   .settings-section h2 {
@@ -103,13 +109,14 @@
     border: 1px solid #d1d5db;
     border-radius: 4px;
     font-size: 0.875rem;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
   }
 
   .form-group input[type="number"]:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
   }
 
   .checkbox-group {

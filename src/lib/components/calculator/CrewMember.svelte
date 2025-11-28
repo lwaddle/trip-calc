@@ -55,6 +55,12 @@
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 0.75rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .crew-member:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 
   .crew-header {
@@ -108,13 +114,14 @@
     border: 1px solid #d1d5db;
     border-radius: 4px;
     font-size: 0.875rem;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
   }
 
   .form-group input:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
   }
 
   @media (max-width: 640px) {

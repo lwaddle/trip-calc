@@ -324,9 +324,9 @@
 
 <style>
   .footer {
-    background: #1f2937;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
-    border-top: 1px solid #374151;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .footer-content {
@@ -344,28 +344,28 @@
   }
 
   .action-btn {
-    background: #374151;
+    background: rgba(255, 255, 255, 0.1);
     color: white;
-    border: 1px solid #4b5563;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 0.75rem 1.5rem;
     border-radius: 6px;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
   }
 
   .action-btn:hover {
-    background: #4b5563;
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .action-btn.primary {
-    background: #2563eb;
-    border-color: #2563eb;
+    background: #bc282e;
+    border-color: #bc282e;
   }
 
   .action-btn.primary:hover {
-    background: #1d4ed8;
+    background: #a02227;
   }
 
   /* Discard Changes Button */
@@ -409,13 +409,13 @@
   .footer-info {
     text-align: center;
     padding-top: 1rem;
-    border-top: 1px solid #374151;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .footer-info p {
     margin: 0;
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   /* Modal Styles */
