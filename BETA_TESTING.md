@@ -141,7 +141,7 @@ This document tracks the remaining work to achieve feature parity with the vanil
 - [x] Create dedicated `DeleteEstimateConfirmModal.svelte`
 - [x] Show estimate name in confirmation
 - [x] Separate from delete profile modal
-- [ ] Integrate with EstimatesView component
+- [x] Integrate with EstimatesView component
 
 **Reference:**
 - Vanilla: `index.html` lines 812-828
@@ -155,7 +155,7 @@ This document tracks the remaining work to achieve feature parity with the vanil
 - [x] Create dedicated `DeleteProfileConfirmModal.svelte`
 - [x] Show profile name in confirmation
 - [x] Separate from delete estimate modal
-- [ ] Integrate with ProfilesView component
+- [x] Integrate with ProfileCard component
 
 **Reference:**
 - Vanilla: `index.html` lines 830-846
@@ -171,7 +171,7 @@ This document tracks the remaining work to achieve feature parity with the vanil
 - [x] Validate JSON structure
 - [x] Error handling display
 - [x] Success feedback
-- [ ] Integrate with ProfilesView component
+- [x] Integrate with ProfilesView component (added Import button)
 
 **Reference:**
 - Vanilla: `index.html` lines 579-596
