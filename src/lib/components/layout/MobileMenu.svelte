@@ -39,10 +39,14 @@
 </script>
 
 {#if isOpen}
-  <div class="mobile-menu-overlay" on:click={handleOverlayClick}>
-    <div class="mobile-menu" on:click|stopPropagation>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="mobile-menu-overlay" on:click={handleOverlayClick} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="mobile-menu" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title">
       <div class="menu-header">
-        <h2>Menu</h2>
+        <h2 id="mobile-menu-title">Menu</h2>
         <button
           type="button"
           class="close-btn"

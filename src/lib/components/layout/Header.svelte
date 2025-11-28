@@ -142,11 +142,6 @@
     background: rgba(255, 255, 255, 0.2);
   }
 
-  .nav-btn.secondary {
-    background: transparent;
-    border: none;
-  }
-
   .user-dropdown-container {
     position: relative;
   }

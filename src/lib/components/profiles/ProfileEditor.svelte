@@ -147,10 +147,14 @@
   }
 </script>
 
-<div class="modal-overlay" on:click={handleCancel}>
-  <div class="modal-content" on:click|stopPropagation>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="modal-overlay" on:click={handleCancel} role="presentation">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="profile-editor-title">
     <div class="modal-header">
-      <h2>{isEditMode ? 'Edit Profile' : 'New Profile'}</h2>
+      <h2 id="profile-editor-title">{isEditMode ? 'Edit Profile' : 'New Profile'}</h2>
       <button
         type="button"
         class="close-button"
@@ -166,6 +170,7 @@
     <form class="modal-body" on:submit|preventDefault={handleSave}>
       <!-- Profile Image -->
       <div class="image-section">
+        <!-- svelte-ignore a11y_label_has_associated_control -->
         <label>Profile Image (Optional)</label>
         {#if imagePreview}
           <div class="image-preview">

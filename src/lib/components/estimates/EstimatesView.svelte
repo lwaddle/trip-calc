@@ -99,9 +99,13 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirm}
-  <div class="modal-overlay" on:click={cancelDelete}>
-    <div class="modal-content" on:click|stopPropagation>
-      <h2 class="modal-title">Delete Estimate?</h2>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click={cancelDelete} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+      <h2 class="modal-title" id="delete-confirm-title">Delete Estimate?</h2>
       <p class="modal-message">
         Are you sure you want to delete "{estimateToDelete?.name}"? This action cannot be undone.
       </p>

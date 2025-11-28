@@ -54,10 +54,14 @@
   }
 </script>
 
-<div class="modal-overlay" on:click={handleClose}>
-  <div class="modal-content" on:click|stopPropagation>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="modal-overlay" on:click={handleClose} role="presentation">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="password-reset-title">
     <div class="modal-header">
-      <h2>Reset Password</h2>
+      <h2 id="password-reset-title">Reset Password</h2>
       <button
         type="button"
         class="close-btn"

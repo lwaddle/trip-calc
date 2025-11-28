@@ -142,10 +142,14 @@
 
 <!-- PDF Preview Modal -->
 {#if showPDFPreview}
-  <div class="modal-overlay" on:click={handleClosePDFPreview}>
-    <div class="pdf-preview-modal" on:click|stopPropagation>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click={handleClosePDFPreview} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="pdf-preview-modal" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="pdf-preview-title">
       <div class="pdf-header">
-        <h2>PDF Preview</h2>
+        <h2 id="pdf-preview-title">PDF Preview</h2>
         <button class="close-btn" on:click={handleClosePDFPreview} aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -176,9 +180,13 @@
 
 <!-- Save Modal -->
 {#if showSaveModal}
-  <div class="modal-overlay" on:click={handleSaveCancel}>
-    <div class="modal-content" on:click|stopPropagation>
-      <h2 class="modal-title">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click={handleSaveCancel} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+      <h2 class="modal-title" id="save-modal-title">
         {$currentEstimateId ? 'Update' : 'Save'} Estimate
       </h2>
 
@@ -190,7 +198,6 @@
           bind:value={estimateName}
           on:keypress={handleKeyPress}
           placeholder="Enter estimate name..."
-          autofocus
         />
       </div>
 

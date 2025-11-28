@@ -126,10 +126,14 @@
 </script>
 
 {#if isOpen}
-  <div class="modal-overlay" on:click={handleClose}>
-    <div class="modal-content" on:click|stopPropagation>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click={handleClose} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
       <div class="modal-header">
-        <h2>Share Estimate</h2>
+        <h2 id="share-modal-title">Share Estimate</h2>
         <button class="close-btn" on:click={handleClose} aria-label="Close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
