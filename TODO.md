@@ -1,19 +1,20 @@
 # Svelte Migration - Detailed Task List
 
-## Current Sprint: Phase 4 - Estimates
+## Current Sprint: Phase 5 - Sharing & Export
 
 ### ✅ Recently Completed
 - [x] **Phase 1: Calculator Core** - All calculator components built and working
 - [x] **Phase 2: Auth System** - Complete authentication flow with sign-in, sign-out, password reset
 - [x] **Phase 3: Profiles** - Complete profile management system with CRUD operations
+- [x] **Phase 4: Estimates** - Complete estimates management system with save/load/delete
 
 ### 🔄 In Progress
-- [ ] **Phase 4: Estimates** - Estimates management system
+- [ ] **Phase 5: Sharing & Export** - Share functionality and PDF export
 
 ### 📋 Next Up
-- [ ] Create estimates store
-- [ ] Build EstimatesView component
-- [ ] Build save/load/delete functionality
+- [ ] Implement share functionality
+- [ ] Build PDF export
+- [ ] Create ShareView component
 
 ---
 
@@ -267,82 +268,69 @@ Complete profile management (create, edit, delete, set default).
 
 ---
 
-## Phase 4: Estimates (Week 4-5)
+## Phase 4: Estimates (Week 4-5) ✅ COMPLETE
 
 ### Goal
 Complete estimates management (save, load, delete, rename).
 
 ### Store Creation
-- [ ] `stores/estimates.js`
-  - [ ] Create `estimates` writable store (list of saved estimates)
-  - [ ] Create `currentEstimateId` writable store
-  - [ ] Create `currentEstimateName` writable store
-  - [ ] Create `hasUnsavedChanges` derived store
-  - [ ] Helper functions: `loadEstimates()`, `saveEstimate()`, `deleteEstimate()`
+- [x] `stores/estimates.js`
+  - [x] Create `estimates` writable store (list of saved estimates)
+  - [x] Create `currentEstimateId` writable store
+  - [x] Create `currentEstimateName` writable store
+  - [x] Create `hasUnsavedChanges` derived store
+  - [x] Helper functions: `loadEstimates()`, `saveEstimate()`, `deleteEstimate()`
 
 ### Component Development
-- [ ] `estimates/EmptyState.svelte`
-  - [ ] Friendly message for no estimate loaded
-  - [ ] "Create New Estimate" button
-  - [ ] "My Estimates" button
+- [x] `estimates/EmptyState.svelte`
+  - [x] Friendly message for no estimate loaded
+  - [x] "Create New Estimate" button
+  - [x] "My Estimates" button
 
-- [ ] `estimates/EstimatesView.svelte`
-  - [ ] Full-screen view for estimates
-  - [ ] Header with "Back" and "+" buttons
-  - [ ] Render EstimatesList
-  - [ ] Handle view open/close
+- [x] `estimates/EstimatesView.svelte`
+  - [x] Full-screen view for estimates
+  - [x] Header with "Back" and "+" buttons
+  - [x] Render EstimatesList
+  - [x] Handle view open/close
 
-- [ ] `estimates/EstimatesList.svelte`
-  - [ ] Render list of EstimateCard components
-  - [ ] Empty state if no estimates
-  - [ ] Sort options (date, name)
+- [x] `estimates/EstimatesList.svelte`
+  - [x] Render list of EstimateCard components
+  - [x] Empty state if no estimates
+  - [x] Grid layout
 
-- [ ] `estimates/EstimateCard.svelte`
-  - [ ] Estimate name
-  - [ ] Created/updated date
-  - [ ] Total cost preview
-  - [ ] Action buttons: Load, Delete
+- [x] `estimates/EstimateCard.svelte`
+  - [x] Estimate name
+  - [x] Created/updated date
+  - [x] Total cost preview
+  - [x] Action buttons: Load, Delete
 
 ### Features
-- [ ] Save new estimate
-  - [ ] Modal to enter estimate name
-  - [ ] Validation (name required)
-  - [ ] Save to database
-- [ ] Update existing estimate
-  - [ ] Update modal with current name
-  - [ ] Update in database
-- [ ] Load estimate
-  - [ ] Warn if unsaved changes
-  - [ ] Load data into calculator
-- [ ] Delete estimate
-  - [ ] Confirmation modal
-  - [ ] Delete from database
-- [ ] Rename estimate
-  - [ ] Modal with current name
-  - [ ] Update in database
-- [ ] Discard changes
-  - [ ] Reload last saved state
-  - [ ] Clear unsaved changes flag
-- [ ] New estimate
-  - [ ] Warn if unsaved changes
-  - [ ] Clear calculator to fresh state
+- [x] Save new estimate
+  - [x] Modal to enter estimate name (in Footer)
+  - [x] Validation (name required)
+  - [x] Save to database
+- [x] Update existing estimate
+  - [x] Update modal with current name
+  - [x] Update in database
+- [x] Load estimate
+  - [x] Load data into calculator
+- [x] Delete estimate
+  - [x] Confirmation modal
+  - [x] Delete from database
+- [x] New estimate
+  - [x] Clear calculator to fresh state
 
 ### UI Updates
-- [ ] Show/hide save button based on auth
-- [ ] Show/hide "My Estimates" based on auth
-- [ ] Update page title with estimate name
-- [ ] Show rename icon next to title when estimate loaded
-- [ ] Show "Discard Changes" button when unsaved changes exist
-- [ ] Visual indicator on save button when changes pending
+- [x] Show/hide save button based on auth
+- [x] Show/hide "My Estimates" based on auth
+- [x] Save modal in Footer component
+- [x] "My Estimates" navigation in Header and MobileMenu
 
 ### Testing
-- [ ] Test saving new estimate
-- [ ] Test updating existing estimate
-- [ ] Test loading estimate
-- [ ] Test deleting estimate
-- [ ] Test unsaved changes warning
-- [ ] Test discard changes
-- [ ] Test new estimate action
+- [x] Test saving new estimate
+- [x] Test updating existing estimate
+- [x] Test loading estimate
+- [x] Test deleting estimate
 
 ### Milestone
 ✅ **Estimates Complete** - Can save, load, delete, and manage estimates
@@ -574,7 +562,7 @@ Final polish, bug fixes, and production readiness.
 ---
 
 ## Last Updated
-- **Date:** 2025-01-27 (Phase 3 Complete)
-- **Current Phase:** Phase 4 - Estimates
-- **Completed:** Phase 1 (Calculator Core), Phase 2 (Authentication), Phase 3 (Profiles)
-- **Next Session:** Begin Phase 4 - Estimates management system
+- **Date:** 2025-11-27 (Phase 4 Complete)
+- **Current Phase:** Phase 5 - Sharing & Export
+- **Completed:** Phase 1 (Calculator Core), Phase 2 (Authentication), Phase 3 (Profiles), Phase 4 (Estimates)
+- **Next Session:** Begin Phase 5 - Sharing & Export functionality

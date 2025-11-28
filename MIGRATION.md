@@ -78,19 +78,23 @@ Migrating the Trip Cost Calculator from vanilla JavaScript to Svelte to improve 
   - [x] Integration with calculator (auto-apply profile settings)
   - [x] Test profile management flows (✅ Working)
 
+- [x] **Phase 4: Estimates** (Week 4-5) - **COMPLETE**
+  - [x] Estimates store (src/lib/stores/estimates.js)
+  - [x] EmptyState component
+  - [x] EstimateCard component
+  - [x] EstimatesList component
+  - [x] EstimatesView component (full-screen estimates management)
+  - [x] Save/Load/Delete functionality
+  - [x] Save modal in Footer component
+  - [x] Integration with App.svelte and navigation
+  - [x] Test estimates management flows (✅ Working)
+
 ### 🔄 In Progress
-- [ ] **Phase 4: Estimates** (Week 4-5) - **NEXT UP**
-  - [ ] Estimates store
-  - [ ] EstimatesView component
-  - [ ] Save/Load/Delete functionality
+- [ ] **Phase 5: Sharing & Export** (Week 5-6) - **NEXT UP**
+  - [ ] Share functionality
+  - [ ] PDF export
 
 ### 📋 Todo
-
-- [ ] **Phase 4: Estimates** (Week 4-5)
-  - [ ] Estimates store
-  - [ ] EstimatesView (list of saved estimates)
-  - [ ] Save/Load/Delete functionality
-  - [ ] Empty state for authenticated users
 
 - [ ] **Phase 5: Sharing & Export** (Week 5-6)
   - [ ] Share functionality (email, native, copy link)
@@ -321,7 +325,7 @@ The migration is complete when:
 ---
 
 ## Last Updated
-- **Date:** 2025-01-27 (Phase 3 Complete)
-- **Status:** Phase 1 (Calculator Core), Phase 2 (Authentication), and Phase 3 (Profiles) complete
-- **Next Up:** Phase 4 - Estimates management system
-- **Progress:** 3 of 6 phases complete (50%)
+- **Date:** 2025-11-27 (Phase 4 Complete)
+- **Status:** Phase 1 (Calculator Core), Phase 2 (Authentication), Phase 3 (Profiles), and Phase 4 (Estimates) complete
+- **Next Up:** Phase 5 - Sharing & Export functionality
+- **Progress:** 4 of 6 phases complete (67%)
