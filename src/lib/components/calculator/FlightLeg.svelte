@@ -1,8 +1,8 @@
 <script>
   import { updateLeg, removeLeg } from '$lib/stores/calculator';
 
-  export let leg;
-  export let index;
+  // Svelte 5 $props() rune
+  let { leg, index } = $props();
 
   function handleUpdate(field, value) {
     updateLeg(leg.id, field, value);

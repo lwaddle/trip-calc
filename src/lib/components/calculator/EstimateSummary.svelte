@@ -2,21 +2,21 @@
   import { estimate } from '$lib/stores/calculator';
   import { formatCurrency } from '$lib/utils/formatters';
 
-  // Reactive calculations for display
-  $: totalHours = $estimate?.totalHours || 0;
-  $: remainingMinutes = $estimate?.remainingMinutes || 0;
-  $: fuelCost = $estimate?.fuelCost || 0;
-  $: crewCost = $estimate?.crewCost || 0;
-  $: hotelCost = $estimate?.hotelCost || 0;
-  $: mealsCost = $estimate?.mealsCost || 0;
-  $: maintenanceCost = $estimate?.maintenanceCost || 0;
-  $: consumablesCost = $estimate?.consumablesCost || 0;
-  $: additionalCost = $estimate?.additionalCost || 0;
-  $: airportFees = $estimate?.airportFees || 0;
-  $: miscFees = $estimate?.miscFees || 0;
-  $: grandTotal = $estimate?.estimatedTotal || 0;
-  $: totalFuelGallons = $estimate?.totalFuelGallons || 0;
-  $: totalDistance = $estimate?.totalDistance || 0;
+  // Reactive calculations for display using Svelte 5 $derived rune
+  let totalHours = $derived($estimate?.totalHours || 0);
+  let remainingMinutes = $derived($estimate?.remainingMinutes || 0);
+  let fuelCost = $derived($estimate?.fuelCost || 0);
+  let crewCost = $derived($estimate?.crewCost || 0);
+  let hotelCost = $derived($estimate?.hotelCost || 0);
+  let mealsCost = $derived($estimate?.mealsCost || 0);
+  let maintenanceCost = $derived($estimate?.maintenanceCost || 0);
+  let consumablesCost = $derived($estimate?.consumablesCost || 0);
+  let additionalCost = $derived($estimate?.additionalCost || 0);
+  let airportFees = $derived($estimate?.airportFees || 0);
+  let miscFees = $derived($estimate?.miscFees || 0);
+  let grandTotal = $derived($estimate?.estimatedTotal || 0);
+  let totalFuelGallons = $derived($estimate?.totalFuelGallons || 0);
+  let totalDistance = $derived($estimate?.totalDistance || 0);
 </script>
 
 <div class="estimate-summary">

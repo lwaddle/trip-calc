@@ -1,8 +1,8 @@
 <script>
   import { updateCrew, removeCrew } from '$lib/stores/calculator';
 
-  export let member;
-  export let index;
+  // Svelte 5 $props() rune
+  let { member, index } = $props();
 
   function handleUpdate(field, value) {
     updateCrew(member.id, field, value);
