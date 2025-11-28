@@ -1,6 +1,6 @@
 <script>
   import { isAuthenticated } from '$lib/stores/auth.js';
-  import { totalEstimate } from '$lib/stores/calculator.js';
+  import { estimate } from '$lib/stores/calculator.js';
   import { currentEstimateId, currentEstimateName, saveEstimate } from '$lib/stores/estimates.js';
   import { openModal, showToast } from '$lib/stores/ui.js';
 
@@ -29,7 +29,7 @@
     isSaving = true;
 
     try {
-      const { error } = await saveEstimate(estimateName.trim(), $totalEstimate.total);
+      const { error } = await saveEstimate(estimateName.trim(), $estimate.estimatedTotal);
 
       if (error) {
         showToast('Failed to save estimate: ' + error.message, 'error');
