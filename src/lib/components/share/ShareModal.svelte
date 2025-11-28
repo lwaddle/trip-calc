@@ -4,6 +4,7 @@
   import { estimate } from '$lib/stores/calculator.js';
   import { generateShareLink, shareViaEmail, shareViaNative, copyToClipboard } from '$lib/stores/share.js';
   import { showToast } from '$lib/stores/ui.js';
+  import { generatePDF } from '$lib/utils/pdfExport.js';
   import EmailUnsavedChangesModal from './EmailUnsavedChangesModal.svelte';
 
   export let isOpen = false;
@@ -14,6 +15,7 @@
   let linkGenerated = false;
   let showUnsavedChangesModal = false;
   let pendingEmailAction = null; // Store which email action is pending
+  let emailFormat = 'text'; // 'text' or 'pdf'
 
   // Generate estimate text for email sharing
   function getEstimateText() {
@@ -89,22 +91,68 @@
   }
 
   async function performEmailShare() {
-    const estimateText = getEstimateText();
+    if (emailFormat === 'pdf') {
+      // Generate PDF and attach to email
+      try {
+        const { blob, filename } = await generatePDF(
+          $estimate,
+          $currentEstimateName,
+          null // metadata - can add if needed
+        );
 
-    if ($isAuthenticated && $currentEstimateId) {
-      // Generate link and share via email
-      if (!shareUrl) {
-        await handleGenerateLink();
-        if (!shareUrl) {
-          // Failed to generate link, share text only
-          shareViaEmail(estimateText);
-          return;
+        // For mobile devices, download PDF instead of email
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('PDF downloaded. You can now attach it to an email.', 'success');
+        } else {
+          // Desktop: Create mailto link with suggestion to attach PDF
+          const subject = $currentEstimateName ? `Trip Estimate: ${$currentEstimateName}` : 'Trip Cost Estimate';
+          const body = `Please find the attached PDF estimate.\n\nNote: The PDF has been downloaded to your device. Please attach it to this email before sending.`;
+          const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+          // Download PDF
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
+
+          // Open email client after short delay
+          setTimeout(() => {
+            window.location.href = mailtoLink;
+          }, 500);
+
+          showToast('PDF downloaded. Opening email client...', 'success');
         }
+      } catch (error) {
+        console.error('PDF generation error:', error);
+        showToast('Failed to generate PDF', 'error');
       }
-      shareViaEmail(estimateText, shareUrl);
     } else {
-      // Guest user - share text only
-      shareViaEmail(estimateText);
+      // Text format (original behavior)
+      const estimateText = getEstimateText();
+
+      if ($isAuthenticated && $currentEstimateId) {
+        // Generate link and share via email
+        if (!shareUrl) {
+          await handleGenerateLink();
+          if (!shareUrl) {
+            // Failed to generate link, share text only
+            shareViaEmail(estimateText);
+            return;
+          }
+        }
+        shareViaEmail(estimateText, shareUrl);
+      } else {
+        // Guest user - share text only
+        shareViaEmail(estimateText);
+      }
     }
   }
 
@@ -186,6 +234,27 @@
           </div>
         {/if}
 
+        <!-- Email Format Toggle -->
+        <div class="format-toggle">
+          <label class="toggle-label">Email Format:</label>
+          <div class="toggle-buttons">
+            <button
+              class="toggle-btn {emailFormat === 'text' ? 'active' : ''}"
+              on:click={() => emailFormat = 'text'}
+              type="button"
+            >
+              Text
+            </button>
+            <button
+              class="toggle-btn {emailFormat === 'pdf' ? 'active' : ''}"
+              on:click={() => emailFormat = 'pdf'}
+              type="button"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
+
         <!-- Share options -->
         <div class="share-options">
           <!-- Email Share -->
@@ -198,7 +267,7 @@
             </div>
             <div class="option-content">
               <h3>Email</h3>
-              <p>Share via email</p>
+              <p>Share via email {emailFormat === 'pdf' ? '(PDF)' : '(Text)'}</p>
             </div>
           </button>
 
@@ -339,6 +408,51 @@
     margin: 0;
     color: #1e40af;
     font-size: 0.875rem;
+  }
+
+  .format-toggle {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .toggle-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .toggle-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn:hover:not(.active) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .toggle-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
   }
 
   .share-options {
