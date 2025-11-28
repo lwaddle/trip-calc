@@ -3,7 +3,7 @@
   import { initialize as initAuth, isPasswordRecovery, user, isAuthenticated } from '$lib/stores/auth.js';
   import { activeModal, openModal } from '$lib/stores/ui.js';
   import { loadUserProfiles } from '$lib/stores/profiles.js';
-  import { initEstimates, currentEstimateId, currentEstimateName } from '$lib/stores/estimates.js';
+  import { initEstimates, currentEstimateId, currentEstimateName, newEstimate } from '$lib/stores/estimates.js';
   import { isShareView } from '$lib/stores/share.js';
   import Header from '$lib/components/layout/Header.svelte';
   import Footer from '$lib/components/layout/Footer.svelte';
@@ -100,8 +100,8 @@
   }
 
   function handleNewEstimateFromEmpty() {
-    // Already on calculator view, just need to ensure calculator is visible
-    // The calculator will be empty by default
+    // Start a new estimate (clears calculator and current estimate tracking)
+    newEstimate();
   }
 
   function handleViewEstimatesFromEmpty() {
