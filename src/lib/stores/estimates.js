@@ -1,6 +1,12 @@
 import { writable, derived, get } from 'svelte/store';
 import { user } from './auth.js';
-import { legs, crew, fuelPrice, fuelDensity, hotelRate, mealsRate, maintenanceRate, includeAPU } from './calculator.js';
+import {
+  legs, crew, fuelPrice, fuelDensity, hotelRate, mealsRate, maintenanceRate, includeAPU,
+  apuBurn, tripDays, hotelStays, otherRate, rentalCar, airfare, mileage,
+  consumablesRate, additionalRate, landingFees, catering, handling,
+  passengerTransport, facilityFees, specialEventFees, rampParking, customs,
+  hangar, otherAirport, tripCoordinationFee, otherMisc, tripNotes
+} from './calculator.js';
 import { loadEstimates as loadEstimatesFromDb, saveEstimate as saveEstimateToDb, deleteEstimate as deleteEstimateFromDb, updateEstimate as updateEstimateInDb } from '../services/database.js';
 
 // ============================================================================
@@ -24,11 +30,26 @@ const lastSavedState = writable(null);
 // Derived Stores
 // ============================================================================
 
-// Check if there are unsaved changes
+// Check if there are unsaved changes (tracks ALL calculator fields)
 export const hasUnsavedChanges = derived(
-  [legs, crew, fuelPrice, fuelDensity, hotelRate, mealsRate, maintenanceRate, includeAPU, lastSavedState],
-  ([$legs, $crew, $fuelPrice, $fuelDensity, $hotelRate, $mealsRate, $maintenanceRate, $includeAPU, $lastSavedState]) => {
-    if (!$lastSavedState) return false;
+  [
+    legs, crew, fuelPrice, fuelDensity, hotelRate, mealsRate, maintenanceRate, includeAPU,
+    apuBurn, tripDays, hotelStays, otherRate, rentalCar, airfare, mileage,
+    consumablesRate, additionalRate, landingFees, catering, handling,
+    passengerTransport, facilityFees, specialEventFees, rampParking, customs,
+    hangar, otherAirport, tripCoordinationFee, otherMisc, tripNotes,
+    lastSavedState, currentEstimateId
+  ],
+  ([
+    $legs, $crew, $fuelPrice, $fuelDensity, $hotelRate, $mealsRate, $maintenanceRate, $includeAPU,
+    $apuBurn, $tripDays, $hotelStays, $otherRate, $rentalCar, $airfare, $mileage,
+    $consumablesRate, $additionalRate, $landingFees, $catering, $handling,
+    $passengerTransport, $facilityFees, $specialEventFees, $rampParking, $customs,
+    $hangar, $otherAirport, $tripCoordinationFee, $otherMisc, $tripNotes,
+    $lastSavedState, $currentEstimateId
+  ]) => {
+    // Only track changes if we have a loaded estimate
+    if (!$lastSavedState || !$currentEstimateId) return false;
 
     const currentState = {
       legs: $legs,
@@ -38,7 +59,29 @@ export const hasUnsavedChanges = derived(
       hotelRate: $hotelRate,
       mealsRate: $mealsRate,
       maintenanceRate: $maintenanceRate,
-      includeAPU: $includeAPU
+      includeAPU: $includeAPU,
+      apuBurn: $apuBurn,
+      tripDays: $tripDays,
+      hotelStays: $hotelStays,
+      otherRate: $otherRate,
+      rentalCar: $rentalCar,
+      airfare: $airfare,
+      mileage: $mileage,
+      consumablesRate: $consumablesRate,
+      additionalRate: $additionalRate,
+      landingFees: $landingFees,
+      catering: $catering,
+      handling: $handling,
+      passengerTransport: $passengerTransport,
+      facilityFees: $facilityFees,
+      specialEventFees: $specialEventFees,
+      rampParking: $rampParking,
+      customs: $customs,
+      hangar: $hangar,
+      otherAirport: $otherAirport,
+      tripCoordinationFee: $tripCoordinationFee,
+      otherMisc: $otherMisc,
+      tripNotes: $tripNotes
     };
 
     return JSON.stringify(currentState) !== JSON.stringify($lastSavedState);
@@ -71,7 +114,7 @@ export async function loadEstimates() {
 }
 
 /**
- * Create a snapshot of the current calculator state
+ * Create a snapshot of the current calculator state (ALL fields)
  */
 function captureCurrentState() {
   return {
@@ -82,22 +125,66 @@ function captureCurrentState() {
     hotelRate: get(hotelRate),
     mealsRate: get(mealsRate),
     maintenanceRate: get(maintenanceRate),
-    includeAPU: get(includeAPU)
+    includeAPU: get(includeAPU),
+    apuBurn: get(apuBurn),
+    tripDays: get(tripDays),
+    hotelStays: get(hotelStays),
+    otherRate: get(otherRate),
+    rentalCar: get(rentalCar),
+    airfare: get(airfare),
+    mileage: get(mileage),
+    consumablesRate: get(consumablesRate),
+    additionalRate: get(additionalRate),
+    landingFees: get(landingFees),
+    catering: get(catering),
+    handling: get(handling),
+    passengerTransport: get(passengerTransport),
+    facilityFees: get(facilityFees),
+    specialEventFees: get(specialEventFees),
+    rampParking: get(rampParking),
+    customs: get(customs),
+    hangar: get(hangar),
+    otherAirport: get(otherAirport),
+    tripCoordinationFee: get(tripCoordinationFee),
+    otherMisc: get(otherMisc),
+    tripNotes: get(tripNotes)
   };
 }
 
 /**
- * Apply an estimate's data to the calculator
+ * Apply an estimate's data to the calculator (ALL fields)
  */
 function applyEstimateData(estimateData) {
   legs.set(estimateData.legs || []);
   crew.set(estimateData.crew || []);
-  fuelPrice.set(estimateData.fuelPrice || 6.0);
-  fuelDensity.set(estimateData.fuelDensity || 6.7);
-  hotelRate.set(estimateData.hotelRate || 150);
-  mealsRate.set(estimateData.mealsRate || 75);
-  maintenanceRate.set(estimateData.maintenanceRate || 350);
-  includeAPU.set(estimateData.includeAPU || false);
+  fuelPrice.set(estimateData.fuelPrice !== undefined ? estimateData.fuelPrice : 6.0);
+  fuelDensity.set(estimateData.fuelDensity !== undefined ? estimateData.fuelDensity : 6.7);
+  hotelRate.set(estimateData.hotelRate !== undefined ? estimateData.hotelRate : 150);
+  mealsRate.set(estimateData.mealsRate !== undefined ? estimateData.mealsRate : 75);
+  maintenanceRate.set(estimateData.maintenanceRate !== undefined ? estimateData.maintenanceRate : 350);
+  includeAPU.set(estimateData.includeAPU !== undefined ? estimateData.includeAPU : false);
+  apuBurn.set(estimateData.apuBurn !== undefined ? estimateData.apuBurn : 100);
+  tripDays.set(estimateData.tripDays !== undefined ? estimateData.tripDays : 0);
+  hotelStays.set(estimateData.hotelStays !== undefined ? estimateData.hotelStays : 0);
+  otherRate.set(estimateData.otherRate !== undefined ? estimateData.otherRate : 0);
+  rentalCar.set(estimateData.rentalCar !== undefined ? estimateData.rentalCar : 0);
+  airfare.set(estimateData.airfare !== undefined ? estimateData.airfare : 0);
+  mileage.set(estimateData.mileage !== undefined ? estimateData.mileage : 0);
+  consumablesRate.set(estimateData.consumablesRate !== undefined ? estimateData.consumablesRate : 0);
+  additionalRate.set(estimateData.additionalRate !== undefined ? estimateData.additionalRate : 0);
+  landingFees.set(estimateData.landingFees !== undefined ? estimateData.landingFees : 0);
+  catering.set(estimateData.catering !== undefined ? estimateData.catering : 0);
+  handling.set(estimateData.handling !== undefined ? estimateData.handling : 0);
+  passengerTransport.set(estimateData.passengerTransport !== undefined ? estimateData.passengerTransport : 0);
+  facilityFees.set(estimateData.facilityFees !== undefined ? estimateData.facilityFees : 0);
+  specialEventFees.set(estimateData.specialEventFees !== undefined ? estimateData.specialEventFees : 0);
+  rampParking.set(estimateData.rampParking !== undefined ? estimateData.rampParking : 0);
+  customs.set(estimateData.customs !== undefined ? estimateData.customs : 0);
+  hangar.set(estimateData.hangar !== undefined ? estimateData.hangar : 0);
+  otherAirport.set(estimateData.otherAirport !== undefined ? estimateData.otherAirport : 0);
+  tripCoordinationFee.set(estimateData.tripCoordinationFee !== undefined ? estimateData.tripCoordinationFee : 0);
+  otherMisc.set(estimateData.otherMisc !== undefined ? estimateData.otherMisc : 0);
+  tripNotes.set(estimateData.tripNotes !== undefined ? estimateData.tripNotes : '');
 }
 
 /**

@@ -1,9 +1,9 @@
 <script>
   import { onMount } from 'svelte';
-  import { initialize as initAuth, isPasswordRecovery, user } from '$lib/stores/auth.js';
+  import { initialize as initAuth, isPasswordRecovery, user, isAuthenticated } from '$lib/stores/auth.js';
   import { activeModal, openModal } from '$lib/stores/ui.js';
   import { loadUserProfiles } from '$lib/stores/profiles.js';
-  import { initEstimates } from '$lib/stores/estimates.js';
+  import { initEstimates, currentEstimateId, currentEstimateName } from '$lib/stores/estimates.js';
   import { isShareView } from '$lib/stores/share.js';
   import Header from '$lib/components/layout/Header.svelte';
   import Footer from '$lib/components/layout/Footer.svelte';
@@ -16,6 +16,7 @@
   import ProfilesView from '$lib/components/profiles/ProfilesView.svelte';
   import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
   import EstimatesView from '$lib/components/estimates/EstimatesView.svelte';
+  import RenameEstimateModal from '$lib/components/estimates/RenameEstimateModal.svelte';
   import ShareView from '$lib/components/share/ShareView.svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
 
@@ -23,6 +24,17 @@
   let showSignInView = true; // Show sign-in by default
   let mobileMenuOpen = false;
   let shareToken = null;
+  let showRenameModal = false;
+
+  // Compute page title based on estimate name
+  $: pageTitle = $currentEstimateName || 'Trip Cost Calculator';
+
+  // Update browser title when estimate name changes
+  $: if (typeof document !== 'undefined') {
+    document.title = $currentEstimateName
+      ? `${$currentEstimateName} - Trip Cost Calculator`
+      : 'Trip Cost Calculator';
+  }
 
   onMount(async () => {
     console.log('Trip Cost Calculator (Svelte) - Initialized');
@@ -80,6 +92,10 @@
   function closeMobileMenu() {
     mobileMenuOpen = false;
   }
+
+  function handleRenameClick() {
+    showRenameModal = true;
+  }
 </script>
 
 <div class="app">
@@ -99,6 +115,23 @@
 
       <main class="main-content">
         <div class="container">
+          <!-- Page heading with optional rename button -->
+          <div class="heading-container">
+            <h1 class="main-heading">{pageTitle}</h1>
+            {#if $isAuthenticated && $currentEstimateId}
+              <button
+                class="btn-icon rename-icon"
+                on:click={handleRenameClick}
+                title="Rename estimate"
+                aria-label="Rename estimate"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20" fill="currentColor">
+                  <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
+                </svg>
+              </button>
+            {/if}
+          </div>
+
           <CalculatorForm />
         </div>
       </main>
@@ -132,6 +165,12 @@
       {#if $activeModal === 'estimates'}
         <EstimatesView />
       {/if}
+
+      <!-- Rename Estimate Modal -->
+      <RenameEstimateModal
+        isOpen={showRenameModal}
+        onClose={() => showRenameModal = false}
+      />
     {/if}
 
     <!-- Toast notifications (always available) -->
@@ -159,6 +198,43 @@
   .container {
     max-width: 1200px;
     margin: 0 auto;
+  }
+
+  .heading-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .main-heading {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+  }
+
+  .rename-icon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .loading {

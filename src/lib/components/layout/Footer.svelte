@@ -1,7 +1,7 @@
 <script>
   import { isAuthenticated, user } from '$lib/stores/auth.js';
-  import { estimate } from '$lib/stores/calculator.js';
-  import { currentEstimateId, currentEstimateName, saveEstimate } from '$lib/stores/estimates.js';
+  import { estimate, resetCalculator } from '$lib/stores/calculator.js';
+  import { currentEstimateId, currentEstimateName, saveEstimate, hasUnsavedChanges, discardChanges, clearCurrentEstimate } from '$lib/stores/estimates.js';
   import { showToast } from '$lib/stores/ui.js';
   import { exportPDF } from '$lib/utils/pdfExport.js';
   import ShareModal from '$lib/components/share/ShareModal.svelte';
@@ -9,6 +9,7 @@
   let showSaveModal = false;
   let showShareModal = false;
   let showPDFPreview = false;
+  let showNewEstimateModal = false;
   let estimateName = '';
   let isSaving = false;
   let isExportingPDF = false;
@@ -111,21 +112,77 @@
       handleSaveConfirm();
     }
   }
+
+  function handleDiscardChanges() {
+    if (confirm('Are you sure you want to discard your changes? This will reload the last saved version of this estimate.')) {
+      discardChanges();
+      showToast('Changes discarded', 'success');
+    }
+  }
+
+  function handleNewEstimate() {
+    // If there are unsaved changes, show confirmation modal
+    if ($hasUnsavedChanges) {
+      showNewEstimateModal = true;
+    } else {
+      confirmNewEstimate();
+    }
+  }
+
+  function confirmNewEstimate() {
+    // Reset the calculator to default state
+    resetCalculator();
+
+    // Clear current estimate tracking
+    clearCurrentEstimate();
+
+    // Close modal
+    showNewEstimateModal = false;
+
+    showToast('New estimate created', 'success');
+  }
+
+  function cancelNewEstimate() {
+    showNewEstimateModal = false;
+  }
 </script>
 
 <footer class="footer">
   <div class="footer-content">
     <div class="actions">
+      <!-- New Estimate Button -->
+      <button type="button" class="action-btn" on:click={handleNewEstimate}>
+        New Estimate
+      </button>
+
+      <!-- Discard Changes Button (only show when there are unsaved changes) -->
+      {#if $hasUnsavedChanges}
+        <button type="button" class="action-btn discard" on:click={handleDiscardChanges}>
+          Discard Changes
+        </button>
+      {/if}
+
+      <!-- Share Button -->
       <button type="button" class="action-btn" on:click={handleShare}>
         Share
       </button>
 
+      <!-- Save/Update Button (authenticated only, with unsaved changes indicator) -->
       {#if $isAuthenticated}
-        <button type="button" class="action-btn primary" on:click={handleSaveClick}>
+        <button
+          type="button"
+          class="action-btn primary"
+          class:has-changes={$hasUnsavedChanges}
+          on:click={handleSaveClick}
+        >
           {$currentEstimateId ? 'Update' : 'Save'} Estimate
+          {#if $hasUnsavedChanges}
+            <span class="unsaved-indicator"></span>
+          {/if}
         </button>
       {/if}
 
+      <!-- Export PDF Button -->
       <button type="button" class="action-btn" on:click={handleExportPDF} disabled={isExportingPDF}>
         {isExportingPDF ? 'Generating...' : 'Export PDF'}
       </button>
@@ -172,6 +229,48 @@
         </button>
         <button class="btn btn-primary" on:click={handleDownloadPDF}>
           Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- New Estimate Confirmation Modal -->
+{#if showNewEstimateModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-overlay" on:click={cancelNewEstimate} role="presentation">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true" aria-labelledby="new-estimate-modal-title">
+      <h2 class="modal-title" id="new-estimate-modal-title">Start New Estimate</h2>
+
+      <div class="modal-warning">
+        <p class="warning-text">
+          <strong style="color: #d32f2f;">You have unsaved changes!</strong> Are you sure you want to start a new estimate? This will clear all data including:
+        </p>
+        <ul class="warning-list">
+          <li>All flight legs</li>
+          <li>All crew members</li>
+          <li>Trip settings and notes</li>
+          <li>Current calculations</li>
+        </ul>
+      </div>
+
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          on:click={cancelNewEstimate}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          on:click={confirmNewEstimate}
+        >
+          Start New Estimate
         </button>
       </div>
     </div>
@@ -267,6 +366,44 @@
 
   .action-btn.primary:hover {
     background: #1d4ed8;
+  }
+
+  /* Discard Changes Button */
+  .action-btn.discard {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
+  }
+
+  .action-btn.discard:hover {
+    background: #b91c1c;
+  }
+
+  /* Unsaved Changes Indicator (pulsing dot) */
+  .action-btn.has-changes {
+    position: relative;
+  }
+
+  .unsaved-indicator {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: #f97316;
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.2);
+    }
   }
 
   .footer-info {
@@ -377,6 +514,41 @@
 
   .btn-primary:hover:not(:disabled) {
     background: #1d4ed8;
+  }
+
+  .btn-danger {
+    background: #dc2626;
+    color: white;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: #b91c1c;
+  }
+
+  /* Modal Warning */
+  .modal-warning {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .warning-text {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    color: #374151;
+  }
+
+  .warning-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+
+  .warning-list li {
+    margin-bottom: 0.25rem;
   }
 
   /* PDF Preview Modal */
