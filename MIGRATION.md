@@ -24,7 +24,7 @@ Migrating the Trip Cost Calculator from vanilla JavaScript to Svelte to improve 
 
 ## Migration Status
 
-**Overall Progress:** 🟢 Phase 1: Setup Complete
+**Overall Progress:** 🟢 Phase 1: Calculator Core Complete
 
 ### ✅ Completed
 - [x] Create `svelte-migration` branch
@@ -39,23 +39,27 @@ Migrating the Trip Cost Calculator from vanilla JavaScript to Svelte to improve 
 - [x] Build skeleton App.svelte
 - [x] Create main.js entry point
 - [x] Update index.html for Svelte
-- [x] Test dev server (✅ Working at http://localhost:3000)
+- [x] Test dev server (✅ Working at http://localhost:3001)
+- [x] **Phase 1: Calculator Core** (Week 1-2) - **COMPLETE**
+  - [x] FlightLeg component
+  - [x] FlightLegsList component
+  - [x] CrewMember component
+  - [x] CrewList component
+  - [x] EstimateSummary component
+  - [x] CalculatorForm component
+  - [x] Header component (with auth placeholders)
+  - [x] Footer component (with action buttons)
+  - [x] Update App.svelte with new components
+  - [x] Test calculator MVP (✅ Working - can add legs/crew, see totals)
 
 ### 🔄 In Progress
-- [ ] **Phase 1: Calculator Core** (Week 1-2) - **NEXT UP**
-  - [ ] FlightLeg component
-  - [ ] CrewMember component
-  - [ ] CalculatorForm component
-  - [ ] Basic layout (Header, Footer)
-
-### 📋 Todo
-
-- [ ] **Phase 2: Auth System** (Week 2-3)
+- [ ] **Phase 2: Auth System** (Week 2-3) - **NEXT UP**
   - [ ] Auth store
   - [ ] SignInView component
   - [ ] SignInModal component
   - [ ] Password reset modals
-  - [ ] Auth state persistence
+
+### 📋 Todo
 
 - [ ] **Phase 3: Profiles** (Week 3-4)
   - [ ] Profiles store
