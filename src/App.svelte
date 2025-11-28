@@ -27,6 +27,7 @@
   let mobileMenuOpen = false;
   let shareToken = null;
   let showRenameModal = false;
+  let userHasInteracted = false; // Track if user clicked "New Estimate"
 
   // Compute page title based on estimate name
   $: pageTitle = $currentEstimateName || 'Trip Cost Calculator';
@@ -100,8 +101,12 @@
   }
 
   function handleNewEstimateFromEmpty() {
+    console.log('handleNewEstimateFromEmpty called');
     // Start a new estimate (clears calculator and current estimate tracking)
+    userHasInteracted = true; // Mark that user wants to use the calculator
+    console.log('userHasInteracted set to:', userHasInteracted);
     newEstimate();
+    console.log('newEstimate() called');
   }
 
   function handleViewEstimatesFromEmpty() {
@@ -109,7 +114,8 @@
   }
 
   // Determine if we should show empty state
-  $: showEmptyState = $isAuthenticated && !$currentEstimateId && !showSignInView;
+  // Show empty state only if: authenticated, no estimate loaded, not on sign-in view, and user hasn't clicked "New Estimate"
+  $: showEmptyState = $isAuthenticated && !$currentEstimateId && !showSignInView && !userHasInteracted;
 </script>
 
 <PageLoader isLoading={!isReady} />
