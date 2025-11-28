@@ -1,5 +1,7 @@
 <script>
   import { estimate } from '$lib/stores/calculator';
+  import { isAuthenticated } from '$lib/stores/auth';
+  import { openModal } from '$lib/stores/ui';
   import { formatCurrency } from '$lib/utils/formatters';
 
   // Reactive calculations for display using Svelte 5 $derived rune
@@ -114,6 +116,23 @@
     <span class="label">Estimated Total:</span>
     <span class="value">{formatCurrency(grandTotal)}</span>
   </div>
+
+  <!-- Auth Tip for Guest Users -->
+  {#if !$isAuthenticated}
+    <div class="auth-tip">
+      <svg class="tip-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <span class="tip-text">
+        <strong>Tip:</strong> Sign in to save and load estimates across devices.
+      </span>
+      <button class="tip-btn" on:click={() => openModal('sign-in')}>
+        Sign In
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -186,6 +205,51 @@
     color: #1e40af;
   }
 
+  /* Auth Tip */
+  .auth-tip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.875rem 1rem;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+  }
+
+  .tip-icon {
+    flex-shrink: 0;
+    color: #d97706;
+  }
+
+  .tip-text {
+    flex: 1;
+    font-size: 0.875rem;
+    color: #78350f;
+    line-height: 1.4;
+  }
+
+  .tip-text strong {
+    font-weight: 600;
+  }
+
+  .tip-btn {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    background: #d97706;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .tip-btn:hover {
+    background: #b45309;
+  }
+
   @media (max-width: 768px) {
     .summary-grid {
       grid-template-columns: 1fr;
@@ -195,6 +259,21 @@
       flex-direction: column;
       gap: 0.5rem;
       text-align: center;
+    }
+
+    .auth-tip {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tip-text {
+      flex-basis: 100%;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .tip-btn {
+      width: 100%;
     }
   }
 </style>

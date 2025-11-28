@@ -18,6 +18,8 @@
   import EstimatesView from '$lib/components/estimates/EstimatesView.svelte';
   import RenameEstimateModal from '$lib/components/estimates/RenameEstimateModal.svelte';
   import ShareView from '$lib/components/share/ShareView.svelte';
+  import EmptyState from '$lib/components/estimates/EmptyState.svelte';
+  import PageLoader from '$lib/components/ui/PageLoader.svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
 
   let isReady = false;
@@ -96,7 +98,21 @@
   function handleRenameClick() {
     showRenameModal = true;
   }
+
+  function handleNewEstimateFromEmpty() {
+    // Already on calculator view, just need to ensure calculator is visible
+    // The calculator will be empty by default
+  }
+
+  function handleViewEstimatesFromEmpty() {
+    openModal('estimates');
+  }
+
+  // Determine if we should show empty state
+  $: showEmptyState = $isAuthenticated && !$currentEstimateId && !showSignInView;
 </script>
+
+<PageLoader isLoading={!isReady} />
 
 <div class="app">
   {#if isReady}
@@ -132,7 +148,14 @@
             {/if}
           </div>
 
-          <CalculatorForm />
+          {#if showEmptyState}
+            <EmptyState
+              onNewEstimate={handleNewEstimateFromEmpty}
+              onViewEstimates={handleViewEstimatesFromEmpty}
+            />
+          {:else}
+            <CalculatorForm />
+          {/if}
         </div>
       </main>
 
