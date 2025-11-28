@@ -250,6 +250,73 @@ export function resetCalculator() {
 }
 
 /**
+ * Apply calculator state from saved data
+ * Used for loading estimates or shared estimates
+ * @param {Object} data - Calculator state data
+ */
+export function applyCalculatorState(data) {
+    // Reset ID counters
+    nextLegId = 1;
+    nextCrewId = 1;
+
+    // Apply legs
+    if (data.legs && Array.isArray(data.legs)) {
+        const legsWithIds = data.legs.map(leg => ({
+            ...leg,
+            id: nextLegId++
+        }));
+        legs.set(legsWithIds);
+    } else {
+        legs.set([]);
+    }
+
+    // Apply crew
+    if (data.crew && Array.isArray(data.crew)) {
+        const crewWithIds = data.crew.map(member => ({
+            ...member,
+            id: nextCrewId++
+        }));
+        crew.set(crewWithIds);
+    } else {
+        crew.set([]);
+    }
+
+    // Apply all other settings
+    if (data.fuelPrice !== undefined) fuelPrice.set(data.fuelPrice);
+    if (data.fuelDensity !== undefined) fuelDensity.set(data.fuelDensity);
+    if (data.includeAPU !== undefined) includeAPU.set(data.includeAPU);
+    if (data.apuBurn !== undefined) apuBurn.set(data.apuBurn);
+
+    if (data.tripDays !== undefined) tripDays.set(data.tripDays);
+    if (data.hotelStays !== undefined) hotelStays.set(data.hotelStays);
+    if (data.hotelRate !== undefined) hotelRate.set(data.hotelRate);
+    if (data.mealsRate !== undefined) mealsRate.set(data.mealsRate);
+    if (data.otherRate !== undefined) otherRate.set(data.otherRate);
+    if (data.rentalCar !== undefined) rentalCar.set(data.rentalCar);
+    if (data.airfare !== undefined) airfare.set(data.airfare);
+    if (data.mileage !== undefined) mileage.set(data.mileage);
+
+    if (data.maintenanceRate !== undefined) maintenanceRate.set(data.maintenanceRate);
+    if (data.consumablesRate !== undefined) consumablesRate.set(data.consumablesRate);
+    if (data.additionalRate !== undefined) additionalRate.set(data.additionalRate);
+
+    if (data.landingFees !== undefined) landingFees.set(data.landingFees);
+    if (data.catering !== undefined) catering.set(data.catering);
+    if (data.handling !== undefined) handling.set(data.handling);
+    if (data.passengerTransport !== undefined) passengerTransport.set(data.passengerTransport);
+    if (data.facilityFees !== undefined) facilityFees.set(data.facilityFees);
+    if (data.specialEventFees !== undefined) specialEventFees.set(data.specialEventFees);
+    if (data.rampParking !== undefined) rampParking.set(data.rampParking);
+    if (data.customs !== undefined) customs.set(data.customs);
+    if (data.hangar !== undefined) hangar.set(data.hangar);
+    if (data.otherAirport !== undefined) otherAirport.set(data.otherAirport);
+
+    if (data.tripCoordinationFee !== undefined) tripCoordinationFee.set(data.tripCoordinationFee);
+    if (data.otherMisc !== undefined) otherMisc.set(data.otherMisc);
+    if (data.tripNotes !== undefined) tripNotes.set(data.tripNotes);
+}
+
+/**
  * Load calculator state from saved estimate data
  * @param {Object} data - Saved estimate data
  */

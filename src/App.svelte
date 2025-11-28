@@ -4,6 +4,7 @@
   import { activeModal, openModal } from '$lib/stores/ui.js';
   import { loadUserProfiles } from '$lib/stores/profiles.js';
   import { initEstimates } from '$lib/stores/estimates.js';
+  import { isShareView } from '$lib/stores/share.js';
   import Header from '$lib/components/layout/Header.svelte';
   import Footer from '$lib/components/layout/Footer.svelte';
   import MobileMenu from '$lib/components/layout/MobileMenu.svelte';
@@ -15,29 +16,42 @@
   import ProfilesView from '$lib/components/profiles/ProfilesView.svelte';
   import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
   import EstimatesView from '$lib/components/estimates/EstimatesView.svelte';
+  import ShareView from '$lib/components/share/ShareView.svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
 
   let isReady = false;
   let showSignInView = true; // Show sign-in by default
   let mobileMenuOpen = false;
+  let shareToken = null;
 
   onMount(async () => {
     console.log('Trip Cost Calculator (Svelte) - Initialized');
 
-    // Initialize auth system
-    const currentUser = await initAuth();
+    // Check for share token in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareParam = urlParams.get('share');
 
-    // If user is already signed in, skip sign-in view and load profiles + estimates
-    if (currentUser) {
+    if (shareParam) {
+      // Share view mode - load shared estimate
+      shareToken = shareParam;
       showSignInView = false;
-      await loadUserProfiles();
-      initEstimates();
-    }
+    } else {
+      // Normal flow
+      // Initialize auth system
+      const currentUser = await initAuth();
 
-    // Check if this is a password recovery flow
-    if (isPasswordRecovery()) {
-      showSignInView = false;
-      openModal('update-password');
+      // If user is already signed in, skip sign-in view and load profiles + estimates
+      if (currentUser) {
+        showSignInView = false;
+        await loadUserProfiles();
+        initEstimates();
+      }
+
+      // Check if this is a password recovery flow
+      if (isPasswordRecovery()) {
+        showSignInView = false;
+        openModal('update-password');
+      }
     }
 
     isReady = true;
@@ -70,7 +84,10 @@
 
 <div class="app">
   {#if isReady}
-    {#if showSignInView}
+    {#if shareToken && $isShareView}
+      <!-- Share view mode (public shared estimate) -->
+      <ShareView {shareToken} />
+    {:else if showSignInView}
       <!-- Sign-in view for unauthenticated users -->
       <SignInView
         onContinueAsGuest={handleContinueAsGuest}

@@ -1,17 +1,22 @@
 <script>
-  import { isAuthenticated } from '$lib/stores/auth.js';
+  import { isAuthenticated, user } from '$lib/stores/auth.js';
   import { estimate } from '$lib/stores/calculator.js';
   import { currentEstimateId, currentEstimateName, saveEstimate } from '$lib/stores/estimates.js';
-  import { openModal, showToast } from '$lib/stores/ui.js';
+  import { showToast } from '$lib/stores/ui.js';
+  import { exportPDF } from '$lib/utils/pdfExport.js';
+  import ShareModal from '$lib/components/share/ShareModal.svelte';
 
   let showSaveModal = false;
+  let showShareModal = false;
+  let showPDFPreview = false;
   let estimateName = '';
   let isSaving = false;
+  let isExportingPDF = false;
+  let pdfPreviewUrl = '';
+  let pdfFilename = '';
 
   function handleShare() {
-    // TODO: Implement share functionality in Phase 5
-    console.log('Share clicked');
-    showToast('Share functionality coming in Phase 5', 'info');
+    showShareModal = true;
   }
 
   function handleSaveClick() {
@@ -52,10 +57,53 @@
     estimateName = '';
   }
 
-  function handleExportPDF() {
-    // TODO: Implement PDF export in Phase 5
-    console.log('Export PDF clicked');
-    showToast('PDF export coming in Phase 5', 'info');
+  async function handleExportPDF() {
+    isExportingPDF = true;
+
+    try {
+      // Prepare metadata
+      const metadata = {
+        creatorEmail: $isAuthenticated ? $user?.email : 'Guest'
+      };
+
+      // Export PDF
+      const result = await exportPDF($estimate, $currentEstimateName, metadata);
+
+      if (result.mode === 'preview') {
+        // Desktop: Show preview modal
+        pdfPreviewUrl = result.pdfUrl;
+        pdfFilename = result.filename;
+        showPDFPreview = true;
+      } else {
+        // Mobile: Already downloaded
+        showToast('PDF downloaded successfully', 'success');
+      }
+    } catch (error) {
+      console.error('PDF export error:', error);
+      showToast('Failed to export PDF', 'error');
+    }
+
+    isExportingPDF = false;
+  }
+
+  function handleDownloadPDF() {
+    if (pdfPreviewUrl && pdfFilename) {
+      // Create download link
+      const a = document.createElement('a');
+      a.href = pdfPreviewUrl;
+      a.download = pdfFilename;
+      a.click();
+      showToast('PDF downloaded successfully', 'success');
+    }
+  }
+
+  function handleClosePDFPreview() {
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl);
+    }
+    pdfPreviewUrl = '';
+    pdfFilename = '';
+    showPDFPreview = false;
   }
 
   function handleKeyPress(event) {
@@ -78,8 +126,8 @@
         </button>
       {/if}
 
-      <button type="button" class="action-btn" on:click={handleExportPDF}>
-        Export PDF
+      <button type="button" class="action-btn" on:click={handleExportPDF} disabled={isExportingPDF}>
+        {isExportingPDF ? 'Generating...' : 'Export PDF'}
       </button>
     </div>
 
@@ -88,6 +136,43 @@
     </div>
   </div>
 </footer>
+
+<!-- Share Modal -->
+<ShareModal isOpen={showShareModal} onClose={() => showShareModal = false} />
+
+<!-- PDF Preview Modal -->
+{#if showPDFPreview}
+  <div class="modal-overlay" on:click={handleClosePDFPreview}>
+    <div class="pdf-preview-modal" on:click|stopPropagation>
+      <div class="pdf-header">
+        <h2>PDF Preview</h2>
+        <button class="close-btn" on:click={handleClosePDFPreview} aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="pdf-preview-body">
+        <iframe
+          src={pdfPreviewUrl}
+          title="PDF Preview"
+          class="pdf-iframe"
+        ></iframe>
+      </div>
+
+      <div class="pdf-footer">
+        <button class="btn btn-secondary" on:click={handleClosePDFPreview}>
+          Close
+        </button>
+        <button class="btn btn-primary" on:click={handleDownloadPDF}>
+          Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Save Modal -->
 {#if showSaveModal}
@@ -287,6 +372,68 @@
     background: #1d4ed8;
   }
 
+  /* PDF Preview Modal */
+  .pdf-preview-modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 900px;
+    width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pdf-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .pdf-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .close-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+
+  .pdf-preview-body {
+    flex: 1;
+    min-height: 0;
+    background: #f3f4f6;
+  }
+
+  .pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .pdf-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
   @media (max-width: 640px) {
     .actions {
       flex-direction: column;
@@ -306,6 +453,20 @@
 
     .btn {
       width: 100%;
+    }
+
+    .pdf-preview-modal {
+      width: 95vw;
+      max-height: 95vh;
+    }
+
+    .pdf-header {
+      padding: 1rem;
+    }
+
+    .pdf-footer {
+      padding: 1rem;
+      flex-direction: column-reverse;
     }
   }
 </style>
