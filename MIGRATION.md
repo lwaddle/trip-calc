@@ -24,7 +24,7 @@ Migrating the Trip Cost Calculator from vanilla JavaScript to Svelte to improve 
 
 ## Migration Status
 
-**Overall Progress:** 🟢 Phase 1: Calculator Core Complete
+**Overall Progress:** 🟢 Phase 2: Authentication Complete
 
 ### ✅ Completed
 - [x] Create `svelte-migration` branch
@@ -51,13 +51,25 @@ Migrating the Trip Cost Calculator from vanilla JavaScript to Svelte to improve 
   - [x] Footer component (with action buttons)
   - [x] Update App.svelte with new components
   - [x] Test calculator MVP (✅ Working - can add legs/crew, see totals)
+- [x] **Phase 2: Auth System** (Week 2-3) - **COMPLETE**
+  - [x] Auth store (src/lib/stores/auth.js)
+  - [x] SignInView component (full-screen auth view)
+  - [x] SignInModal component (modal for re-authentication)
+  - [x] PasswordResetModal component
+  - [x] UpdatePasswordModal component
+  - [x] MobileMenu component with auth integration
+  - [x] Toast notification component
+  - [x] Update Header with auth state UI and user dropdown
+  - [x] Integrate auth system into App.svelte
+  - [x] Test auth flows (✅ Working - sign in, sign out, password reset)
 
 ### 🔄 In Progress
-- [ ] **Phase 2: Auth System** (Week 2-3) - **NEXT UP**
-  - [ ] Auth store
-  - [ ] SignInView component
-  - [ ] SignInModal component
-  - [ ] Password reset modals
+- [ ] **Phase 3: Profiles** (Week 3-4) - **NEXT UP**
+  - [ ] Profiles store
+  - [ ] ProfileSelector component
+  - [ ] ProfilesView component
+  - [ ] ProfileEditor component
+  - [ ] Profile image upload
 
 ### 📋 Todo
 
@@ -303,6 +315,7 @@ The migration is complete when:
 ---
 
 ## Last Updated
-- **Date:** 2025-01-XX (Initial creation)
-- **Status:** Planning phase complete, ready to start coding
-- **Next Up:** Initial Svelte project setup
+- **Date:** 2025-01-27 (Phase 2 Complete)
+- **Status:** Phase 1 (Calculator Core) and Phase 2 (Authentication) complete
+- **Next Up:** Phase 3 - Profile management system
+- **Progress:** 2 of 6 phases complete (33%)

@@ -1,203 +1,194 @@
 # Svelte Migration - Detailed Task List
 
-## Current Sprint: Project Setup
+## Current Sprint: Phase 3 - Profiles
+
+### ✅ Recently Completed
+- [x] **Phase 1: Calculator Core** - All calculator components built and working
+- [x] **Phase 2: Auth System** - Complete authentication flow with sign-in, sign-out, password reset
 
 ### 🔄 In Progress
-- [ ] Create initial migration documentation
-  - [x] MIGRATION.md
-  - [x] ARCHITECTURE.md
-  - [x] TODO.md (this file)
-  - [ ] Update README.md
+- [ ] **Phase 3: Profiles** - Profile management system
 
 ### 📋 Next Up
-- [ ] Initial Svelte project setup
-- [ ] Create base file structure
-- [ ] Start Phase 1: Calculator Core
+- [ ] Create profiles store
+- [ ] Build ProfileSelector component
+- [ ] Build profile management UI
 
 ---
 
-## Phase 1: Calculator Core (Week 1-2)
+## Phase 1: Calculator Core (Week 1-2) ✅ COMPLETE
 
 ### Goal
 Build the core calculator functionality with legs, crew, and calculations working.
 
 ### Setup Tasks
-- [ ] Initialize Svelte + Vite project
-  - [ ] Install Svelte dependencies
-  - [ ] Configure Vite for Svelte
-  - [ ] Set up path aliases (`$lib`)
-  - [ ] Create base file structure
+- [x] Initialize Svelte + Vite project
+  - [x] Install Svelte dependencies
+  - [x] Configure Vite for Svelte
+  - [x] Set up path aliases (`$lib`)
+  - [x] Create base file structure
 
-- [ ] Copy reusable files
-  - [ ] Copy `auth.js` to `src/lib/services/`
-  - [ ] Copy `database.js` to `src/lib/services/`
-  - [ ] Copy `supabase.js` to `src/lib/services/`
-  - [ ] Copy `.env` variables
+- [x] Copy reusable files
+  - [x] Copy `auth.js` to `src/lib/services/`
+  - [x] Copy `database.js` to `src/lib/services/`
+  - [x] Copy `supabase.js` to `src/lib/services/`
+  - [x] Copy `.env` variables
 
-- [ ] Extract utilities from app.js
-  - [ ] Create `calculations.js` - extract calculation logic
-  - [ ] Create `formatters.js` - extract formatCurrency, formatNumber
-  - [ ] Create `constants.js` - STANDARD_PROFILES, DEFAULT_PROFILE_ID
+- [x] Extract utilities from app.js
+  - [x] Create `calculations.js` - extract calculation logic
+  - [x] Create `formatters.js` - extract formatCurrency, formatNumber
+  - [x] Create `constants.js` - STANDARD_PROFILES, DEFAULT_PROFILE_ID
 
 ### Store Creation
-- [ ] `stores/calculator.js`
-  - [ ] Create `legs` writable store
-  - [ ] Create `crew` writable store
-  - [ ] Create `fuelPrice`, `fuelDensity`, `hotelRate`, `mealsRate`, `maintenanceRate` stores
-  - [ ] Create `includeAPU` store
-  - [ ] Create `totalEstimate` derived store (runs calculations automatically)
-  - [ ] Helper functions: `addLeg()`, `removeLeg()`, `updateLeg()`
-  - [ ] Helper functions: `addCrew()`, `removeCrew()`, `updateCrew()`
+- [x] `stores/calculator.js`
+  - [x] Create `legs` writable store
+  - [x] Create `crew` writable store
+  - [x] Create `fuelPrice`, `fuelDensity`, `hotelRate`, `mealsRate`, `maintenanceRate` stores
+  - [x] Create `includeAPU` store
+  - [x] Create `totalEstimate` derived store (runs calculations automatically)
+  - [x] Helper functions: `addLeg()`, `removeLeg()`, `updateLeg()`
+  - [x] Helper functions: `addCrew()`, `removeCrew()`, `updateCrew()`
 
-- [ ] `stores/ui.js`
-  - [ ] Create `activeModal` store
-  - [ ] Create `toastMessage` and `toastType` stores
-  - [ ] Helper functions: `openModal()`, `closeModal()`, `showToast()`
+- [x] `stores/ui.js`
+  - [x] Create `activeModal` store
+  - [x] Create `toastMessage` and `toastType` stores
+  - [x] Helper functions: `openModal()`, `closeModal()`, `showToast()`
 
 ### Component Development
-- [ ] Layout Components
-  - [ ] `Header.svelte`
-    - [ ] Logo
-    - [ ] Desktop navigation (placeholder for now)
-    - [ ] Mobile menu button
-  - [ ] `Footer.svelte`
-    - [ ] Action buttons (Share, Save - placeholders)
-  - [ ] `MobileMenu.svelte`
-    - [ ] Menu overlay
-    - [ ] Navigation items (placeholders)
+- [x] Layout Components
+  - [x] `Header.svelte`
+    - [x] Logo
+    - [x] Desktop navigation
+    - [x] Mobile menu button
+  - [x] `Footer.svelte`
+    - [x] Action buttons (Share, Save - placeholders)
+  - [x] `MobileMenu.svelte` (completed in Phase 2)
+    - [x] Menu overlay
+    - [x] Navigation items
 
-- [ ] Calculator Components
-  - [ ] `CalculatorForm.svelte`
-    - [ ] Form container
-    - [ ] Settings inputs (fuel price, density, etc.)
-    - [ ] Render FlightLegsList
-    - [ ] Render CrewList
-    - [ ] Render EstimateSummary
+- [x] Calculator Components
+  - [x] `CalculatorForm.svelte`
+    - [x] Form container
+    - [x] Settings inputs (fuel price, density, etc.)
+    - [x] Render FlightLegsList
+    - [x] Render CrewList
+    - [x] Render EstimateSummary
 
-  - [ ] `FlightLeg.svelte`
-    - [ ] Origin/destination inputs
-    - [ ] Distance, fuel, flight time inputs
-    - [ ] Ground time inputs
-    - [ ] Remove button
-    - [ ] Two-way binding to store
+  - [x] `FlightLeg.svelte`
+    - [x] Origin/destination inputs
+    - [x] Distance, fuel, flight time inputs
+    - [x] Ground time inputs
+    - [x] Remove button
+    - [x] Two-way binding to store
 
-  - [ ] `FlightLegsList.svelte`
-    - [ ] Render list of FlightLeg components
-    - [ ] "Add Leg" button
-    - [ ] Handle leg addition/removal
+  - [x] `FlightLegsList.svelte`
+    - [x] Render list of FlightLeg components
+    - [x] "Add Leg" button
+    - [x] Handle leg addition/removal
 
-  - [ ] `CrewMember.svelte`
-    - [ ] Role and rate inputs
-    - [ ] Remove button
-    - [ ] Two-way binding to store
+  - [x] `CrewMember.svelte`
+    - [x] Role and rate inputs
+    - [x] Remove button
+    - [x] Two-way binding to store
 
-  - [ ] `CrewList.svelte`
-    - [ ] Render list of CrewMember components
-    - [ ] "Add Crew" button
-    - [ ] Handle crew addition/removal
+  - [x] `CrewList.svelte`
+    - [x] Render list of CrewMember components
+    - [x] "Add Crew" button
+    - [x] Handle crew addition/removal
 
-  - [ ] `EstimateSummary.svelte`
-    - [ ] Display calculated totals
-    - [ ] Fuel costs
-    - [ ] Crew costs
-    - [ ] Hotel/meals costs
-    - [ ] Maintenance costs
-    - [ ] Grand total
+  - [x] `EstimateSummary.svelte`
+    - [x] Display calculated totals
+    - [x] Fuel costs
+    - [x] Crew costs
+    - [x] Hotel/meals costs
+    - [x] Maintenance costs
+    - [x] Grand total
 
-- [ ] UI Components
-  - [ ] `Modal.svelte`
-    - [ ] Reusable modal container
-    - [ ] Close button
-    - [ ] Backdrop click to close
-    - [ ] Slot for content
-
-  - [ ] `Toast.svelte`
-    - [ ] Success/error/info styling
-    - [ ] Auto-dismiss after timeout
-    - [ ] Close button
-
-  - [ ] `Button.svelte` (optional, for consistency)
-    - [ ] Primary/secondary/danger variants
-    - [ ] Loading state
-    - [ ] Disabled state
+- [x] UI Components
+  - [x] `Toast.svelte` (completed in Phase 2)
+    - [x] Success/error/info styling
+    - [x] Auto-dismiss after timeout
+    - [x] Close button
 
 ### Calculations
-- [ ] `utils/calculations.js`
-  - [ ] Extract `calculateEstimate()` from app.js
-  - [ ] Extract calculation helper functions
-  - [ ] Ensure all calculations are pure functions
-  - [ ] Add comments explaining calculation logic
+- [x] `utils/calculations.js`
+  - [x] Extract `calculateEstimate()` from app.js
+  - [x] Extract calculation helper functions
+  - [x] Ensure all calculations are pure functions
+  - [x] Add comments explaining calculation logic
 
-- [ ] `utils/formatters.js`
-  - [ ] `formatCurrency(amount)` function
-  - [ ] `formatNumber(number, decimals)` function
+- [x] `utils/formatters.js`
+  - [x] `formatCurrency(amount)` function
+  - [x] `formatNumber(number, decimals)` function
 
-- [ ] `utils/constants.js`
-  - [ ] STANDARD_PROFILES array
-  - [ ] DEFAULT_PROFILE_ID constant
+- [x] `utils/constants.js`
+  - [x] STANDARD_PROFILES array
+  - [x] DEFAULT_PROFILE_ID constant
 
 ### Testing
-- [ ] Test leg addition/removal
-- [ ] Test crew addition/removal
-- [ ] Test input updates trigger recalculations
-- [ ] Test calculations match vanilla JS version
-- [ ] Test on mobile viewport
+- [x] Test leg addition/removal
+- [x] Test crew addition/removal
+- [x] Test input updates trigger recalculations
+- [x] Test calculations match vanilla JS version
+- [x] Test on mobile viewport
 
 ### Milestone
 ✅ **Calculator MVP Working** - Can add legs/crew and see calculated totals (guest mode only)
 
 ---
 
-## Phase 2: Authentication (Week 2-3)
+## Phase 2: Authentication (Week 2-3) ✅ COMPLETE
 
 ### Goal
 Complete authentication system with sign-in, sign-out, and password reset.
 
 ### Store Creation
-- [ ] `stores/auth.js`
-  - [ ] Create `user` writable store
-  - [ ] Create `isAuthenticated` derived store
-  - [ ] Initialize auth listener on app load
-  - [ ] Helper functions: `signIn()`, `signOut()`, `resetPassword()`
+- [x] `stores/auth.js`
+  - [x] Create `user` writable store
+  - [x] Create `isAuthenticated` derived store
+  - [x] Initialize auth listener on app load
+  - [x] Helper functions: `signIn()`, `signOut()`, `resetPassword()`
 
 ### Component Development
-- [ ] `auth/SignInView.svelte`
-  - [ ] Sign-in form (email/password)
-  - [ ] "Continue as Guest" button
-  - [ ] "Forgot Password" link
-  - [ ] Error message display
-  - [ ] Form validation
+- [x] `auth/SignInView.svelte`
+  - [x] Sign-in form (email/password)
+  - [x] "Continue as Guest" button
+  - [x] "Forgot Password" link
+  - [x] Error message display
+  - [x] Form validation
 
-- [ ] `auth/SignInModal.svelte`
-  - [ ] Modal version of sign-in (for when already in app)
-  - [ ] Same fields as SignInView
-  - [ ] Close button
+- [x] `auth/SignInModal.svelte`
+  - [x] Modal version of sign-in (for when already in app)
+  - [x] Same fields as SignInView
+  - [x] Close button
 
-- [ ] `auth/PasswordResetModal.svelte`
-  - [ ] Email input for reset request
-  - [ ] Success/error messages
-  - [ ] Send reset email functionality
+- [x] `auth/PasswordResetModal.svelte`
+  - [x] Email input for reset request
+  - [x] Success/error messages
+  - [x] Send reset email functionality
 
-- [ ] `auth/UpdatePasswordModal.svelte`
-  - [ ] New password input
-  - [ ] Confirm password input
-  - [ ] Password strength indicator (optional)
-  - [ ] Update password functionality
+- [x] `auth/UpdatePasswordModal.svelte`
+  - [x] New password input
+  - [x] Confirm password input
+  - [x] Password validation
+  - [x] Update password functionality
 
 ### Integration
-- [ ] Update Header to show/hide auth buttons
-- [ ] Update MobileMenu with auth items
-- [ ] Add desktop user dropdown (email display, sign out)
-- [ ] Handle auth state changes (show/hide UI elements)
-- [ ] Redirect logic after sign-in
+- [x] Update Header to show/hide auth buttons
+- [x] Update MobileMenu with auth items
+- [x] Add desktop user dropdown (email display, sign out)
+- [x] Handle auth state changes (show/hide UI elements)
+- [x] Redirect logic after sign-in
+- [x] Integrated into App.svelte with modal management
+- [x] Toast notification system
 
 ### Testing
-- [ ] Test sign-in flow
-- [ ] Test sign-out flow
-- [ ] Test password reset request
-- [ ] Test password update
-- [ ] Test "Continue as Guest"
-- [ ] Test auth state persistence (page reload)
+- [x] Test sign-in flow
+- [x] Test sign-out flow
+- [x] Test password reset request
+- [x] Test password update
+- [x] Test "Continue as Guest"
+- [x] Test auth state persistence (page reload)
 
 ### Milestone
 ✅ **Auth System Complete** - Can sign in, sign out, and reset password
@@ -583,6 +574,7 @@ Final polish, bug fixes, and production readiness.
 ---
 
 ## Last Updated
-- **Date:** 2025-01-XX (Initial creation)
-- **Current Phase:** Project Setup
-- **Next Session:** Initial Svelte setup and file structure
+- **Date:** 2025-01-27 (Phase 1 & 2 Complete)
+- **Current Phase:** Phase 3 - Profiles
+- **Completed:** Phase 1 (Calculator Core), Phase 2 (Authentication)
+- **Next Session:** Begin Phase 3 - Profile management system
