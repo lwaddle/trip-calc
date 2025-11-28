@@ -7,6 +7,7 @@
   import EstimateSummary from '$lib/components/calculator/EstimateSummary.svelte';
   import FlightLegsList from '$lib/components/calculator/FlightLegsList.svelte';
   import CrewList from '$lib/components/calculator/CrewList.svelte';
+  import ClientShareModal from './ClientShareModal.svelte';
 
   export let shareToken = '';
 
@@ -14,6 +15,7 @@
   let loadError = null;
   let estimateData = null;
   let isImporting = false;
+  let showClientShareModal = false;
 
   onMount(async () => {
     if (!shareToken) {
@@ -63,6 +65,38 @@
   function handleExitShareView() {
     exitShareView();
   }
+
+  function handleShareClick() {
+    showClientShareModal = true;
+  }
+
+  // Generate estimate text for sharing
+  function getEstimateText() {
+    const legs = $estimate.legsSummary || [];
+    const total = $estimate.estimatedTotal || 0;
+
+    let text = 'Trip Cost Estimate\n\n';
+
+    if (estimateData?.name) {
+      text += `Name: ${estimateData.name}\n\n`;
+    }
+
+    text += 'Flight Legs:\n';
+    if (legs.length === 0) {
+      text += '  No legs added\n';
+    } else {
+      legs.forEach(leg => {
+        text += `  Leg ${leg.index}: ${leg.from} → ${leg.to} (${leg.hours}h ${leg.minutes}m)\n`;
+      });
+    }
+
+    text += `\nEstimated Total: $${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+
+    return text;
+  }
+
+  // Get the current page URL for sharing
+  $: shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 </script>
 
 {#if isLoading}
@@ -105,6 +139,16 @@
         </div>
 
         <div class="share-actions">
+          <button class="btn btn-share" on:click={handleShareClick} title="Share this estimate">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            Share
+          </button>
           {#if $isAuthenticated}
             <button
               class="btn btn-primary"
@@ -141,9 +185,35 @@
           <EstimateSummary />
         </div>
       </div>
+
+      <!-- Sign-in CTA for guests -->
+      {#if !$isAuthenticated}
+        <div class="sign-in-cta">
+          <div class="cta-content">
+            <h3>Want to save or modify this estimate?</h3>
+            <p>Sign in to import this estimate to your account and make changes.</p>
+            <button class="btn-cta" on:click={() => window.location.href = '/'}>
+              Sign in to save estimate
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Footer link -->
+      <div class="share-footer">
+        <p>Want to create your own estimate? <a href="/" class="footer-link">Start here</a></p>
+      </div>
     </div>
   </div>
 {/if}
+
+<!-- Client Share Modal -->
+<ClientShareModal
+  isOpen={showClientShareModal}
+  onClose={() => showClientShareModal = false}
+  shareUrl={shareUrl}
+  estimateText={getEstimateText()}
+/>
 
 <style>
   .share-view {
@@ -287,6 +357,71 @@
     border-bottom: 2px solid #e5e7eb;
   }
 
+  .sign-in-cta {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .cta-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .cta-content p {
+    color: #1e40af;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.938rem;
+  }
+
+  .btn-cta {
+    background: #2563eb;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.938rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cta:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .share-footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    margin-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .share-footer p {
+    color: #64748b;
+    margin: 0;
+    font-size: 0.938rem;
+  }
+
+  .footer-link {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .footer-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+
   .btn {
     padding: 0.625rem 1.25rem;
     border-radius: 8px;
@@ -296,11 +431,25 @@
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .btn-share {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-share:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   .btn-primary {

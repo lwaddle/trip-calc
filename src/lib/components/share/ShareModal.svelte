@@ -1,9 +1,10 @@
 <script>
   import { isAuthenticated } from '$lib/stores/auth.js';
-  import { currentEstimateId, currentEstimateName } from '$lib/stores/estimates.js';
+  import { currentEstimateId, currentEstimateName, hasUnsavedChanges } from '$lib/stores/estimates.js';
   import { estimate } from '$lib/stores/calculator.js';
   import { generateShareLink, shareViaEmail, shareViaNative, copyToClipboard } from '$lib/stores/share.js';
   import { showToast } from '$lib/stores/ui.js';
+  import EmailUnsavedChangesModal from './EmailUnsavedChangesModal.svelte';
 
   export let isOpen = false;
   export let onClose = () => {};
@@ -11,6 +12,8 @@
   let shareUrl = '';
   let isGeneratingLink = false;
   let linkGenerated = false;
+  let showUnsavedChangesModal = false;
+  let pendingEmailAction = null; // Store which email action is pending
 
   // Generate estimate text for email sharing
   function getEstimateText() {
@@ -74,6 +77,18 @@
   }
 
   async function handleEmailShare() {
+    // Check for unsaved changes first
+    if ($isAuthenticated && $currentEstimateId && $hasUnsavedChanges) {
+      pendingEmailAction = 'email';
+      showUnsavedChangesModal = true;
+      return;
+    }
+
+    // Proceed with email
+    await performEmailShare();
+  }
+
+  async function performEmailShare() {
     const estimateText = getEstimateText();
 
     if ($isAuthenticated && $currentEstimateId) {
@@ -118,7 +133,22 @@
   function handleClose() {
     shareUrl = '';
     linkGenerated = false;
+    showUnsavedChangesModal = false;
+    pendingEmailAction = null;
     onClose();
+  }
+
+  // Handle unsaved changes modal actions
+  function handleEmailCurrentVersion() {
+    showUnsavedChangesModal = false;
+    performEmailShare();
+  }
+
+  async function handleSaveAndEmail() {
+    showUnsavedChangesModal = false;
+    // The EmailUnsavedChangesModal will handle saving
+    // After it saves, it will call this function
+    await performEmailShare();
   }
 
   // Check if Web Share API is supported
@@ -230,6 +260,14 @@
     </div>
   </div>
 {/if}
+
+<!-- Unsaved Changes Warning Modal -->
+<EmailUnsavedChangesModal
+  isOpen={showUnsavedChangesModal}
+  onClose={() => showUnsavedChangesModal = false}
+  onEmailCurrent={handleEmailCurrentVersion}
+  onSaveAndEmail={handleSaveAndEmail}
+/>
 
 <style>
   .modal-overlay {
