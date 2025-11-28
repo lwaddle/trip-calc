@@ -1,10 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { loadEstimates, loadEstimate, deleteEstimate, newEstimate } from '$lib/stores/estimates.js';
-  import { showToast } from '$lib/stores/ui.js';
+  import { closeModal, showToast } from '$lib/stores/ui.js';
   import EstimatesList from './EstimatesList.svelte';
-
-  export let onClose = () => {};
 
   let showDeleteConfirm = false;
   let estimateToDelete = null;
@@ -21,7 +19,7 @@
     try {
       await loadEstimate(estimate);
       showToast(`Loaded estimate: ${estimate.name}`, 'success');
-      onClose();
+      closeModal();
     } catch (error) {
       console.error('Error loading estimate:', error);
       showToast('Failed to load estimate', 'error');
@@ -61,13 +59,13 @@
   function handleNewEstimate() {
     newEstimate();
     showToast('Started new estimate', 'success');
-    onClose();
+    closeModal();
   }
 </script>
 
 <div class="estimates-view">
   <div class="estimates-header">
-    <button class="back-button" on:click={onClose} aria-label="Close estimates view">
+    <button class="back-button" on:click={closeModal} aria-label="Close estimates view">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
