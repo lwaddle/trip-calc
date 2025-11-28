@@ -24,14 +24,12 @@
   }
 
   function handleMyEstimates() {
-    // TODO: Navigate to estimates view
-    console.log('Navigate to My Estimates');
+    openModal('estimates');
     onClose();
   }
 
   function handleProfiles() {
-    // TODO: Navigate to profiles view
-    console.log('Navigate to Profiles');
+    openModal('profiles');
     onClose();
   }
 

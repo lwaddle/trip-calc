@@ -3,6 +3,7 @@
   import { initialize as initAuth, isPasswordRecovery, user } from '$lib/stores/auth.js';
   import { activeModal, openModal } from '$lib/stores/ui.js';
   import { loadUserProfiles } from '$lib/stores/profiles.js';
+  import { initEstimates } from '$lib/stores/estimates.js';
   import Header from '$lib/components/layout/Header.svelte';
   import Footer from '$lib/components/layout/Footer.svelte';
   import MobileMenu from '$lib/components/layout/MobileMenu.svelte';
@@ -13,6 +14,7 @@
   import UpdatePasswordModal from '$lib/components/auth/UpdatePasswordModal.svelte';
   import ProfilesView from '$lib/components/profiles/ProfilesView.svelte';
   import ProfileEditor from '$lib/components/profiles/ProfileEditor.svelte';
+  import EstimatesView from '$lib/components/estimates/EstimatesView.svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
 
   let isReady = false;
@@ -25,10 +27,11 @@
     // Initialize auth system
     const currentUser = await initAuth();
 
-    // If user is already signed in, skip sign-in view and load profiles
+    // If user is already signed in, skip sign-in view and load profiles + estimates
     if (currentUser) {
       showSignInView = false;
       await loadUserProfiles();
+      initEstimates();
     }
 
     // Check if this is a password recovery flow
@@ -40,9 +43,10 @@
     isReady = true;
   });
 
-  // Watch for user changes to load/unload profiles
+  // Watch for user changes to load/unload profiles and estimates
   $: if ($user) {
     loadUserProfiles();
+    initEstimates();
   }
 
   function handleContinueAsGuest() {
@@ -52,6 +56,7 @@
   async function handleSignInSuccess() {
     showSignInView = false;
     await loadUserProfiles();
+    initEstimates();
   }
 
   function toggleMobileMenu() {
@@ -105,6 +110,10 @@
 
       {#if $activeModal === 'profileEditor'}
         <ProfileEditor />
+      {/if}
+
+      {#if $activeModal === 'estimates'}
+        <EstimatesView />
       {/if}
     {/if}
 
