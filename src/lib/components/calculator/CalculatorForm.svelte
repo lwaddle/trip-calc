@@ -4,11 +4,17 @@
   import EstimateSummary from './EstimateSummary.svelte';
   import ProfileSelector from './ProfileSelector.svelte';
   import { fuelPrice, fuelDensity, includeAPU } from '$lib/stores/calculator';
+  import { currentEstimateId } from '$lib/stores/estimates';
+
+  // Hide profile selector when editing a saved estimate
+  $: showProfileSelector = !$currentEstimateId;
 </script>
 
 <div class="calculator-form">
-  <!-- Profile Selector -->
-  <ProfileSelector />
+  <!-- Profile Selector (only show for new/unsaved estimates) -->
+  {#if showProfileSelector}
+    <ProfileSelector />
+  {/if}
 
   <div class="settings-section">
     <h2>Settings</h2>
