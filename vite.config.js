@@ -1,12 +1,16 @@
 import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { copyFileSync } from 'fs';
+import path from 'path';
 
 export default defineConfig({
+  plugins: [svelte()],
+
   // Serve files from root directory
   root: './',
 
   // Public directory for static assets
-  publicDir: 'assets',
+  publicDir: 'public',
 
   // Build output directory
   build: {
@@ -33,6 +37,13 @@ export default defineConfig({
 
   // Public base path
   base: './',
+
+  // Path aliases for cleaner imports
+  resolve: {
+    alias: {
+      '$lib': path.resolve('./src/lib')
+    }
+  },
 
   // Server configuration for development
   server: {
