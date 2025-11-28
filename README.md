@@ -2,6 +2,13 @@
 
 A comprehensive web application for calculating private aviation trip costs with features for flight legs, crew expenses, fuel costs, and more.
 
+> **🚧 Migration in Progress:** This project is being migrated from vanilla JavaScript to Svelte. See [MIGRATION.md](MIGRATION.md) for details on the migration plan and current status.
+>
+> - **Current version (main branch):** Vanilla JavaScript - Tagged as `v1.0-vanilla-js`
+> - **New version (svelte-migration branch):** Svelte - In development
+
+To view the original vanilla JS version: `git checkout v1.0-vanilla-js`
+
 ## Features
 
 - **Flight Leg Management**: Add multiple flight legs with fuel burn calculations
