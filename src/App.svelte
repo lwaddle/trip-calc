@@ -1,9 +1,9 @@
 <script>
   import { onMount } from 'svelte';
-  import { estimate } from '$lib/stores/calculator';
-  import { formatCurrency } from '$lib/utils/formatters';
+  import Header from '$lib/components/layout/Header.svelte';
+  import Footer from '$lib/components/layout/Footer.svelte';
+  import CalculatorForm from '$lib/components/calculator/CalculatorForm.svelte';
 
-  // This is a skeleton - we'll add components as we build them
   let isReady = false;
 
   onMount(() => {
@@ -14,30 +14,19 @@
 
 <div class="app">
   {#if isReady}
-    <header>
-      <h1>Trip Cost Calculator (Svelte)</h1>
-      <p>Migration in progress...</p>
-    </header>
+    <Header />
 
-    <main>
-      <div class="calculator-placeholder">
-        <h2>Calculator Core</h2>
-        <p>This is where the calculator form will go.</p>
-
-        {#if $estimate}
-          <div class="estimate-preview">
-            <h3>Current Estimate</h3>
-            <p>Total: ${formatCurrency($estimate.estimatedTotal)}</p>
-            <p>Flight Hours: {$estimate.totalHours}h {$estimate.remainingMinutes}m</p>
-            <p>Fuel: {$estimate.totalFuelGallons.toFixed(0)} gallons</p>
-          </div>
-        {/if}
+    <main class="main-content">
+      <div class="container">
+        <CalculatorForm />
       </div>
     </main>
 
-    <footer>
-      <p>Svelte migration - Phase 1: Setup Complete</p>
-    </footer>
+    <Footer />
+  {:else}
+    <div class="loading">
+      <p>Loading...</p>
+    </div>
   {/if}
 </div>
 
@@ -46,60 +35,34 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: #f3f4f6;
   }
 
-  header {
-    background: #2563eb;
-    color: white;
-    padding: 2rem;
-    text-align: center;
-  }
-
-  header h1 {
-    margin: 0 0 0.5rem 0;
-  }
-
-  header p {
-    margin: 0;
-    opacity: 0.9;
-  }
-
-  main {
+  .main-content {
     flex: 1;
-    padding: 2rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .container {
     max-width: 1200px;
     margin: 0 auto;
-    width: 100%;
   }
 
-  .calculator-placeholder {
-    background: #f3f4f6;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    padding: 2rem;
-    text-align: center;
+  .loading {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .estimate-preview {
-    margin-top: 2rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    text-align: left;
+  .loading p {
+    font-size: 1.25rem;
+    color: #6b7280;
   }
 
-  .estimate-preview h3 {
-    margin-top: 0;
-  }
-
-  footer {
-    background: #1f2937;
-    color: white;
-    padding: 1rem;
-    text-align: center;
-  }
-
-  footer p {
-    margin: 0;
+  @media (max-width: 640px) {
+    .main-content {
+      padding: 1rem;
+    }
   }
 </style>
