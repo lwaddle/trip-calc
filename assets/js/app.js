@@ -173,8 +173,8 @@ function formatNumber(number, decimals = 0) {
  * Marks the estimate as having unsaved changes
  */
 function markAsChanged() {
-    // Only mark as changed if we have a loaded estimate
-    if (state.currentEstimateId && !state.hasUnsavedChanges) {
+    // Mark as changed for both new and existing estimates
+    if (!state.hasUnsavedChanges) {
         state.hasUnsavedChanges = true;
         showDiscardButton();
         updateSaveButtonIndicator();
@@ -278,8 +278,15 @@ function updateMainHeading() {
         if (renameIcon) {
             renameIcon.style.display = 'flex';
         }
+    } else if (state.currentEstimateId === null && !isEmptyState()) {
+        // New unsaved estimate - show "Untitled"
+        mainHeading.textContent = 'Untitled';
+        document.title = 'Untitled - Trip Cost Calculator';
+        if (renameIcon) {
+            renameIcon.style.display = 'none';
+        }
     } else {
-        // Show default heading
+        // Empty state or default
         mainHeading.textContent = 'Trip Cost Calculator';
         document.title = 'Trip Cost Calculator';
         // Hide rename icon when no estimate is loaded
@@ -320,6 +327,45 @@ function showCalculatorView() {
 
     document.body.classList.remove('sign-in-view-mode');
     document.body.classList.remove('share-view-mode');
+
+    // Show empty state if authenticated and no estimate loaded
+    if (isAuthenticated() && !state.currentEstimateId && state.legs.length === 0) {
+        showEmptyState();
+    } else {
+        hideEmptyState();
+    }
+}
+
+/**
+ * Shows the empty state and hides the calculator form
+ */
+function showEmptyState() {
+    const emptyState = document.getElementById('emptyState');
+    const calculatorForm = document.getElementById('calculatorForm');
+    const normalView = document.getElementById('normalView');
+    if (emptyState) emptyState.style.display = 'flex';
+    if (calculatorForm) calculatorForm.style.display = 'none';
+    if (normalView) normalView.style.display = 'none';
+}
+
+/**
+ * Hides the empty state and shows the calculator form
+ */
+function hideEmptyState() {
+    const emptyState = document.getElementById('emptyState');
+    const calculatorForm = document.getElementById('calculatorForm');
+    const normalView = document.getElementById('normalView');
+    if (emptyState) emptyState.style.display = 'none';
+    if (calculatorForm) calculatorForm.style.display = 'block';
+    if (normalView) normalView.style.display = 'block';
+}
+
+/**
+ * Checks if the empty state is currently displayed
+ */
+function isEmptyState() {
+    const emptyState = document.getElementById('emptyState');
+    return emptyState && emptyState.style.display !== 'none';
 }
 
 // ===========================
@@ -530,7 +576,11 @@ async function initializeApp() {
     // Initialize profiles (will load user profiles and apply selected profile)
     await initializeProfiles();
 
-    addInitialLeg();
+    // Only add initial leg for guest users or when an estimate is already loaded
+    // Authenticated users with no estimate should see empty state (no initial leg)
+    if (!isAuthenticated() || state.currentEstimateId) {
+        addInitialLeg();
+    }
     // Crew is now added by applyProfile(), so don't add initial crew here
     attachEventListeners();
     updateEstimate();
@@ -898,8 +948,14 @@ function openEstimatesView() {
  */
 function closeEstimatesView() {
     document.getElementById('estimatesView').style.display = 'none';
-    document.getElementById('normalView').style.display = 'block';
     document.body.style.overflow = ''; // Restore scrolling
+
+    // Determine whether to show empty state or calculator based on current state
+    if (isAuthenticated() && !state.currentEstimateId && state.legs.length === 0) {
+        showEmptyState();
+    } else {
+        hideEmptyState();
+    }
 }
 
 /**
@@ -1925,6 +1981,37 @@ function attachEventListeners() {
     const addProfileHeaderButton = document.getElementById('addProfileHeaderButton');
     if (addProfileHeaderButton) {
         addProfileHeaderButton.addEventListener('click', openNewProfileEditor);
+    }
+    // Header '+' button for creating new estimate
+    const addEstimateHeaderButton = document.getElementById('addEstimateHeaderButton');
+    if (addEstimateHeaderButton) {
+        addEstimateHeaderButton.addEventListener('click', () => {
+            // Close the estimates view
+            closeEstimatesView();
+            // Trigger new estimate action (which includes unsaved changes check)
+            newEstimateAction();
+        });
+    }
+    // Empty state "Create New Estimate" button
+    const emptyStateNewEstimate = document.getElementById('emptyStateNewEstimate');
+    if (emptyStateNewEstimate) {
+        emptyStateNewEstimate.addEventListener('click', () => {
+            // Hide empty state and show calculator
+            hideEmptyState();
+            // Initialize new estimate state
+            state.currentEstimateId = null;
+            state.currentEstimateName = null;
+            state.hasUnsavedChanges = false;
+            // Add initial leg for new estimate
+            addInitialLeg();
+            // Update heading to show "Untitled"
+            updateMainHeading();
+        });
+    }
+    // Empty state "My Estimates" button
+    const emptyStateMyEstimates = document.getElementById('emptyStateMyEstimates');
+    if (emptyStateMyEstimates) {
+        emptyStateMyEstimates.addEventListener('click', tryOpenEstimatesView);
     }
     // Bottom 'New Profile' button
     const addProfileButton = document.getElementById('addProfileButton');
@@ -3573,7 +3660,7 @@ function saveEstimateAction() {
         modalTitle.textContent = 'Update Estimate';
     } else {
         // New estimate mode: only show Save
-        nameInput.value = '';
+        nameInput.value = 'Untitled';
         updateButton.style.display = 'none';
         saveButton.textContent = 'Save';
         modalTitle.textContent = 'Save Estimate';
@@ -3587,6 +3674,8 @@ function saveEstimateAction() {
         const estimateNameInput = document.getElementById('estimateName');
         if (estimateNameInput) {
             estimateNameInput.focus();
+            // Select all text for easy replacement
+            estimateNameInput.select();
         }
     }, 100);
 }
@@ -3636,6 +3725,9 @@ async function confirmSaveEstimate(e) {
 
     // Hide discard button since estimate is now saved
     hideDiscardButton();
+
+    // Clear the save button indicator
+    updateSaveButtonIndicator();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -3705,6 +3797,9 @@ async function confirmUpdateEstimate(e) {
 
     // Hide discard button since estimate is now updated
     hideDiscardButton();
+
+    // Clear the save button indicator
+    updateSaveButtonIndicator();
 
     // Success!
     closeModal('saveEstimateModal');
@@ -3790,6 +3885,9 @@ async function populateLoadEstimateModal() {
 */
 
 function loadEstimateAction(estimate, options = {}) {
+    // Hide empty state and show calculator
+    hideEmptyState();
+
     // Clear existing
     state.legs = [];
     state.crew = [];
@@ -4780,6 +4878,13 @@ function setFormData(data) {
 // Reset Form
 // ===========================
 function newEstimateAction() {
+    // If no unsaved changes, directly create new estimate (skip modal)
+    if (!state.hasUnsavedChanges) {
+        confirmNewEstimate();
+        return;
+    }
+
+    // Otherwise, show warning modal for unsaved changes
     // Reset modal to default state for new estimate
     const modalTitle = document.querySelector('#newEstimateConfirmModal .modal-header h2');
     if (modalTitle) {
@@ -4791,20 +4896,12 @@ function newEstimateAction() {
         confirmButton.textContent = 'Start New Estimate';
     }
 
-    // Check if there are unsaved changes and warn the user
-    if (state.hasUnsavedChanges) {
-        // Update the modal warning text to emphasize unsaved changes
-        const warningText = document.getElementById('newEstimateWarningText');
-        if (warningText) {
-            warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> Are you sure you want to start a new estimate? This will clear all data including:';
-        }
-    } else {
-        // Reset warning text to default
-        const warningText = document.getElementById('newEstimateWarningText');
-        if (warningText) {
-            warningText.textContent = 'Are you sure you want to start a new estimate? This will clear all data including:';
-        }
+    // Update the modal warning text to emphasize unsaved changes
+    const warningText = document.getElementById('newEstimateWarningText');
+    if (warningText) {
+        warningText.innerHTML = '<strong style="color: #d32f2f;">You have unsaved changes!</strong> Are you sure you want to start a new estimate? This will clear all data including:';
     }
+
     // Open confirmation modal
     openModal('newEstimateConfirmModal');
 }
@@ -4852,7 +4949,10 @@ async function confirmNewEstimate() {
     state.isSaved = false;
     state.hasUnsavedChanges = false;
 
-    // Reset main heading to default
+    // Hide empty state and show calculator
+    hideEmptyState();
+
+    // Update heading to show "Untitled"
     updateMainHeading();
 
     // Clear containers
@@ -4905,25 +5005,45 @@ function discardChangesAction() {
 }
 
 async function confirmDiscardChanges() {
-    // Reload the original estimate from the database
+    closeModal('discardChangesConfirmModal');
+
     if (!state.currentEstimateId) {
-        showToast('No estimate loaded to discard changes from', 'error');
-        closeModal('discardChangesConfirmModal');
+        // New estimate - return to empty state for authenticated users
+        if (isAuthenticated()) {
+            // Clear state
+            state.legs = [];
+            state.crew = [];
+            state.nextLegId = 1;
+            state.nextCrewId = 1;
+            state.currentEstimateId = null;
+            state.currentEstimateName = null;
+            state.isSaved = false;
+            state.hasUnsavedChanges = false;
+
+            // Clear form
+            document.getElementById('flightLegsContainer').innerHTML = '';
+            document.getElementById('crewContainer').innerHTML = '';
+
+            // Reset to empty state
+            showEmptyState();
+            updateMainHeading();
+            hideDiscardButton();
+            updateSaveButtonIndicator();
+
+            showToast('Changes discarded', 'success');
+        }
         return;
     }
 
+    // Existing estimate - reload from database
     try {
         // Fetch the estimate from database
         const { data: estimate, error: loadError } = await loadEstimate(state.currentEstimateId);
 
         if (loadError || !estimate) {
             showToast('Could not reload estimate', 'error');
-            closeModal('discardChangesConfirmModal');
             return;
         }
-
-        // Close the modal first
-        closeModal('discardChangesConfirmModal');
 
         // Reuse the existing loadEstimateAction function to reload the estimate
         // This ensures consistent behavior with loading estimates
@@ -4935,7 +5055,6 @@ async function confirmDiscardChanges() {
     } catch (error) {
         console.error('Error discarding changes:', error);
         showToast('Failed to discard changes', 'error');
-        closeModal('discardChangesConfirmModal');
     }
 }
 
